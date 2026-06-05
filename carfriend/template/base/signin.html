@@ -1,35 +1,51 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Car Friend · Sign In</title>
+  <link rel="stylesheet" href="{% static 'css/carfriend-brand.css' %}">
   <style>
-    :root{ --brand:#10B26A; --bg:#0D0F13; --surface:#161A21; --surface2:#1E2430; --border:#2A3142; --text:#E8ECF4; --text-2:#8A94A8; --danger:#EF4444; --font:'Sora',system-ui,sans-serif; }
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;}
-    .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:40px 36px;width:100%;max-width:400px;}
-    .logo{font-size:22px;font-weight:700;color:var(--brand);margin-bottom:28px;text-align:center;}
-    .logo span{color:var(--text);}
-    label{display:block;font-size:11px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;}
-    input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:11px 14px;font-size:14px;font-family:var(--font);margin-bottom:16px;}
-    input:focus{outline:none;border-color:var(--brand);}
-    button{width:100%;background:var(--brand);color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px;}
-    button:hover{background:#0d9558;}
-    .error{background:rgba(239,68,68,.15);border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;}
+    body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--mist);padding:24px;}
+    .signin-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:44px 40px;width:100%;max-width:400px;box-shadow:var(--shadow);}
+    .logo-block{display:flex;align-items:center;gap:12px;margin-bottom:28px;justify-content:center;}
+    .logo-icon{width:44px;height:44px;background:var(--green-grad);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .logo-icon svg{width:28px;height:28px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;}
+    .brand-name{font-family:var(--font-d);font-weight:700;font-size:22px;color:var(--txt);letter-spacing:-.5px;}
+    .brand-name span{color:var(--green);}
+    .tagline{font-size:13px;color:var(--txt-2);text-align:center;margin-bottom:32px;}
+    label{display:block;font-family:var(--font-d);font-size:11px;font-weight:600;color:var(--txt-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+    input{width:100%;background:var(--mist-2);border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:11px 14px;font-size:14px;font-family:var(--font-b);margin-bottom:16px;}
+    input:focus{outline:none;border-color:var(--green);}
+    button{width:100%;background:var(--green);color:#fff;border:none;border-radius:11px;padding:13px;font-family:var(--font-d);font-size:15px;font-weight:700;cursor:pointer;margin-top:4px;transition:background var(--dur-base) var(--ease);box-shadow:0 8px 20px -10px var(--green-glow);}
+    button:hover{background:var(--green-deep);}
+    .error{background:var(--red-soft);border:1px solid var(--red);color:#c4373b;border-radius:9px;padding:10px 14px;margin-bottom:16px;font-size:13px;}
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="logo">Car<span>Friend</span></div>
+  <div class="signin-card">
+    <div class="logo-block">
+      <div class="logo-icon">
+        <svg viewBox="0 0 20 20">
+          <rect x="2" y="5" width="16" height="9" rx="3"/>
+          <path d="M5 14 Q10 17.5 15 14"/>
+          <circle cx="5.5" cy="14" r="1.4" fill="#fff" stroke="none"/>
+          <circle cx="14.5" cy="14" r="1.4" fill="#fff" stroke="none"/>
+        </svg>
+      </div>
+      <span class="brand-name">Car<span>Friend</span></span>
+    </div>
+    <p class="tagline">Aapka trusted car buying partner.</p>
     {% if error %}<div class="error">{{ error }}</div>{% endif %}
     <form method="post">
       {% csrf_token %}
       <label>Username</label>
-      <input type="text" name="username" required autofocus />
+      <input type="text" name="username" required autofocus/>
       <label>Password</label>
-      <input type="password" name="password" required />
-      <button type="submit">Sign In</button>
+      <input type="password" name="password" required/>
+      <button type="submit">Get Car Assistance →</button>
     </form>
   </div>
 </body>

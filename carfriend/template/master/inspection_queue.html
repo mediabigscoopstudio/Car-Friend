@@ -1,19 +1,7 @@
 {% extends "base/base_web.html" %}
 {% block title %}Inspection Queue · Master{% endblock %}
 {% block page_title %}Inspection Queue{% endblock %}
-{% block sidebar %}
-<nav>
-  <a href="/">Dashboard</a>
-  <a href="/inspection_queue" class="active">Inspections</a>
-  <a href="/auctions_overview">Auctions</a>
-  <a href="/kyc_queue">KYC</a>
-  <a href="/payments_pending">Payments</a>
-  <a href="/leads">Lead Hub</a>
-  <a href="/users">Users</a>
-  <a href="/features">Features</a>
-  <a href="/audit">Audit Log</a>
-</nav>
-{% endblock %}
+
 {% block content %}
 <div class="section-header"><h2>Submitted Inspection Reports</h2></div>
 {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}

@@ -1,0 +1,259 @@
+{% extends "base/base_web.html" %}
+{% load static %}
+
+{% block title %}Live Auction — {{ a.vehicle }}{% endblock %}
+
+{% block content %}
+<div class="auction-room">
+
+  <div class="room-header">
+    <div>
+      <div class="room-label">LIVE AUCTION</div>
+      <h1 class="room-title">{{ a.vehicle }}</h1>
+      <div class="room-sub">{{ a.vehicle.reg_number }} · {{ a.vehicle.year }} · {{ a.vehicle.location }}</div>
+    </div>
+    <div class="room-status">
+      {% if a.status == "live" %}
+      <span class="live-dot"></span>
+      <div id="countdown" class="countdown-timer">--:--</div>
+      <div class="countdown-label">remaining</div>
+      {% else %}
+      <div class="ended-badge">{{ a.status|upper }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="room-grid">
+
+    <!-- left: bid form + history -->
+    <div class="room-left">
+      <div class="card mb-3">
+        <div class="card-header">Current Highest Bid</div>
+        <div class="current-bid" id="current-bid">
+          {% if highest %}₹{{ highest.amount|floatformat:0 }}{% else %}No bids yet{% endif %}
+        </div>
+        {% if highest %}
+        <div class="bid-by" id="bid-by">by {{ highest.bidder.get_full_name }}</div>
+        {% endif %}
+        <div class="reserve">Reserve: ₹{{ a.reserve_price|floatformat:0 }}</div>
+      </div>
+
+      {% if a.status == "live" %}
+      <div class="card mb-3">
+        <div class="card-header">Place Bid</div>
+        <form id="bid-form">
+          {% csrf_token %}
+          <div class="bid-input-row">
+            <span class="rupee">₹</span>
+            <input type="number" id="bid-amount" class="bid-input" min="{{ a.reserve_price }}"
+                   step="{{ a.min_increment }}" placeholder="Enter amount">
+          </div>
+          <div class="quick-bids" id="quick-bids"></div>
+          <button type="submit" class="btn-bid">Place Bid</button>
+        </form>
+        <div id="bid-msg" class="bid-msg"></div>
+      </div>
+      {% endif %}
+
+      <div class="card">
+        <div class="card-header">Bid History</div>
+        <div id="bid-feed" class="bid-feed">
+          {% for b in bids %}
+          <div class="bid-row">
+            <span class="bid-name">{{ b.bidder.get_full_name }}</span>
+            <span class="bid-amt">₹{{ b.amount|floatformat:0 }}</span>
+            <span class="bid-time">{{ b.placed_at|date:"H:i:s" }}</span>
+          </div>
+          {% empty %}
+          <div class="empty-bids">No bids yet — be the first!</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- right: vehicle details -->
+    <div class="room-right">
+      <div class="card mb-3">
+        {% if a.vehicle.thumbnail %}
+        <img src="{{ a.vehicle.thumbnail.url }}" class="vehicle-thumb" alt="{{ a.vehicle }}">
+        {% endif %}
+        <div class="vehicle-details">
+          <div class="detail-row"><span>Make</span><span>{{ a.vehicle.make }}</span></div>
+          <div class="detail-row"><span>Model</span><span>{{ a.vehicle.model }} {{ a.vehicle.variant }}</span></div>
+          <div class="detail-row"><span>Year</span><span>{{ a.vehicle.year }}</span></div>
+          <div class="detail-row"><span>Fuel</span><span>{{ a.vehicle.fuel }}</span></div>
+          <div class="detail-row"><span>Ownership</span><span>{{ a.vehicle.ownership }}</span></div>
+          <div class="detail-row"><span>Location</span><span>{{ a.vehicle.location }}</span></div>
+          <div class="detail-row"><span>Grade</span><span class="grade-badge grade-{{ a.vehicle.condition_grade }}">{{ a.vehicle.condition_grade }}</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">Auction Info</div>
+        <div class="detail-row"><span>Start</span><span>{{ a.start_at|date:"d M H:i" }}</span></div>
+        <div class="detail-row"><span>End</span><span id="end-time">{{ a.end_at|date:"d M H:i" }}</span></div>
+        <div class="detail-row"><span>Min increment</span><span>₹{{ a.min_increment|floatformat:0 }}</span></div>
+        <div class="detail-row"><span>Status</span><span>{{ a.status|upper }}</span></div>
+        {% if a.vehicle.report %}
+        <a href="{{ a.vehicle.report.pdf.url }}" target="_blank" class="pdf-link">📄 Inspection PDF</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.auction-room{max-width:1100px;margin:0 auto;padding:24px 0}
+.room-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px}
+.room-label{font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--red);text-transform:uppercase}
+.room-title{font-size:26px;font-weight:800;margin:4px 0}
+.room-sub{font-size:14px;color:var(--txt-2)}
+.room-status{text-align:center}
+.live-dot{display:inline-block;width:10px;height:10px;background:var(--red);
+          border-radius:50%;margin-right:6px;animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.countdown-timer{font-size:42px;font-weight:800;font-variant-numeric:tabular-nums;
+                 color:var(--green);line-height:1}
+.countdown-label{font-size:12px;color:var(--txt-2);text-align:center}
+.ended-badge{font-size:18px;font-weight:700;color:var(--txt-2);padding:10px 20px;
+             background:var(--mist-2);border-radius:8px}
+.room-grid{display:grid;grid-template-columns:1fr 380px;gap:20px}
+.room-left{display:flex;flex-direction:column}
+.room-right{display:flex;flex-direction:column}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:20px}
+.card-header{font-size:11px;font-weight:700;text-transform:uppercase;color:var(--txt-2);
+             letter-spacing:.05em;margin-bottom:12px}
+.mb-3{margin-bottom:12px}
+.current-bid{font-size:40px;font-weight:800;color:var(--green)}
+.bid-by{font-size:13px;color:var(--txt-2);margin-top:4px}
+.reserve{font-size:12px;color:var(--txt-2);margin-top:8px}
+.bid-input-row{display:flex;align-items:center;border:1px solid var(--line);border-radius:8px;
+               overflow:hidden;margin-bottom:10px}
+.rupee{padding:0 12px;font-size:18px;font-weight:700;color:var(--txt-2);background:var(--mist)}
+.bid-input{flex:1;border:none;padding:12px;font-size:16px;font-weight:600;outline:none}
+.quick-bids{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.quick-bids button{padding:6px 14px;border:1px solid var(--green);color:var(--green);
+                   background:transparent;border-radius:20px;font-size:13px;cursor:pointer}
+.btn-bid{width:100%;padding:14px;background:var(--green);color:#fff;border:none;
+         border-radius:8px;font-weight:700;font-size:16px;cursor:pointer}
+.btn-bid:hover{background:var(--green-2)}
+.bid-msg{font-size:13px;margin-top:8px;min-height:20px;text-align:center}
+.bid-msg.ok{color:var(--green)}
+.bid-msg.err{color:var(--red)}
+.bid-feed{display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto}
+.bid-row{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.bid-name{flex:1;font-size:14px;font-weight:600}
+.bid-amt{font-size:15px;font-weight:700;color:var(--green);margin-right:10px}
+.bid-time{font-size:11px;color:var(--txt-2)}
+.empty-bids{text-align:center;color:var(--txt-2);padding:20px;font-size:14px}
+.vehicle-thumb{width:100%;height:180px;object-fit:cover;border-radius:8px;margin-bottom:14px}
+.vehicle-details{display:flex;flex-direction:column;gap:8px}
+.detail-row{display:flex;justify-content:space-between;font-size:14px;padding:6px 0;
+            border-bottom:1px solid var(--line)}
+.detail-row span:first-child{color:var(--txt-2)}
+.grade-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-weight:700}
+.grade-A,.grade-B{background:#edfbf1;color:var(--green)}
+.grade-C{background:#fffbeb;color:var(--amber)}
+.grade-D{background:#fbe9e7;color:var(--red)}
+.pdf-link{display:block;margin-top:12px;color:var(--green);font-size:13px;font-weight:600;text-decoration:none}
+@media(max-width:768px){.room-grid{grid-template-columns:1fr}}
+</style>
+
+<script>
+const AUCTION_ID = {{ a.id }};
+const END_TIME   = new Date("{{ a.end_at|date:'c' }}");
+const IS_LIVE    = "{{ a.status }}" === "live";
+const MIN_INC    = {{ a.min_increment }};
+
+// countdown
+if (IS_LIVE) {
+  function updateCountdown() {
+    const now = new Date();
+    const diff = Math.max(0, (END_TIME - now) / 1000);
+    const m = String(Math.floor(diff / 60)).padStart(2, '0');
+    const s = String(Math.floor(diff % 60)).padStart(2, '0');
+    document.getElementById('countdown').textContent = m + ':' + s;
+    if (diff <= 0) document.getElementById('countdown').textContent = '00:00';
+  }
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
+}
+
+// WebSocket
+let ws;
+let currentHighest = {{ highest.amount|default:a.reserve_price }};
+
+function connectWS() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}/ws/auction/${AUCTION_ID}/`);
+
+  ws.onmessage = function(e) {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'bid') {
+      currentHighest = msg.amount;
+      document.getElementById('current-bid').textContent = '₹' + Number(msg.amount).toLocaleString('en-IN');
+      const bidBy = document.getElementById('bid-by');
+      if (bidBy) bidBy.textContent = 'by ' + msg.bidder;
+      // prepend to feed
+      const feed = document.getElementById('bid-feed');
+      const empty = feed.querySelector('.empty-bids');
+      if (empty) empty.remove();
+      const row = document.createElement('div');
+      row.className = 'bid-row';
+      const now = new Date();
+      row.innerHTML = `<span class="bid-name">${msg.bidder}</span>
+        <span class="bid-amt">₹${Number(msg.amount).toLocaleString('en-IN')}</span>
+        <span class="bid-time">${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}</span>`;
+      feed.insertBefore(row, feed.firstChild);
+      updateQuickBids();
+    }
+  };
+
+  ws.onclose = function() {
+    if (IS_LIVE) setTimeout(connectWS, 3000);
+  };
+}
+
+if (IS_LIVE) connectWS();
+
+// quick bid buttons
+function updateQuickBids() {
+  const container = document.getElementById('quick-bids');
+  if (!container) return;
+  container.innerHTML = '';
+  [1, 2, 5].forEach(mult => {
+    const amount = currentHighest + MIN_INC * mult;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = '+₹' + (MIN_INC * mult).toLocaleString('en-IN');
+    btn.onclick = () => { document.getElementById('bid-amount').value = amount; };
+    container.appendChild(btn);
+  });
+}
+updateQuickBids();
+
+// bid form
+const bidForm = document.getElementById('bid-form');
+if (bidForm) {
+  bidForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const amount = parseInt(document.getElementById('bid-amount').value);
+    const msg = document.getElementById('bid-msg');
+    if (!amount || amount < currentHighest + MIN_INC) {
+      msg.textContent = `Min bid: ₹${(currentHighest + MIN_INC).toLocaleString('en-IN')}`;
+      msg.className = 'bid-msg err';
+      return;
+    }
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({amount: amount}));
+      msg.textContent = 'Bid placed!';
+      msg.className = 'bid-msg ok';
+      document.getElementById('bid-amount').value = '';
+      setTimeout(() => msg.textContent = '', 3000);
+    } else {
+      msg.textContent = 'Connection lost. Please refresh.';
+      msg.className = 'bid-msg err';
+    }
+  });
+}
+</script>
+{% endblock %}

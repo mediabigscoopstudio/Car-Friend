@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 
-from accounts.decorators import admin_required
+from accounts.decorators import admin_required, role_required
 from core.models import log
 from notifications.services import notify
 from .models import Auction, Bid
@@ -8,7 +8,7 @@ from .models import Auction, Bid
 
 @admin_required
 def auctions_overview(request):
-    return render(request, "master/auctions.html", {"auctions": Auction.objects.all()})
+    return render(request, "master/auctions.html", {"active": "auctions", "auctions": Auction.objects.all()})
 
 
 @admin_required
@@ -18,7 +18,7 @@ def auction_reactivate(request, id):
         a.reactivate(request.user)
     except ValueError as e:
         return render(request, "master/auctions.html",
-                      {"auctions": Auction.objects.all(), "error": str(e)})
+                      {"active": "auctions", "auctions": Auction.objects.all(), "error": str(e)})
     log(request.user, "auction.reactivate", a, request, count=a.reactivation_count)
     notify(
         a.vehicle.seller, "auction_start",
@@ -46,6 +46,18 @@ def bid_void(request, id):
     return redirect(f"/auctions_overview")
 
 
+@role_required("admin", "retail", "sales")
+def auction_room(request, id):
+    from .models import Auction
+    a = get_object_or_404(Auction, id=id)
+    return render(request, "auctions/room.html", {
+        "active": "auctions",
+        "a": a,
+        "bids": a.bids.filter(is_voided=False).order_by("-amount")[:50],
+        "highest": a.highest_bid,
+    })
+
+
 @admin_required
 def lead_hub(request):
     from crm.models import Lead
@@ -66,6 +78,7 @@ def lead_hub(request):
     return render(
         request, "master/leads.html",
         {
+            "active": "pipeline",
             "leads":  Lead.objects.all(),
             "retail": User.objects.filter(role="retail", is_internal=True),
         },

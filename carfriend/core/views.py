@@ -31,6 +31,7 @@ def master_dashboard(request):
     from deals.models import Deal
 
     ctx = {
+        "active": "dashboard",
         "deals_closed": Deal.objects.filter(status="closed").count(),
         "funnel": {
             "leads":       Lead.objects.count(),
@@ -56,9 +57,9 @@ def feature_toggles(request):
         ft.save()
         log(request.user, "feature.toggle", ft, request, enabled=ft.enabled)
         return redirect("/features")
-    return render(request, "master/features.html", {"toggles": FeatureToggle.objects.all()})
+    return render(request, "master/features.html", {"active": "features", "toggles": FeatureToggle.objects.all()})
 
 
 @admin_required
 def audit_log_view(request):
-    return render(request, "master/audit.html", {"logs": AuditLog.objects.all()[:500]})
+    return render(request, "master/audit.html", {"active": "audit", "logs": AuditLog.objects.all()[:500]})

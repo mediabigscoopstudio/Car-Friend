@@ -1,14 +1,7 @@
 {% extends "base/base_web.html" %}
 {% block title %}Audit Log · Master{% endblock %}
 {% block page_title %}Audit Log{% endblock %}
-{% block sidebar %}
-<nav>
-  <a href="/">Dashboard</a><a href="/inspection_queue">Inspections</a>
-  <a href="/auctions_overview">Auctions</a><a href="/kyc_queue">KYC</a>
-  <a href="/payments_pending">Payments</a><a href="/leads">Lead Hub</a>
-  <a href="/users">Users</a><a href="/features">Features</a><a href="/audit" class="active">Audit Log</a>
-</nav>
-{% endblock %}
+
 {% block content %}
 <div class="section-header"><h2>Audit Log (last 500)</h2></div>
 <div class="table-wrap">

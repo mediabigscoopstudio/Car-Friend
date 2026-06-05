@@ -36,7 +36,7 @@ def users(request):
     return render(
         request,
         "master/users.html",
-        {"members": User.objects.filter(is_internal=True), "roles": Role.choices},
+        {"active": "users", "members": User.objects.filter(is_internal=True), "roles": Role.choices},
     )
 
 
@@ -54,7 +54,7 @@ def add_user(request):
         )
         log(request.user, "user.create", u, request, role=u.role)
         return redirect("/users")
-    return render(request, "master/add_user.html", {"roles": Role.choices})
+    return render(request, "master/add_user.html", {"active": "users", "roles": Role.choices})
 
 
 @admin_required

@@ -10,13 +10,14 @@ from notifications.services import notify
 
 @sales_required
 def dealers(request):
-    return render(request, "teams/dealers.html", {"dealers": DealerProfile.objects.all()})
+    return render(request, "teams/dealers.html", {"active": "dealers", "dealers": DealerProfile.objects.all()})
 
 
 @sales_required
 def dealer_detail(request, id):
     d = get_object_or_404(DealerProfile, id=id)
     return render(request, "teams/dealer.html", {
+        "active": "dealers",
         "d":    d,
         "comms": d.user.dealer_comms.all(),
         "ocb":  d.user.ocb_offers.all(),
@@ -27,7 +28,7 @@ def dealer_detail(request, id):
 def deal_pipeline(request):
     return render(
         request, "teams/deals.html",
-        {"deals": Deal.objects.filter(assigned_sales=request.user)},
+        {"active": "deals", "deals": Deal.objects.filter(assigned_sales=request.user)},
     )
 
 
@@ -47,5 +48,5 @@ def ocb_assign(request):
         return redirect("/ocb")
     return render(
         request, "teams/ocb.html",
-        {"listings": OCBListing.objects.filter(status="open")},
+        {"active": "ocb", "listings": OCBListing.objects.filter(status="open")},
     )

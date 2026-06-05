@@ -1,20 +1,25 @@
 {% extends "base/base_inspection.html" %}
 {% block title %}Alerts · Inspector{% endblock %}
-{% with active_tab='alerts' %}
 {% block content %}
+
 <div class="app-header">
   <h1>Alerts</h1>
+  {% if alerts %}<span class="badge green">{{ alerts|length }}</span>{% endif %}
 </div>
+
 <div class="card">
   {% for n in alerts %}
-  <div class="notif-item {% if not n.is_read %}unread{% endif %}">
+  <div class="notif-row {% if not n.is_read %}unread{% endif %}">
     <div class="notif-title">{{ n.title }}</div>
     {% if n.body %}<div class="notif-body">{{ n.body }}</div>{% endif %}
-    <div class="notif-time">{{ n.created_at|date:"d M H:i" }}</div>
+    <div class="notif-time">{{ n.created_at|date:"d M Y · H:i" }}</div>
   </div>
   {% empty %}
-  <div style="padding:24px;text-align:center;color:var(--text-2);font-size:13px">No alerts</div>
+  <div class="empty-state">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+    No alerts — you're all clear
+  </div>
   {% endfor %}
 </div>
+
 {% endblock %}
-{% endwith %}

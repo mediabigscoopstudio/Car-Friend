@@ -11,7 +11,7 @@ from .models import Payment
 def payments_pending(request):
     return render(
         request, "master/payments.html",
-        {"payments": Payment.objects.filter(status="pending")},
+        {"active": "payments", "payments": Payment.objects.filter(status="pending")},
     )
 
 
@@ -37,4 +37,4 @@ def payment_confirm(request, id):
                title="Payment confirmed",
                body=f"₹{p.amount:,} for {d.vehicle.title}")
         return redirect("/payments_pending")
-    return render(request, "master/payment_confirm.html", {"p": p})
+    return render(request, "master/payment_confirm.html", {"active": "payments", "p": p})

@@ -28,6 +28,7 @@ urlpatterns = [
     path("payments_pending", p.payments_pending, name="payments_pending"),
     path("payment_confirm/<int:id>", p.payment_confirm, name="payment_confirm"),
     # auctions
+    path("auction/<int:id>", au.auction_room, name="auction_room"),
     path("auctions_overview", au.auctions_overview, name="auctions_overview"),
     path("auction_reactivate/<int:id>", au.auction_reactivate, name="auction_reactivate"),
     path("auction_pause/<int:id>", au.auction_pause, name="auction_pause"),

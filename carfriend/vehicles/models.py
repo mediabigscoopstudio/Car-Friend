@@ -29,6 +29,8 @@ class Vehicle(models.Model):
     condition_grade  = models.CharField(max_length=1, choices=Grade.choices, blank=True)
     est_market_value = models.PositiveIntegerField(default=0)
     status           = models.CharField(max_length=12, choices=Status.choices, default=Status.DRAFT)
+    fuel             = models.CharField(max_length=20, blank=True)
+    thumbnail        = models.ImageField(upload_to="vehicles/thumbnails/", blank=True, null=True)
     created_at       = models.DateTimeField(auto_now_add=True)
     updated_at       = models.DateTimeField(auto_now=True)
 

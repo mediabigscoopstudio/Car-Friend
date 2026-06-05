@@ -1,26 +1,76 @@
 {% extends "base/base_inspection.html" %}
 {% block title %}Visit · Inspector{% endblock %}
 {% block content %}
+
 <div class="app-header">
   <a href="/visits" class="back">←</a>
   <h1>Visit Detail</h1>
+  <span class="pill pill-{{ v.status }}">{{ v.get_status_display }}</span>
 </div>
+
+{% if vehicle.thumbnail %}
+<div style="margin:0 16px 12px;border-radius:14px;overflow:hidden;height:180px">
+  <img src="{{ vehicle.thumbnail.url }}" style="width:100%;height:100%;object-fit:cover" alt="{{ vehicle.title }}">
+</div>
+{% endif %}
+
 <div class="card">
-  <div class="card-header"><h2>{{ vehicle.title }}</h2></div>
+  <div class="card-hd">
+    <h2>{{ vehicle.title }}</h2>
+  </div>
   <div class="card-body">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-      <div><div style="font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px">Year</div><div style="font-weight:600">{{ vehicle.year }}</div></div>
-      <div><div style="font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px">Location</div><div style="font-weight:600">{{ vehicle.location|default:"—" }}</div></div>
-      <div><div style="font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px">Status</div><div style="font-weight:600">{{ v.get_status_display }}</div></div>
-      <div><div style="font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px">Scheduled</div><div style="font-weight:600">{{ v.scheduled_at|date:"d M H:i" }}</div></div>
+    <div class="info-grid">
+      <div class="info-cell">
+        <div class="ic-lbl">Year</div>
+        <div class="ic-val">{{ vehicle.year }}</div>
+      </div>
+      <div class="info-cell">
+        <div class="ic-lbl">Fuel</div>
+        <div class="ic-val">{{ vehicle.fuel|default:"—" }}</div>
+      </div>
+      <div class="info-cell">
+        <div class="ic-lbl">Location</div>
+        <div class="ic-val">{{ vehicle.location|default:"—" }}</div>
+      </div>
+      <div class="info-cell">
+        <div class="ic-lbl">Ownership</div>
+        <div class="ic-val">{{ vehicle.ownership|default:"—" }}</div>
+      </div>
+      <div class="info-cell">
+        <div class="ic-lbl">Reg</div>
+        <div class="ic-val" style="font-size:12px">{{ vehicle.reg_number }}</div>
+      </div>
+      <div class="info-cell">
+        <div class="ic-lbl">Scheduled</div>
+        <div class="ic-val" style="font-size:12px">{{ v.scheduled_at|date:"d M, H:i" }}</div>
+      </div>
     </div>
+
     {% if v.status == 'scheduled' %}
-    <a href="/start/{{ v.id }}" class="btn btn-primary">Start Inspection</a>
-    {% elif v.status == 'inprogress' %}
-    <a href="/inspection/{{ v.report.id }}/basic" class="btn btn-primary">Continue Inspection</a>
+      <a href="/start/{{ v.id }}" class="btn btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Start Inspection
+      </a>
+    {% elif v.status == 'inprogress' or v.status == 'reinspect' %}
+      {% if v.report %}
+        <a href="/inspection/{{ v.report.id }}/summary" class="btn btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"/></svg>
+          Continue Inspection
+        </a>
+      {% else %}
+        <a href="/start/{{ v.id }}" class="btn btn-primary">Start Inspection</a>
+      {% endif %}
+    {% elif v.status == 'submitted' or v.status == 'approved' %}
+      {% if v.report %}
+        <a href="/report/{{ v.report.id }}" class="btn btn-secondary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          View Report
+        </a>
+      {% endif %}
     {% else %}
-    <a href="/report/{{ v.report.id }}" class="btn btn-secondary">View Report</a>
+      <div style="text-align:center;padding:8px 0;color:var(--app-txt2);font-size:13px">{{ v.get_status_display }}</div>
     {% endif %}
   </div>
 </div>
+
 {% endblock %}

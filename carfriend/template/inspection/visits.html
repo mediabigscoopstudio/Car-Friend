@@ -1,25 +1,36 @@
 {% extends "base/base_inspection.html" %}
 {% block title %}Visits · Inspector{% endblock %}
-{% with active_tab='visits' %}
 {% block content %}
+
 <div class="app-header">
   <a href="/" class="back">←</a>
   <h1>All Visits</h1>
+  <span class="badge {% if visits %}green{% endif %}">{{ visits|length }}</span>
 </div>
+
 <div class="card">
   {% for v in visits %}
-  <a href="/visit/{{ v.id }}" style="text-decoration:none;color:inherit">
-    <div class="visit-item">
-      <div class="visit-dot {% if v.status == 'inprogress' %}green{% elif v.status == 'submitted' or v.status == 'approved' %}gray{% else %}yellow{% endif %}"></div>
-      <div class="visit-info">
-        <div class="name">{{ v.vehicle.title }}</div>
-        <div class="sub">{{ v.get_status_display }} · {{ v.scheduled_at|date:"d M H:i" }}</div>
+  <a href="/visit/{{ v.id }}">
+    <div class="visit-row">
+      <div class="visit-dot
+        {% if v.status == 'inprogress' %}dot-green
+        {% elif v.status == 'submitted' or v.status == 'approved' %}dot-gray
+        {% elif v.status == 'reinspect' or v.status == 'rejected' %}dot-red
+        {% else %}dot-amber{% endif %}">
       </div>
+      <div class="visit-info">
+        <div class="vi-name">{{ v.vehicle.title }}</div>
+        <div class="vi-sub">{{ v.scheduled_at|date:"d M · H:i" }} &nbsp;·&nbsp; <span class="pill pill-{{ v.status }}">{{ v.get_status_display }}</span></div>
+      </div>
+      <div class="visit-arrow">›</div>
     </div>
   </a>
   {% empty %}
-  <div style="padding:24px;text-align:center;color:var(--text-2);font-size:13px">No visits assigned</div>
+  <div class="empty-state">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    No visits assigned to you yet
+  </div>
   {% endfor %}
 </div>
+
 {% endblock %}
-{% endwith %}

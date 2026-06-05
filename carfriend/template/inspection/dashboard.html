@@ -1,69 +1,97 @@
 {% extends "base/base_inspection.html" %}
-{% block title %}Dashboard · Inspector{% endblock %}
-{% with active_tab='home' %}
+{% block title %}Home · Inspector{% endblock %}
 {% block content %}
+
 <div class="app-header">
-  <div class="logo">CarFriend</div>
-  <span style="flex:1"></span>
-  <span style="font-size:13px;color:var(--text-2)">Inspector</span>
+  <div style="flex:1">
+    <div style="font-size:11px;font-weight:700;color:var(--app-green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Inspector Portal</div>
+    <h1 style="font-size:20px">Hey, {{ request.user.first_name|default:request.user.username }} 👋</h1>
+  </div>
+  <div style="width:38px;height:38px;border-radius:50%;background:var(--green,#015310);display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-weight:800;font-size:15px;color:#fff;flex-shrink:0">
+    {{ request.user.first_name|first|upper|default:"?" }}
+  </div>
 </div>
 
-<div style="padding:0 16px 12px">
-  <div style="font-size:22px;font-weight:700">Good to go, {{ request.user.first_name|default:request.user.username }}!</div>
-  <div style="font-size:14px;color:var(--text-2);margin-top:4px">{{ target }} visit{{ target|pluralize }} scheduled today</div>
+<div class="kpi-strip">
+  <div class="kpi">
+    <div class="kpi-val">{{ today|length }}</div>
+    <div class="kpi-lbl">Today</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-val">{{ upcoming|length }}</div>
+    <div class="kpi-lbl">Upcoming</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-val">{{ completed|length }}</div>
+    <div class="kpi-lbl">Done</div>
+  </div>
 </div>
 
-<!-- Today's visits -->
 <div class="card">
-  <div class="card-header"><h2>Today</h2><span class="badge">{{ today|length }}</span></div>
+  <div class="card-hd">
+    <h2>Today's Visits</h2>
+    <span class="badge {% if today %}green{% endif %}">{{ today|length }}</span>
+  </div>
   {% for v in today %}
-  <a href="/visit/{{ v.id }}" style="text-decoration:none;color:inherit">
-    <div class="visit-item">
-      <div class="visit-dot {% if v.status == 'inprogress' %}green{% elif v.status == 'submitted' %}gray{% else %}yellow{% endif %}"></div>
+  <a href="/visit/{{ v.id }}">
+    <div class="visit-row">
+      <div class="visit-dot {% if v.status == 'inprogress' %}dot-green{% elif v.status == 'submitted' or v.status == 'approved' %}dot-gray{% else %}dot-amber{% endif %}"></div>
       <div class="visit-info">
-        <div class="name">{{ v.vehicle.title }}</div>
-        <div class="sub">{{ v.vehicle.location|default:"—" }}</div>
+        <div class="vi-name">{{ v.vehicle.title }}</div>
+        <div class="vi-sub">{{ v.vehicle.location|default:"No location" }} &nbsp;·&nbsp; <span class="pill pill-{{ v.status }}">{{ v.get_status_display }}</span></div>
       </div>
-      <div class="time">{{ v.scheduled_at|date:"H:i" }}</div>
+      <div class="visit-time">{{ v.scheduled_at|date:"H:i" }}</div>
+      <div class="visit-arrow">›</div>
     </div>
   </a>
   {% empty %}
-  <div style="padding:16px;color:var(--text-2);font-size:13px">No visits today</div>
+  <div class="empty-state">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    No visits scheduled for today
+  </div>
   {% endfor %}
 </div>
 
-<!-- Upcoming -->
 {% if upcoming %}
 <div class="card">
-  <div class="card-header"><h2>Upcoming</h2><span class="badge">{{ upcoming|length }}</span></div>
+  <div class="card-hd">
+    <h2>Upcoming</h2>
+    <span class="badge">{{ upcoming|length }}</span>
+  </div>
   {% for v in upcoming %}
-  <a href="/visit/{{ v.id }}" style="text-decoration:none;color:inherit">
-    <div class="visit-item">
-      <div class="visit-dot gray"></div>
+  <a href="/visit/{{ v.id }}">
+    <div class="visit-row">
+      <div class="visit-dot dot-amber"></div>
       <div class="visit-info">
-        <div class="name">{{ v.vehicle.title }}</div>
-        <div class="sub">{{ v.scheduled_at|date:"d M" }}</div>
+        <div class="vi-name">{{ v.vehicle.title }}</div>
+        <div class="vi-sub">{{ v.scheduled_at|date:"D, d M · H:i" }}</div>
       </div>
+      <div class="visit-arrow">›</div>
     </div>
   </a>
   {% endfor %}
 </div>
 {% endif %}
 
-<!-- Completed -->
 {% if completed %}
 <div class="card">
-  <div class="card-header"><h2>Completed</h2></div>
-  {% for v in completed %}
-  <div class="visit-item">
-    <div class="visit-dot gray"></div>
-    <div class="visit-info">
-      <div class="name">{{ v.vehicle.title }}</div>
-      <div class="sub">{{ v.get_status_display }}</div>
-    </div>
+  <div class="card-hd">
+    <h2>Completed</h2>
+    <span class="badge">{{ completed|length }}</span>
   </div>
+  {% for v in completed %}
+  <a href="/visit/{{ v.id }}">
+    <div class="visit-row">
+      <div class="visit-dot dot-gray"></div>
+      <div class="visit-info">
+        <div class="vi-name">{{ v.vehicle.title }}</div>
+        <div class="vi-sub"><span class="pill pill-{{ v.status }}">{{ v.get_status_display }}</span></div>
+      </div>
+      <div class="visit-arrow">›</div>
+    </div>
+  </a>
   {% endfor %}
 </div>
 {% endif %}
+
 {% endblock %}
-{% endwith %}

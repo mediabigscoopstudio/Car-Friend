@@ -9,16 +9,17 @@ from notifications.services import notify
 from .models import Lead, NegotiationOffer, CommunicationLog, Task
 
 
-@retail_required
+@role_required("retail", "sales", "admin")
 def pipeline(request):
-    leads = (
-        Lead.objects.all() if request.user.is_admin
-        else Lead.objects.filter(assigned_to=request.user)
-    )
-    stages = {}
-    for s, label in Lead.Stage.choices:
-        stages[label] = leads.filter(stage=s)
-    return render(request, "teams/pipeline.html", {"stages": stages})
+    qs = Lead.objects.select_related("seller", "vehicle").order_by("-created_at")
+    if not request.user.is_admin:
+        qs = qs.filter(assigned_to=request.user)
+    columns = [
+        {"key": s, "label": label, "leads": list(qs.filter(stage=s))}
+        for s, label in Lead.Stage.choices
+    ]
+    return render(request, "teams/pipeline.html",
+                  {"columns": columns, "total": qs.count(), "active": "pipeline"})
 
 
 @retail_required
@@ -28,6 +29,7 @@ def seller_detail(request, id):
     if lead.vehicle:
         margin_hint = lead.vehicle.est_market_value - lead.expected_price
     return render(request, "teams/seller.html", {
+        "active":      "pipeline",
         "lead":        lead,
         "vehicle":     lead.vehicle,
         "offers":      lead.offers.all(),
@@ -89,7 +91,7 @@ def create_auction(request, id):
             body="Your car is now in a live 30-minute auction.",
         )
         return redirect("/pipeline")
-    return render(request, "teams/create_auction.html", {"lead": lead})
+    return render(request, "teams/create_auction.html", {"active": "pipeline", "lead": lead})
 
 
 @role_required("retail", "sales")
@@ -110,7 +112,7 @@ def add_comm(request):
 def tasks(request):
     return render(
         request, "teams/tasks.html",
-        {"tasks": Task.objects.filter(assigned_to=request.user)},
+        {"active": "tasks", "tasks": Task.objects.filter(assigned_to=request.user)},
     )
 
 

@@ -10,7 +10,7 @@ from .models import KYCVerification
 def kyc_queue(request):
     return render(
         request, "master/kyc_queue.html",
-        {"records": KYCVerification.objects.filter(status="pending")},
+        {"active": "users", "records": KYCVerification.objects.filter(status="pending")},
     )
 
 

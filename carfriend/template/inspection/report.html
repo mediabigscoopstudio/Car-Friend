@@ -1,49 +1,108 @@
 {% extends "base/base_inspection.html" %}
+{% load cf %}
 {% block title %}Report · Inspector{% endblock %}
 {% block content %}
+
 <div class="app-header">
   <a href="/visits" class="back">←</a>
   <h1>Inspection Report</h1>
+  {% if r.is_locked %}
+  <span class="pill" style="background:rgba(99,102,241,.15);color:#818cf8;font-size:10px">Locked</span>
+  {% endif %}
 </div>
 
-<div class="card">
-  <div class="card-header"><h2>{{ r.visit.vehicle.title }}</h2></div>
-  <div class="card-body">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-      <div><div style="font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px">Score</div>
-        <div style="font-size:28px;font-weight:800;color:var(--brand)">{{ r.score }}/100</div></div>
-      <div><div style="font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px">Grade</div>
-        <div style="font-size:28px;font-weight:800">{{ r.condition_grade|default:"—" }}</div></div>
-      <div><div style="font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px">Est. Value</div>
-        <div style="font-weight:600">₹{{ r.est_market_value|floatformat:0 }}</div></div>
-      <div><div style="font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px">Sections</div>
-        <div style="font-weight:600">{{ r.checkpoints|length }} sections</div></div>
+<!-- Score hero -->
+<div style="margin:0 16px 12px">
+  <div class="score-hero">
+    <div class="score-ring" style="background:conic-gradient(var(--app-green) {{ r.score }}%, rgba(255,255,255,.08) 0%)">
+      <div class="sr-num">{{ r.score }}</div>
     </div>
-
-    {% if dents %}
-    <div style="margin-bottom:12px">
-      <div style="font-size:12px;color:var(--text-2);margin-bottom:6px">Dents ({{ dents|length }})</div>
-      {% for d in dents %}
-      <span style="display:inline-block;background:var(--surface2);border-radius:6px;padding:4px 8px;font-size:11px;margin:2px">{{ d.label|default:"Dent" }} (sev {{ d.severity }})</span>
-      {% endfor %}
+    <div class="score-details">
+      <div class="sd-grade">{{ r.condition_grade|default:"—" }}</div>
+      <div class="sd-label">Condition Grade</div>
+      {% if r.redo_count %}
+      <div style="font-size:11px;color:var(--app-amber);margin-top:4px">Redo ×{{ r.redo_count }}</div>
+      {% endif %}
     </div>
-    {% endif %}
-
-    {% if media %}
-    <div style="margin-bottom:16px">
-      <div style="font-size:12px;color:var(--text-2);margin-bottom:8px">Photos ({{ media|length }})</div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
-        {% for m in media %}
-        <div style="background:var(--surface2);border-radius:8px;overflow:hidden;aspect-ratio:4/3">
-          {% if m.masked_file %}<img src="{{ m.masked_file.url }}" style="width:100%;height:100%;object-fit:cover"/>
-          {% elif m.file %}<img src="{{ m.file.url }}" style="width:100%;height:100%;object-fit:cover"/>{% endif %}
-        </div>
-        {% endfor %}
+    <div style="margin-left:auto;text-align:right">
+      <div style="font-size:11px;color:var(--app-txt2);text-transform:uppercase;letter-spacing:.05em">Score</div>
+      <div style="font-family:var(--font-d);font-size:30px;font-weight:800;color:var(--app-green);line-height:1">
+        {{ r.score }}<span style="font-size:14px;font-weight:500">/100</span>
+      </div>
+      <div style="font-size:11px;color:var(--app-txt2);margin-top:4px">
+        <span class="pill pill-{{ r.decision }}" style="font-size:10px">{{ r.get_decision_display }}</span>
       </div>
     </div>
-    {% endif %}
-
-    <a href="/submit/{{ r.id }}" class="btn btn-primary" style="margin-top:8px">Submit for Admin Review</a>
   </div>
 </div>
+
+<!-- Vehicle summary -->
+<div class="card">
+  <div class="card-hd"><h2>{{ r.visit.vehicle.title }}</h2></div>
+  <div style="padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div>
+      <div style="font-size:10px;text-transform:uppercase;color:var(--app-txt2);letter-spacing:.05em">Sections</div>
+      <div style="font-weight:600;margin-top:3px">{{ r.checkpoints|length }} filled</div>
+    </div>
+    {% if r.est_market_value %}
+    <div>
+      <div style="font-size:10px;text-transform:uppercase;color:var(--app-txt2);letter-spacing:.05em">Est. Value</div>
+      <div style="font-weight:600;margin-top:3px">₹{{ r.est_market_value|floatformat:0 }}</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Photos -->
+{% if media %}
+<div class="card">
+  <div class="card-hd">
+    <h2>Photos</h2>
+    <span class="badge">{{ media|length }}</span>
+  </div>
+  <div class="card-body">
+    <div class="photo-grid">
+      {% for m in media %}
+      <div class="photo-cell">
+        {% if m.masked_file %}<img src="{{ m.masked_file.url }}" alt="{{ m.slot }}">
+        {% elif m.image %}<img src="{{ m.image.url }}" alt="{{ m.slot }}">{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Dents -->
+{% if dents %}
+<div class="card">
+  <div class="card-hd">
+    <h2>Dent Markers</h2>
+    <span class="badge">{{ dents|length }}</span>
+  </div>
+  <div style="padding:12px 16px;display:flex;flex-wrap:wrap;gap:8px">
+    {% for d in dents %}
+    <span style="background:var(--app-card2);border:1px solid var(--app-line);border-radius:8px;padding:6px 10px;font-size:12px">
+      {{ d.label|default:"Dent" }} · sev {{ d.severity }}
+    </span>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- CTA -->
+<div style="padding:0 16px 16px">
+  {% if not r.is_locked %}
+  <a href="/submit/{{ r.id }}" class="btn btn-primary">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    Submit for Admin Review
+  </a>
+  {% elif r.pdf %}
+  <a href="{{ r.pdf.url }}" class="btn btn-secondary" target="_blank">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    Download PDF Report
+  </a>
+  {% endif %}
+</div>
+
 {% endblock %}
