@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Car Friend - App Index{% endblock %}
+{% block content %}
+  <h1>Car Friend - Local App Index</h1>
+  <p>Every app in the platform. Click any to open its welcome page on its host.</p>
+  {% for app in apps %}
+    <a class="applink" href="{{ app.url }}">{{ app.title }}<span class="tag">{{ app.host }}.</span></a>
+  {% endfor %}
+{% endblock %}
