@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}Welcome to {{ title }}{% endblock %}
+{% block content %}
+  <h1>Welcome to the {{ title }} app</h1>
+  <p>It does: {{ does }}</p>
+  <a class="back" href="{{ request.scheme }}://localhost:{{ request.get_port }}/">back to app index</a>
+{% endblock %}

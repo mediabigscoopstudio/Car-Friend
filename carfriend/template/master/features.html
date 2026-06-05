@@ -1,0 +1,38 @@
+{% extends "base/base_web.html" %}
+{% block title %}Feature Toggles · Master{% endblock %}
+{% block page_title %}Feature Toggles{% endblock %}
+{% block sidebar %}
+<nav>
+  <a href="/">Dashboard</a><a href="/inspection_queue">Inspections</a>
+  <a href="/auctions_overview">Auctions</a><a href="/kyc_queue">KYC</a>
+  <a href="/payments_pending">Payments</a><a href="/leads">Lead Hub</a>
+  <a href="/users">Users</a><a href="/features" class="active">Features</a><a href="/audit">Audit Log</a>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="section-header"><h2>Platform Feature Toggles</h2></div>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Feature</th><th>Key</th><th>Description</th><th>State</th><th></th></tr></thead>
+    <tbody>
+      {% for ft in toggles %}
+      <tr>
+        <td><strong>{{ ft.label }}</strong></td>
+        <td style="font-family:var(--mono);font-size:12px">{{ ft.key }}</td>
+        <td style="color:var(--text-2);font-size:13px">{{ ft.description|default:"—" }}</td>
+        <td>{% if ft.enabled %}<span class="pill pill-green">ON</span>{% else %}<span class="pill pill-red">OFF</span>{% endif %}</td>
+        <td>
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="id" value="{{ ft.id }}"/>
+            <button class="btn btn-secondary btn-sm">Toggle</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-2)">No feature toggles defined. Create them via Django admin.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

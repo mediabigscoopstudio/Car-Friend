@@ -1,0 +1,43 @@
+{% extends "base/base_web.html" %}
+{% block title %}Inspection Queue · Master{% endblock %}
+{% block page_title %}Inspection Queue{% endblock %}
+{% block sidebar %}
+<nav>
+  <a href="/">Dashboard</a>
+  <a href="/inspection_queue" class="active">Inspections</a>
+  <a href="/auctions_overview">Auctions</a>
+  <a href="/kyc_queue">KYC</a>
+  <a href="/payments_pending">Payments</a>
+  <a href="/leads">Lead Hub</a>
+  <a href="/users">Users</a>
+  <a href="/features">Features</a>
+  <a href="/audit">Audit Log</a>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="section-header"><h2>Submitted Inspection Reports</h2></div>
+{% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Vehicle</th><th>Inspector</th><th>Submitted</th><th>Score</th><th>Grade</th><th></th></tr></thead>
+    <tbody>
+      {% for r in reports %}
+      <tr>
+        <td>{{ r.visit.vehicle.title }}</td>
+        <td>{{ r.visit.inspector }}</td>
+        <td>{{ r.submitted_at|date:"d M Y H:i"|default:"—" }}</td>
+        <td>{{ r.score }}/100</td>
+        <td>
+          <span class="pill {% if r.condition_grade == 'A' %}pill-green{% elif r.condition_grade == 'D' %}pill-red{% else %}pill-yellow{% endif %}">
+            {{ r.condition_grade|default:"—" }}
+          </span>
+        </td>
+        <td><a href="/inspection_review/{{ r.id }}" class="btn btn-secondary btn-sm">Review</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-2)">No pending inspections</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

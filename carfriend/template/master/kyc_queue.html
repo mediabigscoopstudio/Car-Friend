@@ -1,0 +1,39 @@
+{% extends "base/base_web.html" %}
+{% block title %}KYC Queue · Master{% endblock %}
+{% block page_title %}KYC Verification Queue{% endblock %}
+{% block sidebar %}
+<nav>
+  <a href="/">Dashboard</a><a href="/inspection_queue">Inspections</a>
+  <a href="/auctions_overview">Auctions</a><a href="/kyc_queue" class="active">KYC</a>
+  <a href="/payments_pending">Payments</a><a href="/leads">Lead Hub</a>
+  <a href="/users">Users</a><a href="/features">Features</a><a href="/audit">Audit Log</a>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="section-header"><h2>Pending KYC Records</h2></div>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Subject</th><th>Type</th><th>Reference</th><th>Submitted</th><th></th></tr></thead>
+    <tbody>
+      {% for rec in records %}
+      <tr>
+        <td>{{ rec.subject }}</td>
+        <td><span class="pill pill-gray">{{ rec.get_kind_display }}</span></td>
+        <td style="font-family:var(--mono);font-size:12px">{{ rec.masked_value|default:rec.provider_ref|default:"—" }}</td>
+        <td>{{ rec.created_at|date:"d M Y" }}</td>
+        <td>
+          <form method="post" action="/kyc_decide/{{ rec.id }}" style="display:flex;gap:6px;align-items:center">
+            {% csrf_token %}
+            <input type="text" name="note" placeholder="Note (optional)" style="font-size:12px;padding:5px 8px;width:160px"/>
+            <button type="submit" name="decision" value="approved" class="btn btn-primary btn-sm">Approve</button>
+            <button type="submit" name="decision" value="rejected" class="btn btn-danger btn-sm">Reject</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-2)">No pending KYC records</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

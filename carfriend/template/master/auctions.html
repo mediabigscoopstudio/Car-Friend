@@ -1,0 +1,49 @@
+{% extends "base/base_web.html" %}
+{% block title %}Auctions · Master{% endblock %}
+{% block page_title %}Auctions{% endblock %}
+{% block sidebar %}
+<nav>
+  <a href="/">Dashboard</a><a href="/inspection_queue">Inspections</a>
+  <a href="/auctions_overview" class="active">Auctions</a>
+  <a href="/kyc_queue">KYC</a><a href="/payments_pending">Payments</a>
+  <a href="/leads">Lead Hub</a><a href="/users">Users</a>
+  <a href="/features">Features</a><a href="/audit">Audit Log</a>
+</nav>
+{% endblock %}
+{% block content %}
+{% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+<div class="section-header"><h2>All Auctions</h2></div>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Vehicle</th><th>Status</th><th>Reserve</th><th>Highest Bid</th><th>Ends At</th><th>Re-activations</th><th>Actions</th></tr></thead>
+    <tbody>
+      {% for a in auctions %}
+      <tr>
+        <td>{{ a.vehicle.title }}</td>
+        <td>
+          <span class="pill {% if a.status == 'live' %}pill-green{% elif a.status == 'closed' %}pill-red{% else %}pill-gray{% endif %}">
+            {{ a.get_status_display }}
+          </span>
+        </td>
+        <td style="font-family:var(--mono)">₹{{ a.reserve_price|floatformat:0 }}</td>
+        <td style="font-family:var(--mono)">
+          {% if a.highest_bid %}₹{{ a.highest_bid.amount|floatformat:0 }}{% else %}—{% endif %}
+        </td>
+        <td>{{ a.end_at|date:"d M H:i" }}</td>
+        <td>{{ a.reactivation_count }}/10</td>
+        <td style="display:flex;gap:6px;flex-wrap:wrap">
+          {% if a.status == 'closed' or a.status == 'completed' %}
+          <form method="post" action="/auction_reactivate/{{ a.id }}">{% csrf_token %}<button class="btn btn-primary btn-sm">Re-activate</button></form>
+          {% endif %}
+          {% if a.status == 'live' %}
+          <form method="post" action="/auction_pause/{{ a.id }}">{% csrf_token %}<button class="btn btn-danger btn-sm">Pause</button></form>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-2)">No auctions yet</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

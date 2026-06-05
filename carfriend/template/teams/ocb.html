@@ -1,0 +1,36 @@
+{% extends "base/base_web.html" %}
+{% block title %}OCB · Teams{% endblock %}
+{% block page_title %}One Click Buy Listings{% endblock %}
+{% block sidebar %}
+<nav>
+  <a href="/pipeline">Pipeline</a><a href="/tasks">Tasks</a>
+  <a href="/dealers">Dealers</a><a href="/deals">My Deals</a><a href="/ocb" class="active">OCB</a>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="section-header"><h2>Open OCB Listings</h2></div>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Vehicle</th><th>OCB Price</th><th>Assigned To</th><th>Assign</th></tr></thead>
+    <tbody>
+      {% for listing in listings %}
+      <tr>
+        <td>{{ listing.vehicle.title }}</td>
+        <td style="font-family:var(--mono)">₹{{ listing.ocb_price|floatformat:0 }}</td>
+        <td>{{ listing.assigned_to|default:"—" }}</td>
+        <td>
+          <form method="post" style="display:flex;gap:6px;align-items:center">
+            {% csrf_token %}
+            <input type="hidden" name="ocb_id" value="{{ listing.id }}"/>
+            <input type="number" name="dealer_id" placeholder="Dealer user ID" style="width:120px;font-size:12px;padding:5px 8px"/>
+            <button type="submit" class="btn btn-primary btn-sm">Assign</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-2)">No open OCB listings</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

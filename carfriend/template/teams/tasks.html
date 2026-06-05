@@ -1,0 +1,57 @@
+{% extends "base/base_web.html" %}
+{% block title %}Tasks · Teams{% endblock %}
+{% block page_title %}My Tasks{% endblock %}
+{% block sidebar %}
+<nav>
+  <a href="/pipeline">Pipeline</a><a href="/tasks" class="active">Tasks</a>
+  <a href="/dealers">Dealers</a><a href="/deals">My Deals</a><a href="/ocb">OCB</a>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="section-header">
+  <h2>Tasks</h2>
+</div>
+<!-- Add task -->
+<div class="form-card" style="margin-bottom:24px">
+  <form method="post" action="/add_task" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+    {% csrf_token %}
+    <div class="form-group" style="margin:0;flex:2;min-width:200px"><label>Title</label><input type="text" name="title" required style="margin:0"/></div>
+    <div class="form-group" style="margin:0"><label>Kind</label>
+      <select name="kind" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px 12px;font-size:14px">
+        <option value="followup">Follow-up</option><option value="call">Call reminder</option>
+        <option value="negotiation">Negotiation note</option><option value="doc">Pending document</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin:0"><label>Due</label><input type="datetime-local" name="due_at" style="margin:0"/></div>
+    <button type="submit" class="btn btn-primary">Add Task</button>
+  </form>
+</div>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Task</th><th>Kind</th><th>Due</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for t in tasks %}
+      <tr>
+        <td><strong>{{ t.title }}</strong>{% if t.notes %}<div style="font-size:12px;color:var(--text-2)">{{ t.notes }}</div>{% endif %}</td>
+        <td><span class="pill pill-gray">{{ t.get_kind_display }}</span></td>
+        <td style="font-family:var(--mono);font-size:12px">{{ t.due_at|date:"d M H:i"|default:"—" }}</td>
+        <td>
+          <span class="pill {% if t.status == 'done' %}pill-green{% elif t.status == 'overdue' %}pill-red{% else %}pill-yellow{% endif %}">
+            {{ t.get_status_display }}
+          </span>
+        </td>
+        <td>
+          {% if t.status != 'done' %}
+          <form method="post" action="/task_done/{{ t.id }}">
+            {% csrf_token %}<button class="btn btn-primary btn-sm">Done</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-2)">No tasks yet</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

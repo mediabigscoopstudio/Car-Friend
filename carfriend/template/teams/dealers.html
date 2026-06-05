@@ -1,0 +1,31 @@
+{% extends "base/base_web.html" %}
+{% block title %}Dealers · Teams{% endblock %}
+{% block page_title %}Dealer Database{% endblock %}
+{% block sidebar %}
+<nav>
+  <a href="/pipeline">Pipeline</a><a href="/tasks">Tasks</a>
+  <a href="/dealers" class="active">Dealers</a><a href="/deals">My Deals</a><a href="/ocb">OCB</a>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="section-header"><h2>Dealers</h2></div>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Dealership</th><th>City</th><th>Budget Range</th><th>Brand Interest</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for d in dealers %}
+      <tr>
+        <td><strong>{{ d.dealership_name }}</strong></td>
+        <td>{{ d.city|default:"—" }}</td>
+        <td style="font-family:var(--mono);font-size:12px">₹{{ d.budget_min|floatformat:0 }} – ₹{{ d.budget_max|floatformat:0 }}</td>
+        <td style="font-size:12px">{{ d.brand_interest|default:"—" }}</td>
+        <td>{% if d.is_banned %}<span class="pill pill-red">Banned</span>{% else %}<span class="pill pill-green">Active</span>{% endif %}</td>
+        <td><a href="/dealer/{{ d.id }}" class="btn btn-secondary btn-sm">View</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-2)">No dealers yet</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

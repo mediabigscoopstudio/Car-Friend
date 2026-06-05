@@ -1,0 +1,122 @@
+{% extends "base/base_web.html" %}
+{% block title %}Review Inspection · Master{% endblock %}
+{% block page_title %}Inspection Review{% endblock %}
+{% block sidebar %}
+<nav>
+  <a href="/">Dashboard</a>
+  <a href="/inspection_queue" class="active">Inspections</a>
+  <a href="/auctions_overview">Auctions</a>
+  <a href="/kyc_queue">KYC</a>
+  <a href="/payments_pending">Payments</a>
+  <a href="/leads">Lead Hub</a>
+  <a href="/users">Users</a>
+  <a href="/features">Features</a>
+  <a href="/audit">Audit Log</a>
+</nav>
+{% endblock %}
+{% block content %}
+<div style="margin-bottom:24px">
+  <a href="/inspection_queue" style="color:var(--brand);font-size:14px;text-decoration:none">← Back to queue</a>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="label">Vehicle</div><div class="value" style="font-size:18px">{{ r.visit.vehicle.title }}</div></div>
+  <div class="kpi-card"><div class="label">Score</div><div class="value green">{{ r.score }}/100</div></div>
+  <div class="kpi-card"><div class="label">Grade</div><div class="value">{{ r.condition_grade|default:"—" }}</div></div>
+  <div class="kpi-card"><div class="label">Est. Value</div><div class="value">₹{{ r.est_market_value|floatformat:0 }}</div></div>
+</div>
+
+{% if r.summary %}
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:24px">
+  <div style="font-size:11px;text-transform:uppercase;color:var(--text-2);margin-bottom:8px">Summary</div>
+  <p style="font-size:14px">{{ r.summary }}</p>
+</div>
+{% endif %}
+
+<!-- Checkpoints -->
+{% if r.checkpoints %}
+<div class="section-header"><h2>Checkpoints</h2></div>
+<div class="table-wrap" style="margin-bottom:24px">
+  <table>
+    <thead><tr><th>Section</th><th>Item</th><th>Value</th><th>Severity</th></tr></thead>
+    <tbody>
+      {% for section, items in r.checkpoints.items %}
+        {% for key, data in items.items %}
+        <tr>
+          <td>{{ section|capfirst }}</td>
+          <td>{{ key }}</td>
+          <td>{{ data.val }}</td>
+          <td>
+            <span class="pill {% if data.sev == 0 %}pill-green{% elif data.sev <= 2 %}pill-yellow{% else %}pill-red{% endif %}">
+              {{ data.sev }}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- Dent markers -->
+{% if dents %}
+<div class="section-header"><h2>Dent Markers ({{ dents|length }})</h2></div>
+<div class="table-wrap" style="margin-bottom:24px">
+  <table>
+    <thead><tr><th>Position (x,y)</th><th>Label</th><th>Severity</th></tr></thead>
+    <tbody>
+      {% for d in dents %}
+      <tr>
+        <td style="font-family:var(--mono)">{{ d.x|floatformat:2 }}, {{ d.y|floatformat:2 }}</td>
+        <td>{{ d.label|default:"—" }}</td>
+        <td><span class="pill {% if d.severity <= 2 %}pill-green{% elif d.severity <= 3 %}pill-yellow{% else %}pill-red{% endif %}">{{ d.severity }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- Media -->
+{% if media %}
+<div class="section-header"><h2>Photos ({{ media|length }})</h2></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:24px">
+  {% for m in media %}
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+    {% if m.masked_file %}
+      <img src="{{ m.masked_file.url }}" alt="{{ m.section }}" style="width:100%;height:120px;object-fit:cover"/>
+    {% elif m.file %}
+      <img src="{{ m.file.url }}" alt="{{ m.section }}" style="width:100%;height:120px;object-fit:cover"/>
+    {% endif %}
+    <div style="padding:8px 10px;font-size:11px;color:var(--text-2)">
+      {{ m.section|default:"—" }}
+      {% if m.plate_masked %}<span class="pill pill-green" style="margin-left:4px">✓ Masked</span>{% else %}<span class="pill pill-red" style="margin-left:4px">Unmasked</span>{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Decision form -->
+<div class="section-header"><h2>Decision</h2></div>
+<div class="form-card">
+  <form method="post" action="/inspection_decide/{{ r.id }}">
+    {% csrf_token %}
+    <div class="form-group">
+      <label>Decision</label>
+      <select name="decision" required>
+        <option value="">— select —</option>
+        <option value="approve">Approve</option>
+        <option value="reject">Reject</option>
+        <option value="reinspect">Request Re-inspection</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Note (optional)</label>
+      <textarea name="note" rows="3" style="resize:vertical"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Submit Decision</button>
+  </form>
+</div>
+{% endblock %}

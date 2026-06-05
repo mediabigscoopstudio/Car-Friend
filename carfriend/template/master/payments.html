@@ -1,0 +1,31 @@
+{% extends "base/base_web.html" %}
+{% block title %}Payments · Master{% endblock %}
+{% block page_title %}Pending Payments{% endblock %}
+{% block sidebar %}
+<nav>
+  <a href="/">Dashboard</a><a href="/inspection_queue">Inspections</a>
+  <a href="/auctions_overview">Auctions</a><a href="/kyc_queue">KYC</a>
+  <a href="/payments_pending" class="active">Payments</a><a href="/leads">Lead Hub</a>
+  <a href="/users">Users</a><a href="/features">Features</a><a href="/audit">Audit Log</a>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="section-header"><h2>Payments Awaiting Confirmation</h2></div>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Deal</th><th>Amount</th><th>Created</th><th></th></tr></thead>
+    <tbody>
+      {% for p in payments %}
+      <tr>
+        <td>{{ p.deal }}</td>
+        <td style="font-family:var(--mono)">₹{{ p.amount|floatformat:0 }}</td>
+        <td>{{ p.created_at|date:"d M Y H:i" }}</td>
+        <td><a href="/payment_confirm/{{ p.id }}" class="btn btn-primary btn-sm">Confirm</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-2)">No pending payments</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

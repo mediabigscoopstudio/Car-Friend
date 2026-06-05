@@ -1,0 +1,21 @@
+{% extends "base/base_web.html" %}
+{% block title %}Create Auction · Teams{% endblock %}
+{% block page_title %}Create Auction{% endblock %}
+{% block sidebar %}
+<nav><a href="/pipeline" class="active">Pipeline</a><a href="/tasks">Tasks</a></nav>
+{% endblock %}
+{% block content %}
+<div style="margin-bottom:20px"><a href="/seller/{{ lead.id }}" style="color:var(--brand);font-size:14px;text-decoration:none">← Back</a></div>
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="label">Vehicle</div><div class="value" style="font-size:16px">{{ lead.vehicle.title }}</div></div>
+  <div class="kpi-card"><div class="label">Expected</div><div class="value green">₹{{ lead.expected_price|floatformat:0 }}</div></div>
+</div>
+<div class="form-card" style="margin-top:24px">
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-group"><label>Reserve Price (₹) *</label><input type="number" name="reserve_price" required/></div>
+    <div class="form-group"><label>Min Bid Increment (₹)</label><input type="number" name="min_increment" value="5000"/></div>
+    <button type="submit" class="btn btn-primary">Launch 30-min Auction</button>
+  </form>
+</div>
+{% endblock %}

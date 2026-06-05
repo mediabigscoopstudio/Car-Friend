@@ -1,0 +1,66 @@
+{% extends "base/base_web.html" %}
+{% block title %}{{ d.dealership_name }} · Teams{% endblock %}
+{% block page_title %}Dealer Detail{% endblock %}
+{% block sidebar %}
+<nav>
+  <a href="/pipeline">Pipeline</a><a href="/tasks">Tasks</a>
+  <a href="/dealers" class="active">Dealers</a><a href="/deals">My Deals</a><a href="/ocb">OCB</a>
+</nav>
+{% endblock %}
+{% block content %}
+<div style="margin-bottom:20px"><a href="/dealers" style="color:var(--brand);font-size:14px;text-decoration:none">← Dealers</a></div>
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="label">Dealership</div><div class="value" style="font-size:18px">{{ d.dealership_name }}</div></div>
+  <div class="kpi-card"><div class="label">City</div><div class="value" style="font-size:16px">{{ d.city|default:"—" }}</div></div>
+  <div class="kpi-card"><div class="label">Budget</div><div class="value" style="font-size:14px">₹{{ d.budget_min|floatformat:0 }}–₹{{ d.budget_max|floatformat:0 }}</div></div>
+  <div class="kpi-card"><div class="label">Brand Interest</div><div class="value" style="font-size:14px">{{ d.brand_interest|default:"—" }}</div></div>
+</div>
+
+<!-- Comm log -->
+<div class="section-header" style="margin-top:24px"><h2>Communication Log</h2></div>
+<form method="post" action="/add_comm" style="display:flex;gap:8px;margin-bottom:16px;align-items:flex-end">
+  {% csrf_token %}
+  <input type="hidden" name="dealer_id" value="{{ d.user.id }}"/>
+  <select name="kind" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px">
+    <option value="call">Call</option><option value="note">Note</option>
+    <option value="interest">Interest level</option><option value="counter">Counter</option>
+  </select>
+  <input type="text" name="body" placeholder="Log entry…" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 12px;font-size:13px"/>
+  <button type="submit" class="btn btn-secondary btn-sm">Add</button>
+</form>
+{% if comms %}
+<div class="table-wrap" style="margin-bottom:24px">
+  <table>
+    <thead><tr><th>Type</th><th>Note</th><th>Date</th></tr></thead>
+    <tbody>
+      {% for c in comms %}
+      <tr>
+        <td><span class="pill pill-gray">{{ c.get_kind_display }}</span></td>
+        <td>{{ c.body }}</td>
+        <td>{{ c.created_at|date:"d M H:i" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- OCB offers -->
+{% if ocb %}
+<div class="section-header"><h2>OCB Offers</h2></div>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Vehicle</th><th>Price</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for o in ocb %}
+      <tr>
+        <td>{{ o.vehicle.title }}</td>
+        <td style="font-family:var(--mono)">₹{{ o.ocb_price|floatformat:0 }}</td>
+        <td><span class="pill pill-gray">{{ o.get_status_display }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

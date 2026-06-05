@@ -1,0 +1,30 @@
+{% extends "base/base_web.html" %}
+{% block title %}Deal Pipeline · Teams{% endblock %}
+{% block page_title %}My Deal Pipeline{% endblock %}
+{% block sidebar %}
+<nav>
+  <a href="/pipeline">Pipeline</a><a href="/tasks">Tasks</a>
+  <a href="/dealers">Dealers</a><a href="/deals" class="active">My Deals</a><a href="/ocb">OCB</a>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="section-header"><h2>Assigned Deals</h2></div>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Vehicle</th><th>Seller</th><th>Dealer</th><th>Final Price</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for d in deals %}
+      <tr>
+        <td>{{ d.vehicle.title }}</td>
+        <td>{{ d.seller.get_full_name|default:d.seller.username }}</td>
+        <td>{{ d.dealer.get_full_name|default:d.dealer.username }}</td>
+        <td style="font-family:var(--mono)">₹{{ d.final_price|floatformat:0 }}</td>
+        <td><span class="pill {% if d.status == 'closed' %}pill-green{% elif d.status == 'paid' %}pill-green{% else %}pill-yellow{% endif %}">{{ d.get_status_display }}</span></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-2)">No deals assigned</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

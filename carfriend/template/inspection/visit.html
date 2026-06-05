@@ -1,0 +1,26 @@
+{% extends "base/base_inspection.html" %}
+{% block title %}Visit · Inspector{% endblock %}
+{% block content %}
+<div class="app-header">
+  <a href="/visits" class="back">←</a>
+  <h1>Visit Detail</h1>
+</div>
+<div class="card">
+  <div class="card-header"><h2>{{ vehicle.title }}</h2></div>
+  <div class="card-body">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div><div style="font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px">Year</div><div style="font-weight:600">{{ vehicle.year }}</div></div>
+      <div><div style="font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px">Location</div><div style="font-weight:600">{{ vehicle.location|default:"—" }}</div></div>
+      <div><div style="font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px">Status</div><div style="font-weight:600">{{ v.get_status_display }}</div></div>
+      <div><div style="font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px">Scheduled</div><div style="font-weight:600">{{ v.scheduled_at|date:"d M H:i" }}</div></div>
+    </div>
+    {% if v.status == 'scheduled' %}
+    <a href="/start/{{ v.id }}" class="btn btn-primary">Start Inspection</a>
+    {% elif v.status == 'inprogress' %}
+    <a href="/inspection/{{ v.report.id }}/basic" class="btn btn-primary">Continue Inspection</a>
+    {% else %}
+    <a href="/report/{{ v.report.id }}" class="btn btn-secondary">View Report</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

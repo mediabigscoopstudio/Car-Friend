@@ -1,0 +1,32 @@
+{% extends "base/base_web.html" %}
+{% block title %}Audit Log · Master{% endblock %}
+{% block page_title %}Audit Log{% endblock %}
+{% block sidebar %}
+<nav>
+  <a href="/">Dashboard</a><a href="/inspection_queue">Inspections</a>
+  <a href="/auctions_overview">Auctions</a><a href="/kyc_queue">KYC</a>
+  <a href="/payments_pending">Payments</a><a href="/leads">Lead Hub</a>
+  <a href="/users">Users</a><a href="/features">Features</a><a href="/audit" class="active">Audit Log</a>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="section-header"><h2>Audit Log (last 500)</h2></div>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Timestamp</th><th>Actor</th><th>Action</th><th>Target</th><th>IP</th></tr></thead>
+    <tbody>
+      {% for entry in logs %}
+      <tr>
+        <td style="font-family:var(--mono);font-size:12px;white-space:nowrap">{{ entry.created_at|date:"d M Y H:i:s" }}</td>
+        <td>{{ entry.actor|default:"—" }}</td>
+        <td style="font-family:var(--mono);font-size:12px">{{ entry.action }}</td>
+        <td style="font-size:12px">{{ entry.target_type }} #{{ entry.target_id }}</td>
+        <td style="font-family:var(--mono);font-size:12px;color:var(--text-2)">{{ entry.ip|default:"—" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-2)">No audit entries yet</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

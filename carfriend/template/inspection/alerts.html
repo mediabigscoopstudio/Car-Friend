@@ -1,0 +1,20 @@
+{% extends "base/base_inspection.html" %}
+{% block title %}Alerts · Inspector{% endblock %}
+{% with active_tab='alerts' %}
+{% block content %}
+<div class="app-header">
+  <h1>Alerts</h1>
+</div>
+<div class="card">
+  {% for n in alerts %}
+  <div class="notif-item {% if not n.is_read %}unread{% endif %}">
+    <div class="notif-title">{{ n.title }}</div>
+    {% if n.body %}<div class="notif-body">{{ n.body }}</div>{% endif %}
+    <div class="notif-time">{{ n.created_at|date:"d M H:i" }}</div>
+  </div>
+  {% empty %}
+  <div style="padding:24px;text-align:center;color:var(--text-2);font-size:13px">No alerts</div>
+  {% endfor %}
+</div>
+{% endblock %}
+{% endwith %}

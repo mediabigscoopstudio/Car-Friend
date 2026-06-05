@@ -1,0 +1,124 @@
+{% extends "base/base_web.html" %}
+{% block title %}Dashboard · Master{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar-section">Overview</div>
+<nav>
+  <a href="/" class="active">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    Dashboard
+  </a>
+</nav>
+<div class="sidebar-section">Operations</div>
+<nav>
+  <a href="/inspection_queue">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+    Inspections
+    {% if pending_reviews %}<span class="badge warn">!</span>{% endif %}
+  </a>
+  <a href="/auctions_overview">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>
+    Auctions
+  </a>
+  <a href="/kyc_queue">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    KYC
+  </a>
+  <a href="/payments_pending">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+    Payments
+  </a>
+  <a href="/leads">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    Lead Hub
+  </a>
+</nav>
+<div class="sidebar-section">Platform</div>
+<nav>
+  <a href="/users">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+    Users
+  </a>
+  <a href="/features">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M5.34 18.66l-1.41 1.41M12 2v2M12 20v2M4.93 4.93l1.41 1.41M18.66 18.66l1.41 1.41M2 12h2M20 12h2"/></svg>
+    Features
+  </a>
+  <a href="/audit">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    Audit Log
+  </a>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="label">Deals Closed</div>
+    <div class="value green">{{ deals_closed }}</div>
+  </div>
+  <div class="kpi-card">
+    <div class="label">Total Leads</div>
+    <div class="value">{{ funnel.leads }}</div>
+  </div>
+  <div class="kpi-card">
+    <div class="label">Inspections Done</div>
+    <div class="value">{{ funnel.inspections }}</div>
+  </div>
+  <div class="kpi-card">
+    <div class="label">Auctions</div>
+    <div class="value">{{ funnel.auctions }}</div>
+  </div>
+  <div class="kpi-card">
+    <div class="label">Pending Your Review</div>
+    <div class="value{% if pending_reviews %} green{% endif %}">{{ pending_reviews }}</div>
+  </div>
+</div>
+
+<!-- Lifecycle Funnel -->
+<div class="section-header">
+  <h2>Lifecycle Funnel</h2>
+</div>
+<div class="kpi-grid" style="margin-bottom:28px">
+  <div class="kpi-card"><div class="label">Leads</div><div class="value">{{ funnel.leads }}</div></div>
+  <div class="kpi-card"><div class="label">Inspected</div><div class="value">{{ funnel.inspections }}</div></div>
+  <div class="kpi-card"><div class="label">Auctions</div><div class="value">{{ funnel.auctions }}</div></div>
+  <div class="kpi-card"><div class="label">Deals</div><div class="value">{{ funnel.deals }}</div></div>
+</div>
+
+<!-- Team -->
+<div class="section-header">
+  <h2>Team</h2>
+  <a href="/add_user" class="btn btn-primary btn-sm">+ Add User</a>
+</div>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Name</th><th>Role</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for u in team %}
+      <tr>
+        <td>{{ u.get_full_name|default:u.username }}</td>
+        <td><span class="pill pill-gray">{{ u.get_role_display }}</span></td>
+        <td>
+          {% if u.is_suspended %}
+            <span class="pill pill-red">Suspended</span>
+          {% else %}
+            <span class="pill pill-green">Active</span>
+          {% endif %}
+        </td>
+        <td>
+          <form method="post" action="/suspend_user/{{ u.id }}" style="display:inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-secondary btn-sm">
+              {% if u.is_suspended %}Unsuspend{% else %}Suspend{% endif %}
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" style="color:var(--text-2);text-align:center;padding:24px">No team members yet. <a href="/add_user" style="color:var(--brand)">Add one</a></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

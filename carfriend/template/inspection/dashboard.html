@@ -1,0 +1,69 @@
+{% extends "base/base_inspection.html" %}
+{% block title %}Dashboard · Inspector{% endblock %}
+{% with active_tab='home' %}
+{% block content %}
+<div class="app-header">
+  <div class="logo">CarFriend</div>
+  <span style="flex:1"></span>
+  <span style="font-size:13px;color:var(--text-2)">Inspector</span>
+</div>
+
+<div style="padding:0 16px 12px">
+  <div style="font-size:22px;font-weight:700">Good to go, {{ request.user.first_name|default:request.user.username }}!</div>
+  <div style="font-size:14px;color:var(--text-2);margin-top:4px">{{ target }} visit{{ target|pluralize }} scheduled today</div>
+</div>
+
+<!-- Today's visits -->
+<div class="card">
+  <div class="card-header"><h2>Today</h2><span class="badge">{{ today|length }}</span></div>
+  {% for v in today %}
+  <a href="/visit/{{ v.id }}" style="text-decoration:none;color:inherit">
+    <div class="visit-item">
+      <div class="visit-dot {% if v.status == 'inprogress' %}green{% elif v.status == 'submitted' %}gray{% else %}yellow{% endif %}"></div>
+      <div class="visit-info">
+        <div class="name">{{ v.vehicle.title }}</div>
+        <div class="sub">{{ v.vehicle.location|default:"—" }}</div>
+      </div>
+      <div class="time">{{ v.scheduled_at|date:"H:i" }}</div>
+    </div>
+  </a>
+  {% empty %}
+  <div style="padding:16px;color:var(--text-2);font-size:13px">No visits today</div>
+  {% endfor %}
+</div>
+
+<!-- Upcoming -->
+{% if upcoming %}
+<div class="card">
+  <div class="card-header"><h2>Upcoming</h2><span class="badge">{{ upcoming|length }}</span></div>
+  {% for v in upcoming %}
+  <a href="/visit/{{ v.id }}" style="text-decoration:none;color:inherit">
+    <div class="visit-item">
+      <div class="visit-dot gray"></div>
+      <div class="visit-info">
+        <div class="name">{{ v.vehicle.title }}</div>
+        <div class="sub">{{ v.scheduled_at|date:"d M" }}</div>
+      </div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Completed -->
+{% if completed %}
+<div class="card">
+  <div class="card-header"><h2>Completed</h2></div>
+  {% for v in completed %}
+  <div class="visit-item">
+    <div class="visit-dot gray"></div>
+    <div class="visit-info">
+      <div class="name">{{ v.vehicle.title }}</div>
+      <div class="sub">{{ v.get_status_display }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
+{% endwith %}

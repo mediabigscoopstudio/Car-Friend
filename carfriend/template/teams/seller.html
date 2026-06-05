@@ -1,0 +1,110 @@
+{% extends "base/base_web.html" %}
+{% block title %}Seller · Teams{% endblock %}
+{% block page_title %}Seller Detail{% endblock %}
+{% block sidebar %}
+<nav>
+  <a href="/pipeline" class="active">Pipeline</a><a href="/tasks">Tasks</a>
+  <a href="/dealers">Dealers</a><a href="/deals">My Deals</a><a href="/ocb">OCB</a>
+</nav>
+{% endblock %}
+{% block content %}
+<div style="margin-bottom:20px"><a href="/pipeline" style="color:var(--brand);font-size:14px;text-decoration:none">← Pipeline</a></div>
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="label">Seller</div><div class="value" style="font-size:18px">{{ lead.seller.get_full_name|default:lead.seller.username }}</div></div>
+  <div class="kpi-card"><div class="label">Stage</div><div class="value" style="font-size:16px">{{ lead.get_stage_display }}</div></div>
+  <div class="kpi-card"><div class="label">Expected Price</div><div class="value green">₹{{ lead.expected_price|floatformat:0 }}</div></div>
+  <div class="kpi-card"><div class="label">Margin Hint</div><div class="value">₹{{ margin_hint|floatformat:0 }}</div></div>
+</div>
+
+{% if vehicle %}
+<div class="section-header" style="margin-top:24px"><h2>Vehicle: {{ vehicle.title }}</h2></div>
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="label">Year</div><div class="value">{{ vehicle.year }}</div></div>
+  <div class="kpi-card"><div class="label">Grade</div><div class="value">{{ vehicle.condition_grade|default:"—" }}</div></div>
+  <div class="kpi-card"><div class="label">Est. Value</div><div class="value">₹{{ vehicle.est_market_value|floatformat:0 }}</div></div>
+  <div class="kpi-card"><div class="label">Status</div><div class="value" style="font-size:14px">{{ vehicle.get_status_display }}</div></div>
+</div>
+{% endif %}
+
+<!-- Move stage -->
+<div class="section-header" style="margin-top:24px"><h2>Move Stage</h2></div>
+<form method="post" action="/lead_move/{{ lead.id }}" style="display:flex;gap:8px;margin-bottom:24px">
+  {% csrf_token %}
+  <select name="stage" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 12px;font-size:13px">
+    <option value="new">New</option><option value="qualified">Qualified</option>
+    <option value="insp_sched">Inspection Scheduled</option><option value="admin_ok">Admin Approved</option>
+    <option value="negotiation">Negotiation</option><option value="auction_made">Auction Created</option>
+    <option value="closed">Closed</option>
+  </select>
+  <button type="submit" class="btn btn-primary btn-sm">Move</button>
+</form>
+
+<!-- Negotiation -->
+<div class="section-header"><h2>Price Negotiation</h2></div>
+<form method="post" action="/add_offer/{{ lead.id }}" style="display:flex;gap:8px;margin-bottom:20px;align-items:flex-end">
+  {% csrf_token %}
+  <div class="form-group" style="margin:0;flex:1">
+    <label>Offer Price (₹)</label>
+    <input type="number" name="offer_price" placeholder="Enter offer" style="margin:0"/>
+  </div>
+  <button type="submit" class="btn btn-primary">Send Offer</button>
+</form>
+{% if offers %}
+<div class="table-wrap" style="margin-bottom:24px">
+  <table>
+    <thead><tr><th>Offer</th><th>Result</th><th>Counter</th><th>Date</th></tr></thead>
+    <tbody>
+      {% for o in offers %}
+      <tr>
+        <td style="font-family:var(--mono)">₹{{ o.offer_price|floatformat:0 }}</td>
+        <td><span class="pill {% if o.result == 'accepted' %}pill-green{% elif o.result == 'rejected' %}pill-red{% else %}pill-yellow{% endif %}">{{ o.get_result_display }}</span></td>
+        <td style="font-family:var(--mono)">{% if o.counter_price %}₹{{ o.counter_price|floatformat:0 }}{% else %}—{% endif %}</td>
+        <td>{{ o.created_at|date:"d M H:i" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- Auction creation -->
+{% if vehicle %}
+<div class="section-header"><h2>Create Auction</h2></div>
+<form method="post" action="/create_auction/{{ lead.id }}" style="display:flex;gap:8px;margin-bottom:24px;align-items:flex-end;flex-wrap:wrap">
+  {% csrf_token %}
+  <div class="form-group" style="margin:0;min-width:180px"><label>Reserve Price (₹)</label><input type="number" name="reserve_price" required style="margin:0"/></div>
+  <div class="form-group" style="margin:0;min-width:140px"><label>Min Increment (₹)</label><input type="number" name="min_increment" value="5000" style="margin:0"/></div>
+  <button type="submit" class="btn btn-primary">Start Auction</button>
+</form>
+{% endif %}
+
+<!-- Comm log -->
+<div class="section-header"><h2>Communication Log</h2></div>
+<form method="post" action="/add_comm" style="display:flex;gap:8px;margin-bottom:16px;align-items:flex-end">
+  {% csrf_token %}
+  <input type="hidden" name="lead_id" value="{{ lead.id }}"/>
+  <select name="kind" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px">
+    <option value="call">Call</option><option value="note">Note</option>
+    <option value="counter">Counter</option><option value="interest">Interest</option>
+  </select>
+  <input type="text" name="body" placeholder="Log entry…" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 12px;font-size:13px"/>
+  <button type="submit" class="btn btn-secondary btn-sm">Add</button>
+</form>
+{% if comms %}
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Type</th><th>Note</th><th>By</th><th>Date</th></tr></thead>
+    <tbody>
+      {% for c in comms %}
+      <tr>
+        <td><span class="pill pill-gray">{{ c.get_kind_display }}</span></td>
+        <td>{{ c.body }}</td>
+        <td>{{ c.by|default:"—" }}</td>
+        <td>{{ c.created_at|date:"d M H:i" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

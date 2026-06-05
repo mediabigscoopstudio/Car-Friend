@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Car Friend Inspector · Login</title>
+  <style>
+    :root{--brand:#10B26A;--bg:#0D0F13;--surface:#161A21;--surface2:#1E2430;--border:#2A3142;--text:#E8ECF4;--text-2:#8A94A8;--danger:#EF4444;--font:'Sora',system-ui,sans-serif;}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:36px 28px;width:100%;max-width:360px;}
+    .logo{font-size:24px;font-weight:800;color:var(--brand);margin-bottom:4px;text-align:center;}
+    .logo span{color:var(--text);}
+    .subtitle{text-align:center;font-size:13px;color:var(--text-2);margin-bottom:28px;}
+    label{display:block;font-size:11px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;}
+    input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:12px;padding:13px 16px;font-size:15px;font-family:var(--font);margin-bottom:16px;}
+    input:focus{outline:none;border-color:var(--brand);}
+    button{width:100%;background:var(--brand);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;}
+    .error{background:rgba(239,68,68,.15);border:1px solid var(--danger);color:var(--danger);border-radius:10px;padding:11px 14px;margin-bottom:16px;font-size:13px;}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">Car<span>Friend</span></div>
+    <div class="subtitle">Inspector Portal</div>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+    <form method="post">
+      {% csrf_token %}
+      <label>Username</label>
+      <input type="text" name="username" required autofocus/>
+      <label>Password</label>
+      <input type="password" name="password" required/>
+      <button type="submit">Sign In</button>
+    </form>
+  </div>
+</body>
+</html>

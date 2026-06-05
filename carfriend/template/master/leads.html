@@ -1,0 +1,42 @@
+{% extends "base/base_web.html" %}
+{% block title %}Lead Hub · Master{% endblock %}
+{% block page_title %}Lead Hub{% endblock %}
+{% block sidebar %}
+<nav>
+  <a href="/">Dashboard</a><a href="/inspection_queue">Inspections</a>
+  <a href="/auctions_overview">Auctions</a><a href="/kyc_queue">KYC</a>
+  <a href="/payments_pending">Payments</a><a href="/leads" class="active">Lead Hub</a>
+  <a href="/users">Users</a><a href="/features">Features</a><a href="/audit">Audit Log</a>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="section-header"><h2>All Leads</h2></div>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Seller</th><th>Stage</th><th>Assigned To</th><th>Expected Price</th><th>Assign</th></tr></thead>
+    <tbody>
+      {% for lead in leads %}
+      <tr>
+        <td>{{ lead.seller }}</td>
+        <td><span class="pill pill-gray">{{ lead.get_stage_display }}</span></td>
+        <td>{{ lead.assigned_to|default:"—" }}</td>
+        <td style="font-family:var(--mono)">₹{{ lead.expected_price|floatformat:0 }}</td>
+        <td>
+          <form method="post" style="display:flex;gap:6px;align-items:center">
+            {% csrf_token %}
+            <input type="hidden" name="lead_id" value="{{ lead.id }}"/>
+            <select name="assignee_id" style="font-size:12px;padding:4px 8px">
+              <option value="">— select —</option>
+              {% for ra in retail %}<option value="{{ ra.id }}" {% if lead.assigned_to == ra %}selected{% endif %}>{{ ra.get_full_name|default:ra.username }}</option>{% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm">Assign</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-2)">No leads yet</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

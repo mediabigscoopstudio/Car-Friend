@@ -1,0 +1,25 @@
+{% extends "base/base_web.html" %}
+{% block title %}Add User · Master{% endblock %}
+{% block page_title %}Add User{% endblock %}
+{% block sidebar %}
+<nav><a href="/">Dashboard</a><a href="/users" class="active">Users</a></nav>
+{% endblock %}
+{% block content %}
+<div style="margin-bottom:20px"><a href="/users" style="color:var(--brand);font-size:14px;text-decoration:none">← Back to Users</a></div>
+<div class="form-card">
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-group"><label>First Name</label><input type="text" name="first_name"/></div>
+    <div class="form-group"><label>Username *</label><input type="text" name="username" required/></div>
+    <div class="form-group"><label>Email</label><input type="email" name="email"/></div>
+    <div class="form-group"><label>Phone</label><input type="text" name="phone"/></div>
+    <div class="form-group"><label>Role *</label>
+      <select name="role" required>
+        {% for value, label in roles %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-group"><label>Password *</label><input type="password" name="password" required/></div>
+    <button type="submit" class="btn btn-primary">Create User</button>
+  </form>
+</div>
+{% endblock %}

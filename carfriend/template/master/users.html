@@ -1,0 +1,41 @@
+{% extends "base/base_web.html" %}
+{% block title %}Users · Master{% endblock %}
+{% block page_title %}User Management{% endblock %}
+{% block sidebar %}
+<nav>
+  <a href="/">Dashboard</a><a href="/inspection_queue">Inspections</a>
+  <a href="/auctions_overview">Auctions</a><a href="/kyc_queue">KYC</a>
+  <a href="/payments_pending">Payments</a><a href="/leads">Lead Hub</a>
+  <a href="/users" class="active">Users</a><a href="/features">Features</a><a href="/audit">Audit Log</a>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="section-header">
+  <h2>Internal Users</h2>
+  <a href="/add_user" class="btn btn-primary btn-sm">+ Add User</a>
+</div>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Phone</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for u in members %}
+      <tr>
+        <td>{{ u.get_full_name|default:"—" }}</td>
+        <td style="font-family:var(--mono)">{{ u.username }}</td>
+        <td><span class="pill pill-gray">{{ u.get_role_display }}</span></td>
+        <td>{{ u.phone|default:"—" }}</td>
+        <td>{% if u.is_suspended %}<span class="pill pill-red">Suspended</span>{% else %}<span class="pill pill-green">Active</span>{% endif %}</td>
+        <td>
+          <form method="post" action="/suspend_user/{{ u.id }}" style="display:inline">
+            {% csrf_token %}
+            <button class="btn btn-secondary btn-sm">{% if u.is_suspended %}Unsuspend{% else %}Suspend{% endif %}</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-2)">No internal users yet</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

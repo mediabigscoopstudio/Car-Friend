@@ -1,0 +1,12 @@
+{% load static %}
+{% for label, key in basic_items %}
+<div class="cp-row">
+  <label>{{ label }}</label>
+  <input type="text" name="cp_{{ key }}" value="{{ r.checkpoints.basic|default_if_none:''|default:'' }}" placeholder="—" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 10px;font-size:13px;max-width:100px"/>
+  <select name="sev_{{ key }}">
+    <option value="0">OK</option><option value="1">Minor</option>
+    <option value="2">Moderate</option><option value="3">Major</option>
+    <option value="4">Severe</option><option value="5">Critical</option>
+  </select>
+</div>
+{% endfor %}

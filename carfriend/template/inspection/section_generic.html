@@ -1,0 +1,60 @@
+{% extends "base/base_inspection.html" %}
+{% block title %}{{ section|capfirst }} · Inspector{% endblock %}
+{% block content %}
+<div class="app-header">
+  <a href="/visits" class="back">←</a>
+  <h1>{{ section|capfirst }}</h1>
+  <span style="font-size:12px;color:var(--text-2)">{{ done }} done · {{ issues }} issues</span>
+</div>
+
+<!-- Section nav -->
+<div class="section-chips">
+  {% for s in sections %}
+  <a href="/inspection/{{ r.id }}/{{ s }}" {% if s == section %}class="active"{% endif %}>{{ s|capfirst }}</a>
+  {% endfor %}
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-label"><span>Progress</span><span>{{ done }} checkpoints logged</span></div>
+  <div class="progress-bar"><div class="progress-fill" style="width:{% widthratio done 50 100 %}%"></div></div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  <div class="card" style="margin-bottom:100px">
+    <!-- Previously saved items for this section -->
+    {% for key, data in section_data.items %}
+    <div class="cp-row">
+      <label>{{ key }}</label>
+      <input type="text" name="cp_{{ key }}" value="{{ data.val }}" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 10px;font-size:13px;max-width:130px"/>
+      <select name="sev_{{ key }}" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 8px;font-size:12px">
+        <option value="0" {% if data.sev == 0 %}selected{% endif %}>OK</option>
+        <option value="1" {% if data.sev == 1 %}selected{% endif %}>Minor</option>
+        <option value="2" {% if data.sev == 2 %}selected{% endif %}>Moderate</option>
+        <option value="3" {% if data.sev == 3 %}selected{% endif %}>Major</option>
+        <option value="4" {% if data.sev == 4 %}selected{% endif %}>Severe</option>
+        <option value="5" {% if data.sev == 5 %}selected{% endif %}>Critical</option>
+      </select>
+    </div>
+    {% endfor %}
+
+    <!-- Preset checkpoint fields for this section -->
+    {% for item in preset_checkpoints %}
+    {% if item.key not in section_data %}
+    <div class="cp-row">
+      <label>{{ item.label }}</label>
+      <input type="text" name="cp_{{ item.key }}" placeholder="—" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 10px;font-size:13px;max-width:130px"/>
+      <select name="sev_{{ item.key }}" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 8px;font-size:12px">
+        <option value="0">OK</option><option value="1">Minor</option><option value="2">Moderate</option>
+        <option value="3">Major</option><option value="4">Severe</option><option value="5">Critical</option>
+      </select>
+    </div>
+    {% endif %}
+    {% endfor %}
+  </div>
+
+  <div style="position:fixed;bottom:80px;left:0;right:0;max-width:480px;margin:0 auto;padding:0 16px;z-index:10">
+    <button type="submit" class="btn btn-primary">Save &amp; Continue →</button>
+  </div>
+</form>
+{% endblock %}

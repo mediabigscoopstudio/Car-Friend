@@ -1,0 +1,25 @@
+{% extends "base/base_inspection.html" %}
+{% block title %}Visits · Inspector{% endblock %}
+{% with active_tab='visits' %}
+{% block content %}
+<div class="app-header">
+  <a href="/" class="back">←</a>
+  <h1>All Visits</h1>
+</div>
+<div class="card">
+  {% for v in visits %}
+  <a href="/visit/{{ v.id }}" style="text-decoration:none;color:inherit">
+    <div class="visit-item">
+      <div class="visit-dot {% if v.status == 'inprogress' %}green{% elif v.status == 'submitted' or v.status == 'approved' %}gray{% else %}yellow{% endif %}"></div>
+      <div class="visit-info">
+        <div class="name">{{ v.vehicle.title }}</div>
+        <div class="sub">{{ v.get_status_display }} · {{ v.scheduled_at|date:"d M H:i" }}</div>
+      </div>
+    </div>
+  </a>
+  {% empty %}
+  <div style="padding:24px;text-align:center;color:var(--text-2);font-size:13px">No visits assigned</div>
+  {% endfor %}
+</div>
+{% endblock %}
+{% endwith %}
