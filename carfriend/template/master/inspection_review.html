@@ -1,122 +1,557 @@
 {% extends "base/base_web.html" %}
-{% block title %}Review Inspection · Master{% endblock %}
-{% block page_title %}Inspection Review{% endblock %}
-{% block sidebar %}
-<nav>
-  <a href="/">Dashboard</a>
-  <a href="/inspection_queue" class="active">Inspections</a>
-  <a href="/auctions_overview">Auctions</a>
-  <a href="/kyc_queue">KYC</a>
-  <a href="/payments_pending">Payments</a>
-  <a href="/leads">Lead Hub</a>
-  <a href="/users">Users</a>
-  <a href="/features">Features</a>
-  <a href="/audit">Audit Log</a>
-</nav>
-{% endblock %}
+{% load static cf %}
+
+{% block title %}Inspection #{{ r.id }} — {{ r.visit.vehicle }}{% endblock %}
+
 {% block content %}
-<div style="margin-bottom:24px">
-  <a href="/inspection_queue" style="color:var(--brand);font-size:14px;text-decoration:none">← Back to queue</a>
-</div>
 
-<div class="kpi-grid">
-  <div class="kpi-card"><div class="label">Vehicle</div><div class="value" style="font-size:18px">{{ r.visit.vehicle.title }}</div></div>
-  <div class="kpi-card"><div class="label">Score</div><div class="value green">{{ r.score }}/100</div></div>
-  <div class="kpi-card"><div class="label">Grade</div><div class="value">{{ r.condition_grade|default:"—" }}</div></div>
-  <div class="kpi-card"><div class="label">Est. Value</div><div class="value">₹{{ r.est_market_value|floatformat:0 }}</div></div>
-</div>
+<style>
+/* ── page shell ── */
+.ir { max-width: 1040px; margin: 0 auto; padding: 0 0 60px; }
 
-{% if r.summary %}
-<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:24px">
-  <div style="font-size:11px;text-transform:uppercase;color:var(--text-2);margin-bottom:8px">Summary</div>
-  <p style="font-size:14px">{{ r.summary }}</p>
-</div>
-{% endif %}
+/* ── nav row ── */
+.ir-nav {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 0 20px;
+}
+.ir-nav a { color: var(--txt-2); font-size: 13px; text-decoration: none; }
+.ir-nav a:hover { color: var(--green); }
+.ir-nav .ir-id { flex:1; font-size: 13px; color: var(--txt-2); }
+.ir-nav .ir-pdf {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 8px;
+  border: 1px solid var(--line); font-size: 13px; font-weight: 600;
+  color: var(--txt-2);
+}
+.ir-nav .ir-pdf:hover { border-color: var(--green); color: var(--green); }
 
-<!-- Checkpoints -->
-{% if r.checkpoints %}
-<div class="section-header"><h2>Checkpoints</h2></div>
-<div class="table-wrap" style="margin-bottom:24px">
-  <table>
-    <thead><tr><th>Section</th><th>Item</th><th>Value</th><th>Severity</th></tr></thead>
-    <tbody>
-      {% for section, items in r.checkpoints.items %}
-        {% for key, data in items.items %}
-        <tr>
-          <td>{{ section|capfirst }}</td>
-          <td>{{ key }}</td>
-          <td>{{ data.val }}</td>
-          <td>
-            <span class="pill {% if data.sev == 0 %}pill-green{% elif data.sev <= 2 %}pill-yellow{% else %}pill-red{% endif %}">
-              {{ data.sev }}
-            </span>
-          </td>
-        </tr>
-        {% endfor %}
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-{% endif %}
+/* ── score banner ── */
+.ir-banner {
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+.ir-banner-inner {
+  display: flex; align-items: stretch;
+  min-height: 130px;
+}
+.ir-vehicle-side {
+  flex: 1;
+  padding: 22px 24px;
+  display: flex; flex-direction: column; justify-content: center; gap: 4px;
+}
+.ir-cf-brand {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 700;
+  color: var(--txt-2);
+  text-transform: uppercase; letter-spacing: .06em;
+  margin-bottom: 6px;
+}
+.ir-cf-brand svg { width: 14px; height: 14px; color: var(--green); }
+.ir-vehicle-name {
+  font-family: var(--font-d, 'Poppins', sans-serif);
+  font-size: 22px; font-weight: 800;
+  color: var(--txt);
+  line-height: 1.2;
+}
+.ir-vehicle-meta {
+  font-size: 13px; color: var(--txt-2); margin-top: 2px;
+}
+.ir-inspector-meta {
+  font-size: 12px; color: var(--txt-2); margin-top: 8px;
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.ir-inspector-meta span {
+  background: var(--mist, #f5f5f5); padding: 2px 8px; border-radius: 10px;
+  font-size: 11px;
+}
+.ir-score-side {
+  min-width: 140px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 4px;
+  padding: 20px;
+  background: var(--mist, #f9fafb);
+  border-left: 1px solid var(--line);
+}
+.ir-grade-circle {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-d); font-size: 28px; font-weight: 900;
+  margin-bottom: 6px;
+}
+.grade-A .ir-grade-circle { background: rgba(1,83,16,.1); color: #015310; }
+.grade-B .ir-grade-circle { background: rgba(5,150,105,.1); color: #059669; }
+.grade-C .ir-grade-circle { background: rgba(217,119,6,.1); color: #d97706; }
+.grade-D .ir-grade-circle { background: rgba(220,38,38,.1); color: #dc2626; }
+.ir-score-num {
+  font-family: var(--font-d); font-size: 26px; font-weight: 800;
+  color: var(--txt); line-height: 1;
+}
+.ir-score-num span { font-size: 13px; font-weight: 500; color: var(--txt-2); }
+.ir-score-lbl { font-size: 11px; color: var(--txt-2); text-transform: uppercase; letter-spacing: .04em; }
+.ir-decision-badge {
+  margin-top: 6px;
+  padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.badge-pending  { background: #fffbeb; color: #d97706; }
+.badge-approved { background: #ecfdf5; color: #015310; }
+.badge-redo     { background: #fff3e0; color: #e65100; }
+.badge-removed  { background: #fef2f2; color: #dc2626; }
 
-<!-- Dent markers -->
-{% if dents %}
-<div class="section-header"><h2>Dent Markers ({{ dents|length }})</h2></div>
-<div class="table-wrap" style="margin-bottom:24px">
-  <table>
-    <thead><tr><th>Position (x,y)</th><th>Label</th><th>Severity</th></tr></thead>
-    <tbody>
-      {% for d in dents %}
-      <tr>
-        <td style="font-family:var(--mono)">{{ d.x|floatformat:2 }}, {{ d.y|floatformat:2 }}</td>
-        <td>{{ d.label|default:"—" }}</td>
-        <td><span class="pill {% if d.severity <= 2 %}pill-green{% elif d.severity <= 3 %}pill-yellow{% else %}pill-red{% endif %}">{{ d.severity }}</span></td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-{% endif %}
+/* ── decision bar ── */
+.ir-decision-bar {
+  display: flex; gap: 10px;
+  margin-bottom: 20px;
+}
+.ir-btn-approve, .ir-btn-redo, .ir-btn-remove {
+  flex: 1; padding: 13px 10px;
+  border: none; border-radius: 10px;
+  font-family: var(--font-d); font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: opacity .15s;
+}
+.ir-btn-approve:hover, .ir-btn-redo:hover, .ir-btn-remove:hover { opacity: .85; }
+.ir-btn-approve { background: var(--green, #015310); color: #fff; }
+.ir-btn-redo    { background: #e65100; color: #fff; }
+.ir-btn-remove  { background: #dc2626; color: #fff; }
 
-<!-- Media -->
-{% if media %}
-<div class="section-header"><h2>Photos ({{ media|length }})</h2></div>
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:24px">
-  {% for m in media %}
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden">
-    {% if m.masked_file %}
-      <img src="{{ m.masked_file.url }}" alt="{{ m.section }}" style="width:100%;height:120px;object-fit:cover"/>
-    {% elif m.file %}
-      <img src="{{ m.file.url }}" alt="{{ m.section }}" style="width:100%;height:120px;object-fit:cover"/>
+.ir-decision-done {
+  padding: 14px 18px; border-radius: 10px;
+  font-size: 14px; margin-bottom: 20px;
+  border: 1px solid var(--line);
+  display: flex; align-items: center; gap: 10px;
+}
+.ir-decision-done.dd-approved { background: #ecfdf5; border-color: rgba(1,83,16,.2); }
+.ir-decision-done.dd-redo     { background: #fff3e0; border-color: rgba(230,81,0,.2); }
+.ir-decision-done.dd-removed  { background: #fef2f2; border-color: rgba(220,38,38,.2); }
+
+/* ── sections ── */
+.ir-section { margin-bottom: 16px; }
+.ir-section-hd {
+  font-size: 11px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: .07em;
+  color: var(--txt-2);
+  padding: 0 0 10px;
+  display: flex; align-items: center; gap: 8px;
+  border-bottom: 2px solid var(--line);
+  margin-bottom: 12px;
+}
+.ir-section-hd.has-issues { color: #d97706; border-color: rgba(217,119,6,.3); }
+.ir-issue-badge {
+  background: rgba(220,38,38,.1); color: #dc2626;
+  padding: 2px 8px; border-radius: 10px; font-size: 10px;
+}
+.ir-ok-badge {
+  background: rgba(1,83,16,.08); color: var(--green);
+  padding: 2px 8px; border-radius: 10px; font-size: 10px;
+}
+
+/* ── car details grid ── */
+.ir-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+}
+.ir-detail-cell {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.ir-dc-label {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .04em;
+  color: var(--txt-2); margin-bottom: 4px;
+}
+.ir-dc-value {
+  font-size: 13px; font-weight: 600; color: var(--txt);
+}
+
+/* ── overview grid ── */
+.ir-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.ir-ov-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.ir-ov-label { font-size: 12px; font-weight: 700; color: var(--txt); margin-bottom: 6px; }
+.ir-ov-counts { display: flex; gap: 8px; flex-wrap: wrap; }
+.ir-ov-ok { font-size: 11px; font-weight: 600; color: var(--green); }
+.ir-ov-issue { font-size: 11px; font-weight: 600; color: var(--txt-2); }
+.ir-ov-issue.has-issue { color: #dc2626; }
+
+/* ── checkpoint table ── */
+.ir-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.ir-card-hd {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: .06em;
+  color: var(--txt-2);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.ir-card-hd.warn { color: #d97706; background: rgba(217,119,6,.04); }
+.ir-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.ir-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .04em;
+  color: var(--txt-2);
+  border-bottom: 1px solid var(--line);
+  background: var(--mist, #f9fafb);
+}
+.ir-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+  color: var(--txt);
+}
+.ir-table tr:last-child td { border-bottom: none; }
+.ir-table tr.issue-row td { background: rgba(220,38,38,.03); }
+.ir-part-name { font-weight: 600; color: var(--txt); }
+.ir-sub-name  { color: var(--txt-2); font-size: 12px; }
+
+.s-ok    { display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(1,83,16,.08);color:var(--green); }
+.s-issue { display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(220,38,38,.1);color:#dc2626; }
+.s-nc    { color: var(--txt-2); font-size: 12px; }
+.ir-note { font-size: 12px; color: var(--txt-2); font-style: italic; }
+
+/* ── photo gallery ── */
+.ir-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+.ir-photo img {
+  width: 100%; aspect-ratio: 4/3;
+  object-fit: cover; border-radius: 8px;
+  border: 1px solid var(--line);
+  display: block;
+}
+.ir-photo-label {
+  font-size: 10px; color: var(--txt-2);
+  margin-top: 4px; text-align: center;
+  text-transform: uppercase; letter-spacing: .03em;
+}
+
+/* ── modals ── */
+.modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px; }
+.modal-box { background:var(--paper);border-radius:16px;padding:28px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.15); }
+.modal-box h3 { margin:0 0 8px;font-size:18px;font-weight:700; }
+.modal-box p  { color:var(--txt-2);font-size:14px;margin:0 0 16px; }
+.field-label  { display:block;font-size:12px;font-weight:600;color:var(--txt-2);text-transform:uppercase;margin:14px 0 6px; }
+.field-input  { width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:var(--mist);box-sizing:border-box; }
+.field-input:focus { outline:none;border-color:var(--green); }
+.duration-pills { display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px; }
+.duration-pills label { display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;padding:8px 14px;border:1px solid var(--line);border-radius:20px; }
+.modal-actions { display:flex;gap:10px;justify-content:flex-end;margin-top:20px; }
+.btn-cancel { padding:10px 18px;background:transparent;border:1px solid var(--line);border-radius:8px;cursor:pointer;font-size:14px; }
+.btn-approve-submit { padding:10px 18px;background:var(--green);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer; }
+.btn-redo-submit    { padding:10px 18px;background:#e65100;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer; }
+.btn-remove-submit  { padding:10px 18px;background:#dc2626;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer; }
+</style>
+
+<div class="ir">
+
+  <!-- Nav -->
+  <div class="ir-nav">
+    <a href="/inspection_queue">← Queue</a>
+    <span class="ir-id">Report #{{ r.id }}</span>
+    {% if r.redo_count %}<span style="font-size:12px;color:#e65100">Redo ×{{ r.redo_count }}</span>{% endif %}
+    {% if r.pdf %}
+    <a href="{{ r.pdf.url }}" target="_blank" class="ir-pdf">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Download PDF
+    </a>
     {% endif %}
-    <div style="padding:8px 10px;font-size:11px;color:var(--text-2)">
-      {{ m.section|default:"—" }}
-      {% if m.plate_masked %}<span class="pill pill-green" style="margin-left:4px">✓ Masked</span>{% else %}<span class="pill pill-red" style="margin-left:4px">Unmasked</span>{% endif %}
+  </div>
+
+  <!-- Score banner -->
+  <div class="ir-banner grade-{{ r.condition_grade }}">
+    <div class="ir-banner-inner">
+      <div class="ir-vehicle-side">
+        <div class="ir-cf-brand">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+          CarFriend Inspection
+        </div>
+        <div class="ir-vehicle-name">{{ r.visit.vehicle.title }}</div>
+        <div class="ir-vehicle-meta">
+          {{ r.visit.vehicle.reg_number|default:"—" }} · {{ r.visit.vehicle.year }}
+          {% with s=r.checkpoints|dictkey:'summary' %}
+          {% if s %}
+            {% if s|dictkey:'km' %} · {{ s|dictkey:'km' }} km{% endif %}
+            {% if s|dictkey:'fuel_type' %} · {{ s|dictkey:'fuel_type' }}{% endif %}
+          {% endif %}
+          {% endwith %}
+        </div>
+        <div class="ir-inspector-meta">
+          <span>Inspector: {{ r.visit.inspector.get_full_name|default:r.visit.inspector.username }}</span>
+          <span>{{ r.submitted_at|date:"d M Y"|default:"Not submitted" }}</span>
+          {% if r.visit.vehicle.location %}<span>{{ r.visit.vehicle.location }}</span>{% endif %}
+        </div>
+      </div>
+      <div class="ir-score-side">
+        <div class="ir-grade-circle">{{ r.condition_grade|default:"?" }}</div>
+        <div class="ir-score-num">{{ r.score }}<span>/100</span></div>
+        <div class="ir-score-lbl">Overall Score</div>
+        <div class="ir-decision-badge badge-{{ r.decision }}">{{ r.get_decision_display }}</div>
+      </div>
     </div>
   </div>
-  {% endfor %}
-</div>
-{% endif %}
 
-<!-- Decision form -->
-<div class="section-header"><h2>Decision</h2></div>
-<div class="form-card">
-  <form method="post" action="/inspection_decide/{{ r.id }}">
-    {% csrf_token %}
-    <div class="form-group">
-      <label>Decision</label>
-      <select name="decision" required>
-        <option value="">— select —</option>
-        <option value="approve">Approve</option>
-        <option value="reject">Reject</option>
-        <option value="reinspect">Request Re-inspection</option>
-      </select>
+  <!-- Decision actions or status -->
+  {% if r.decision == "pending" or r.decision == "redo" %}
+  <div class="ir-decision-bar">
+    <button class="ir-btn-approve" onclick="openApproveModal()">
+      ✓ Approve &amp; Start Auction
+    </button>
+    <button class="ir-btn-redo" onclick="openRedoModal()">
+      ↩ Request Redo
+    </button>
+    <button class="ir-btn-remove" onclick="openRemoveModal()">
+      ✕ Remove / Void
+    </button>
+  </div>
+  {% else %}
+  <div class="ir-decision-done dd-{{ r.decision }}">
+    <strong>{{ r.get_decision_display }}</strong>
+    {% if r.decided_by %} · by {{ r.decided_by.get_full_name }}{% endif %}
+    {% if r.decision_note %} — "{{ r.decision_note }}"{% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Section overview -->
+  {% with non_summary=sections_data|slice:"1:" %}
+  {% if non_summary %}
+  <div class="ir-section">
+    <div class="ir-section-hd">Section Overview</div>
+    <div class="ir-overview-grid">
+      {% for sec in non_summary %}
+      <div class="ir-ov-card">
+        <div class="ir-ov-label">{{ sec.label }}</div>
+        <div class="ir-ov-counts">
+          <span class="ir-ov-ok">{{ sec.ok_count }} OK</span>
+          <span class="ir-ov-issue {% if sec.issue_count %}has-issue{% endif %}">{{ sec.issue_count }} Issues</span>
+        </div>
+      </div>
+      {% endfor %}
     </div>
-    <div class="form-group">
-      <label>Note (optional)</label>
-      <textarea name="note" rows="3" style="resize:vertical"></textarea>
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  <!-- Car Details (summary checkpoints) -->
+  {% with summary=sections_data.0 %}
+  {% if summary.is_summary and summary.fields %}
+  <div class="ir-section">
+    <div class="ir-section-hd">Car Details</div>
+    <div class="ir-details-grid">
+      {% for f in summary.fields %}
+      {% if f.value and f.value != "—" %}
+      <div class="ir-detail-cell">
+        <div class="ir-dc-label">{{ f.key|humanize }}</div>
+        <div class="ir-dc-value">{{ f.value }}</div>
+      </div>
+      {% endif %}
+      {% endfor %}
     </div>
-    <button type="submit" class="btn btn-primary">Submit Decision</button>
-  </form>
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  <!-- Checkpoint detail sections -->
+  {% for sec in sections_data %}
+  {% if not sec.is_summary %}
+  <div class="ir-card">
+    <div class="ir-card-hd {% if sec.issue_count %}warn{% endif %}">
+      <span>{{ sec.label }}</span>
+      <span>
+        {% if sec.issue_count %}<span class="ir-issue-badge">{{ sec.issue_count }} issues</span>{% endif %}
+        {% if sec.ok_count %}<span class="ir-ok-badge">{{ sec.ok_count }} OK</span>{% endif %}
+      </span>
+    </div>
+    <table class="ir-table">
+      <thead>
+        <tr>
+          <th style="width:34%">Component</th>
+          <th style="width:18%">Sub</th>
+          <th style="width:20%">Status</th>
+          <th>Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for part in sec.parts %}
+          {% if part.has_subparts %}
+            {% for sub in part.subparts %}
+            <tr {% if sub.status == 'issue' %}class="issue-row"{% endif %}>
+              {% if forloop.first %}
+              <td class="ir-part-name" rowspan="{{ part.subparts|length }}">{{ part.label }}</td>
+              {% endif %}
+              <td class="ir-sub-name">{{ sub.label }}</td>
+              <td>
+                {% if sub.status == 'ok' %}<span class="s-ok">✓ OK</span>
+                {% elif sub.status == 'issue' %}<span class="s-issue">✗ Issue</span>
+                {% else %}<span class="s-nc">—</span>{% endif %}
+              </td>
+              <td class="ir-note">{{ sub.condition|default:"" }}</td>
+            </tr>
+            {% endfor %}
+          {% elif part.kind == 'measure' or part.kind == 'count' %}
+            {% with sub=part.subparts.0 %}
+            <tr>
+              <td class="ir-part-name" colspan="2">{{ part.label }}</td>
+              <td><strong>{{ sub.value|default:"—" }}</strong>{% if part.unit %} <span style="font-size:11px;color:var(--txt-2)">{{ part.unit }}</span>{% endif %}</td>
+              <td></td>
+            </tr>
+            {% endwith %}
+          {% else %}
+            {% with sub=part.subparts.0 %}
+            <tr {% if sub.status == 'issue' %}class="issue-row"{% endif %}>
+              <td class="ir-part-name" colspan="2">{{ part.label }}</td>
+              <td>
+                {% if sub.status == 'ok' %}<span class="s-ok">✓ OK</span>
+                {% elif sub.status == 'issue' %}<span class="s-issue">✗ Issue</span>
+                {% else %}<span class="s-nc">—</span>{% endif %}
+              </td>
+              <td class="ir-note">{{ sub.condition|default:"" }}</td>
+            </tr>
+            {% endwith %}
+          {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+  {% endfor %}
+
+  <!-- Photo gallery -->
+  {% if photos %}
+  <div class="ir-section" style="margin-top:8px">
+    <div class="ir-section-hd">
+      Photos
+      <span class="ir-ok-badge">{{ photos|length }}</span>
+    </div>
+    <div class="ir-photo-grid">
+      {% for p in photos %}
+      {% if p.url %}
+      <div class="ir-photo">
+        <a href="{{ p.url }}" target="_blank">
+          <img src="{{ p.url }}" alt="{{ p.slot }}" loading="lazy">
+        </a>
+        <div class="ir-photo-label">{{ p.slot }}</div>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Dents -->
+  {% if dents %}
+  <div class="ir-section" style="margin-top:8px">
+    <div class="ir-section-hd">Dent Markers</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      {% for d in dents %}
+      <span style="background:var(--mist);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:12px">
+        {{ d.label|default:"Dent" }} · severity {{ d.severity }}
+      </span>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div><!-- /ir -->
+
+<!-- ──────────────────── MODALS ──────────────────── -->
+<div id="modal-approve" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <h3>Approve &amp; Start Auction</h3>
+    <p>Set the auction duration for <strong>{{ r.visit.vehicle }}</strong>.</p>
+    <form method="post" action="/inspection_decide/{{ r.id }}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="approve">
+      <label class="field-label">Duration</label>
+      <div class="duration-pills">
+        <label><input type="radio" name="duration_minutes" value="15"> 15 min</label>
+        <label><input type="radio" name="duration_minutes" value="30" checked> 30 min</label>
+        <label><input type="radio" name="duration_minutes" value="60"> 60 min</label>
+        <label><input type="radio" name="duration_minutes" value="120"> 2 hr</label>
+      </div>
+      <label class="field-label">Note (optional)</label>
+      <textarea name="note" class="field-input" rows="2" placeholder="Internal note…"></textarea>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModals()">Cancel</button>
+        <button type="submit" class="btn-approve-submit">Approve &amp; Launch</button>
+      </div>
+    </form>
+  </div>
 </div>
+
+<div id="modal-redo" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <h3>Request Redo</h3>
+    <p>The inspector will be notified and the report unlocked for revision.</p>
+    <form method="post" action="/inspection_decide/{{ r.id }}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="redo">
+      <label class="field-label">Reason for redo</label>
+      <textarea name="note" class="field-input" rows="3" placeholder="Describe what needs to be corrected…" required></textarea>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModals()">Cancel</button>
+        <button type="submit" class="btn-redo-submit">Send Redo Request</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="modal-remove" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <h3>Remove / Void Report</h3>
+    <p style="color:#dc2626">This will permanently void the report and reject the vehicle from the queue.</p>
+    <form method="post" action="/inspection_decide/{{ r.id }}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="remove">
+      <label class="field-label">Reason</label>
+      <textarea name="note" class="field-input" rows="3" placeholder="Reason for removal…"></textarea>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModals()">Cancel</button>
+        <button type="submit" class="btn-remove-submit">Confirm Remove</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openApproveModal(){ document.getElementById('modal-approve').style.display='flex'; }
+function openRedoModal(){    document.getElementById('modal-redo').style.display='flex'; }
+function openRemoveModal(){  document.getElementById('modal-remove').style.display='flex'; }
+function closeModals(){
+  document.querySelectorAll('.modal-overlay').forEach(m => m.style.display='none');
+}
+document.querySelectorAll('.modal-overlay').forEach(m =>
+  m.addEventListener('click', e => { if(e.target===m) closeModals(); })
+);
+</script>
+
 {% endblock %}

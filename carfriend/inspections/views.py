@@ -1,10 +1,12 @@
+import datetime
 from django.shortcuts import render, redirect, get_object_or_404
+from django.utils import timezone
 
 from accounts.decorators import admin_required
 from core.models import log
 from notifications.services import notify
 from .models import InspectionReport
-from .services import publish_guard
+from .schema import CHECKPOINT_SCHEMA
 
 
 @admin_required
@@ -12,45 +14,149 @@ def inspection_queue(request):
     reports = (
         InspectionReport.objects
         .filter(visit__status="submitted")
-        .select_related("visit__vehicle")
+        .select_related("visit__vehicle", "visit__inspector")
     )
-    return render(request, "master/inspection_queue.html", {"reports": reports})
+    return render(request, "master/inspection_queue.html", {
+        "active": "inspections",
+        "reports": reports,
+    })
 
 
 @admin_required
 def inspection_review(request, id):
     r = get_object_or_404(InspectionReport, id=id)
-    return render(
-        request, "master/inspection_review.html",
-        {"r": r, "media": r.media.all(), "dents": r.dents.all()},
-    )
+
+    # Pre-process checkpoints into template-friendly structure
+    sections_data = []
+    for sec_key, sec_schema in CHECKPOINT_SCHEMA.items():
+        if sec_schema.get("kind") == "media":
+            continue
+        saved = r.checkpoints.get(sec_key, {})
+        sec_row = {
+            "key": sec_key,
+            "label": sec_schema["label"],
+            "is_summary": sec_key == "summary",
+            "fields": [],
+            "parts": [],
+            "ok_count": 0,
+            "issue_count": 0,
+        }
+        if sec_key == "summary":
+            for field in sec_schema.get("fields", []):
+                sec_row["fields"].append({"key": field, "value": saved.get(field, "—")})
+        else:
+            for part in sec_schema.get("parts", []):
+                part_saved = saved.get(part["key"], {})
+                subparts_data = []
+                if part.get("subparts"):
+                    for sub in part["subparts"]:
+                        cell = part_saved.get(sub, {}) if isinstance(part_saved, dict) else {}
+                        st = cell.get("status", "") if isinstance(cell, dict) else ""
+                        if st == "ok":    sec_row["ok_count"] += 1
+                        elif st == "issue": sec_row["issue_count"] += 1
+                        subparts_data.append({
+                            "label": sub, "status": st,
+                            "condition": cell.get("condition", "") if isinstance(cell, dict) else "",
+                            "value": cell.get("value", "") if isinstance(cell, dict) else "",
+                        })
+                else:
+                    cell = part_saved.get("_", {}) if isinstance(part_saved, dict) else {}
+                    st = cell.get("status", "") if isinstance(cell, dict) else ""
+                    if st == "ok":    sec_row["ok_count"] += 1
+                    elif st == "issue": sec_row["issue_count"] += 1
+                    subparts_data.append({
+                        "label": "", "status": st,
+                        "condition": cell.get("condition", "") if isinstance(cell, dict) else "",
+                        "value": cell.get("value", "") if isinstance(cell, dict) else "",
+                    })
+                sec_row["parts"].append({
+                    "key": part["key"],
+                    "label": part["label"],
+                    "kind": part["kind"],
+                    "unit": part.get("unit", ""),
+                    "has_subparts": bool(part.get("subparts")),
+                    "subparts": subparts_data,
+                })
+        sections_data.append(sec_row)
+
+    # Photo list for gallery
+    photos = []
+    for m in r.media.filter(kind="photo"):
+        img = m.webp_file or m.masked_file or m.file
+        photos.append({"slot": m.slot or m.section or "Photo", "url": img.url if img else ""})
+
+    return render(request, "master/inspection_review.html", {
+        "active": "inspections",
+        "r": r,
+        "sections_data": sections_data,
+        "photos": photos,
+        "dents": r.dents.all(),
+        "schema": CHECKPOINT_SCHEMA,
+    })
 
 
 @admin_required
 def inspection_decide(request, id):
     if request.method != "POST":
-        return redirect("/inspection_queue")
+        return redirect(f"/inspection_review/{id}")
     r = get_object_or_404(InspectionReport, id=id)
-    decision = request.POST["decision"]
-    r.decision_note = request.POST.get("note", "")
+    action = request.POST.get("action")
     r.decided_by = request.user
-    v = r.visit
-    if decision == "approve":
-        publish_guard(r)
+    r.decision_note = request.POST.get("note", "")
+
+    if action == "approve":
+        duration = int(request.POST.get("duration_minutes", 30))
+        r.decision = "approved"
+        r.save()
+        v = r.visit
         v.status = "approved"
-        v.vehicle.status = "approved"
+        v.vehicle.status = "listed"
         v.vehicle.save()
-    elif decision == "reject":
-        v.status = "rejected"
-    else:
-        v.status = "reinspect"
-    v.save()
-    r.save()
-    log(request.user, "inspection.decide", r, request, decision=decision)
-    if v.inspector:
-        notify(
-            v.inspector, "insp_decision",
-            title=f"Inspection {decision}d: {v.vehicle.title}",
-            body=r.decision_note,
+        v.save()
+        from auctions.models import Auction
+        start = timezone.now()
+        a = Auction.objects.create(
+            vehicle=v.vehicle,
+            reserve_price=v.vehicle.expected_price,
+            created_by=request.user,
+            start_at=start,
+            end_at=start + datetime.timedelta(minutes=duration),
+            status="live",
         )
-    return redirect("/inspection_queue")
+        log(request.user, "inspection.approve", r, request, duration=duration, auction=a.id)
+        notify(v.inspector, "insp_decision",
+               title=f"Approved: {v.vehicle.title}",
+               body=f"Auction is live for {duration} min.")
+        notify(v.vehicle.seller, "auction_start",
+               title=f"Auction live: {v.vehicle.title}",
+               body=f"Live for {duration} minutes.")
+        return redirect(f"/auction/{a.id}")
+
+    if action == "redo":
+        r.decision = "redo"
+        r.is_locked = False
+        r.redo_count += 1
+        r.save()
+        v = r.visit
+        v.status = "reinspect"
+        v.save()
+        log(request.user, "inspection.redo", r, request, note=r.decision_note)
+        notify(v.inspector, "insp_decision",
+               title=f"Redo requested: {v.vehicle.title}",
+               body=r.decision_note or "Please revise and resubmit your report.")
+        return redirect("/inspection_queue")
+
+    if action == "remove":
+        r.decision = "removed"
+        r.is_locked = True
+        r.save()
+        v = r.visit
+        v.status = "rejected"
+        v.save()
+        log(request.user, "inspection.remove", r, request)
+        notify(v.inspector, "insp_decision",
+               title=f"Report removed: {v.vehicle.title}",
+               body=r.decision_note or "This report was removed.")
+        return redirect("/inspection_queue")
+
+    return redirect(f"/inspection_review/{id}")

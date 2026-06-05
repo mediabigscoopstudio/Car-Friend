@@ -29,28 +29,48 @@ class InspectionVisit(models.Model):
 
 
 class InspectionReport(models.Model):
-    visit            = models.OneToOneField(InspectionVisit, on_delete=models.CASCADE, related_name="report")
+    class Decision(models.TextChoices):
+        PENDING  = "pending",  "Awaiting admin"
+        APPROVED = "approved", "Approved"
+        REDO     = "redo",     "Redo requested"
+        REMOVED  = "removed",  "Removed / voided"
+
+    visit            = models.OneToOneField("InspectionVisit", on_delete=models.CASCADE, related_name="report")
     checkpoints      = models.JSONField(default=dict, blank=True)
+    photos           = models.JSONField(default=dict, blank=True)
+    comments         = models.JSONField(default=list, blank=True)
     score            = models.PositiveIntegerField(default=0)
     condition_grade  = models.CharField(max_length=1, blank=True)
     est_market_value = models.PositiveIntegerField(default=0)
-    summary          = models.TextField(blank=True)
-    pdf              = models.FileField(upload_to="inspections/reports/", blank=True, null=True)
-    is_synced        = models.BooleanField(default=True)
-    submitted_at     = models.DateTimeField(null=True, blank=True)
+    decision         = models.CharField(max_length=10, choices=Decision.choices, default=Decision.PENDING)
+    is_locked        = models.BooleanField(default=False)
+    redo_count       = models.PositiveSmallIntegerField(default=0)
+    decision_note    = models.TextField(blank=True)
     decided_by       = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
                                          on_delete=models.SET_NULL, related_name="inspection_decisions")
-    decision_note    = models.TextField(blank=True)
+    pdf              = models.FileField(upload_to="inspections/reports/", blank=True, null=True)
+    submitted_at     = models.DateTimeField(null=True, blank=True)
     created_at       = models.DateTimeField(auto_now_add=True)
     updated_at       = models.DateTimeField(auto_now=True)
 
     def __str__(self): return f"Report · {self.visit.vehicle} · {self.score}/100"
 
+    @property
+    def editable(self):
+        return not self.is_locked
+
     def compute_score(self):
         penalty = 0
-        for section in self.checkpoints.values():
-            for item in section.values():
-                penalty += int(item.get("sev", 0)) * 2
+        for sec_data in self.checkpoints.values():
+            if not isinstance(sec_data, dict):
+                continue
+            for part_data in sec_data.values():
+                if not isinstance(part_data, dict):
+                    continue
+                # part_data is {subpart_or_underscore: {status, condition, value}}
+                for cell in part_data.values():
+                    if isinstance(cell, dict) and cell.get("status") == "issue":
+                        penalty += 4
         penalty += sum(d.severity for d in self.dents.all())
         self.score = max(0, 100 - penalty)
         self.condition_grade = (
@@ -75,16 +95,24 @@ class InspectionMedia(models.Model):
     class Kind(models.TextChoices):
         PHOTO = "photo", "Photo"
         VIDEO = "video", "Video"
+        AUDIO = "audio", "Audio"
 
-    report      = models.ForeignKey(InspectionReport, on_delete=models.CASCADE, related_name="media")
-    kind        = models.CharField(max_length=6, choices=Kind.choices, default=Kind.PHOTO)
-    section     = models.CharField(max_length=40, blank=True)
-    file        = models.FileField(upload_to="inspections/media/raw/")
-    masked_file = models.ImageField(upload_to="inspections/media/masked/", blank=True, null=True)
+    report       = models.ForeignKey(InspectionReport, on_delete=models.CASCADE, related_name="media")
+    kind         = models.CharField(max_length=6, choices=Kind.choices, default=Kind.PHOTO)
+    slot         = models.CharField(max_length=80, blank=True)
+    section      = models.CharField(max_length=40, blank=True)
+    file         = models.FileField(upload_to="inspections/media/raw/", blank=True, null=True)
+    webp_file    = models.ImageField(upload_to="inspections/media/webp/", blank=True, null=True)
+    mp4_file     = models.FileField(upload_to="inspections/media/mp4/", blank=True, null=True)
+    masked_file  = models.ImageField(upload_to="inspections/media/masked/", blank=True, null=True)
     plate_masked = models.BooleanField(default=False)
-    gps_lat     = models.FloatField(null=True, blank=True)
-    gps_lng     = models.FloatField(null=True, blank=True)
-    captured_at = models.DateTimeField(null=True, blank=True)
-    created_at  = models.DateTimeField(auto_now_add=True)
+    gps_lat      = models.FloatField(null=True, blank=True)
+    gps_lng      = models.FloatField(null=True, blank=True)
+    captured_at  = models.DateTimeField(null=True, blank=True)
+    created_at   = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self): return f"{self.get_kind_display()} · {self.section}"
+    @property
+    def image(self):
+        return self.webp_file or self.masked_file or (self.file if self.kind == self.Kind.PHOTO else None)
+
+    def __str__(self): return f"{self.get_kind_display()} · {self.slot or self.section}"

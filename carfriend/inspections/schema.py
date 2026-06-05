@@ -1,0 +1,130 @@
+# inspections/schema.py
+CHECKPOINT_SCHEMA = {
+    "summary": {
+        "label": "Car Details",
+        "groups": [
+            {"label": "Basic Info", "fields": [
+                "year_of_manufacturing", "no_of_owners", "duplicate_key", "km", "fuel_type",
+            ]},
+            {"label": "Registration", "fields": [
+                "registration_number", "reg_state", "reg_city", "rto", "city",
+                "rto_noc_issued", "registration_year", "registration_month", "fitness_upto",
+            ]},
+            {"label": "Insurance & Tax", "fields": [
+                "insurance_type", "insurance_expiry", "road_tax_paid",
+                "road_tax_validity", "cng_lpg_in_rc",
+            ]},
+            {"label": "RC & Documents", "fields": [
+                "rc_availability", "rc_condition", "mismatch_in_rc",
+                "under_hypothecation", "chassis_number_embossing",
+            ]},
+            {"label": "Other Details", "fields": [
+                "inspection_at", "branch", "to_be_scrapped",
+                "manufacturing_month",
+            ]},
+        ],
+        "fields": [
+            "year_of_manufacturing","no_of_owners","duplicate_key","km","fuel_type",
+            "reg_state","reg_city","insurance_type","insurance_expiry","rc_availability",
+            "road_tax_paid","road_tax_validity","cng_lpg_in_rc","registration_number","rto",
+            "city","rto_noc_issued","inspection_at","under_hypothecation","branch",
+            "to_be_scrapped","chassis_number_embossing","manufacturing_month",
+            "registration_year","registration_month","fitness_upto","rc_condition","mismatch_in_rc",
+        ],
+    },
+    "exterior": {
+        "label": "Exterior + Tyres",
+        "parts": [
+            {"key":"bumper","label":"Bumper","subparts":["Front","Rear"],"kind":"ok"},
+            {"key":"bonnet","label":"Bonnet/Hood","kind":"ok"},
+            {"key":"roof","label":"Roof","kind":"ok"},
+            {"key":"fender","label":"Fender","subparts":["LHS","RHS"],"kind":"ok"},
+            {"key":"door","label":"Door","subparts":["LHS Front","LHS Rear","RHS Front","RHS Rear"],"kind":"ok"},
+            {"key":"pillar","label":"Pillar","kind":"ok"},
+            {"key":"running_border","label":"Running Border","subparts":["LHS","RHS"],"kind":"ok"},
+            {"key":"quarter_panel","label":"Quarter Panel","subparts":["LHS","RHS"],"kind":"ok"},
+            {"key":"dicky_door","label":"Dicky Door / Boot Door","kind":"ok"},
+            {"key":"boot_floor","label":"Boot Floor","kind":"ok"},
+            {"key":"apron","label":"Apron","kind":"ok"},
+            {"key":"firewall","label":"Firewall","kind":"ok"},
+            {"key":"cowl_top","label":"Cowl Top","kind":"ok"},
+            {"key":"lower_cross_member","label":"Lower Cross Member","kind":"ok"},
+            {"key":"upper_cross_member","label":"Upper Cross Member (Bonnet Patti)","kind":"ok"},
+            {"key":"head_light_support","label":"Head Light Support","kind":"ok"},
+            {"key":"radiator_support","label":"Radiator Support","kind":"ok"},
+            {"key":"windshield","label":"Windshield","kind":"ok"},
+            {"key":"orvm","label":"ORVM - Manual / Electrical","subparts":["LHS","RHS"],"kind":"ok"},
+            {"key":"light","label":"Light","subparts":["LHS Headlight","RHS Headlight","LHS Taillight","RHS Taillight"],"kind":"ok"},
+            {"key":"tyre_lhs_front","label":"LHS Front Tyre","kind":"measure","unit":"mm"},
+            {"key":"tyre_rhs_front","label":"RHS Front Tyre","kind":"measure","unit":"mm"},
+            {"key":"tyre_lhs_rear","label":"LHS Rear Tyre","kind":"measure","unit":"mm"},
+            {"key":"tyre_rhs_rear","label":"RHS Rear Tyre","kind":"measure","unit":"mm"},
+            {"key":"tyre_spare","label":"Spare Tyre","kind":"measure","unit":"mm"},
+        ],
+    },
+    "electricals": {
+        "label": "Electricals + Interior",
+        "parts": [
+            {"key":"power_windows_count","label":"No. Of Power Windows","kind":"count"},
+            {"key":"airbags_count","label":"No. Of Airbags","kind":"count"},
+            {"key":"power_windows","label":"Power Windows","kind":"ok"},
+            {"key":"electrical","label":"Electrical","kind":"ok"},
+            {"key":"interior","label":"Interior","kind":"ok"},
+            {"key":"airbag_feature","label":"Airbag Feature","kind":"ok"},
+            {"key":"music_system","label":"Music System","kind":"ok"},
+            {"key":"leather_seat","label":"Leather Seat","kind":"ok"},
+            {"key":"fabric_seat","label":"Fabric Seat","kind":"ok"},
+            {"key":"sunroof","label":"Sunroof","kind":"ok"},
+            {"key":"steering_audio","label":"Steering Mounted Audio Control","kind":"ok"},
+            {"key":"abs","label":"ABS","kind":"ok"},
+            {"key":"rear_defogger","label":"Rear Defogger","kind":"ok"},
+            {"key":"reverse_camera","label":"Reverse Camera","kind":"ok"},
+            {"key":"navigation_chip","label":"Navigation chip","kind":"ok"},
+        ],
+    },
+    "engine": {
+        "label": "Engine + Transmission",
+        "parts": [
+            {"key":"engine","label":"Engine","kind":"ok"},
+            {"key":"battery","label":"Battery","kind":"ok"},
+            {"key":"oil_dipstick","label":"Engine Oil Level Dipstik","kind":"ok"},
+            {"key":"engine_oil","label":"Engine Oil","kind":"ok"},
+            {"key":"coolant","label":"Coolant","kind":"ok"},
+            {"key":"engine_mounting","label":"Engine Mounting","kind":"ok"},
+            {"key":"engine_sound","label":"Engine Sound","kind":"ok"},
+            {"key":"exhaust_smoke","label":"Exhaust Smoke","kind":"ok"},
+            {"key":"clutch","label":"Clutch","kind":"ok"},
+            {"key":"gear_shifting","label":"Gear Shifting","kind":"ok"},
+            {"key":"turbo_charger","label":"Turbo Charger","kind":"ok"},
+            {"key":"fuel_injector","label":"Fuel Injector","kind":"ok"},
+        ],
+    },
+    "steering": {
+        "label": "Steering/Suspension + Brakes",
+        "parts": [
+            {"key":"steering","label":"Steering","kind":"ok"},
+            {"key":"suspension","label":"Suspension","kind":"ok"},
+            {"key":"brake","label":"Brake","kind":"ok"},
+        ],
+    },
+    "ac": {
+        "label": "Air Conditioning",
+        "parts": [
+            {"key":"ac_cooling","label":"AC Cooling","kind":"ok"},
+            {"key":"heater","label":"Heater","kind":"ok"},
+            {"key":"climate_control","label":"Climate Control AC","kind":"ok"},
+        ],
+    },
+    "photos": {
+        "label": "Photos & Media",
+        "kind": "media",
+    },
+}
+
+PHOTO_SLOTS = [
+    "Front Main","Front Right Side","Front Left Side","Left Main","Rear Left Side","Rear Main",
+    "Rear Right Side","Rear Boot Opened","Right Main","Boot Floor","Firewall","Cowl Top",
+    "Lower Cross Member","Upper Cross Member (Bonnet Patti)","Head Light Support","Radiator Support",
+    "Lock system","Odometer","Flooring","Driver Seat","Second Row Seat","Dashboard","Engine",
+    "Battery","Engine Oil Level Dipstik","Engine Oil","Coolant",
+]
