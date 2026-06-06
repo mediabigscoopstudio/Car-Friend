@@ -3,9 +3,8 @@
 {% block content %}
 
 <div class="app-header">
-  <a href="/" class="back">←</a>
   <h1>All Visits</h1>
-  <span class="badge {% if visits %}green{% endif %}">{{ visits|length }}</span>
+  {% if visits %}<span class="badge green">{{ visits|length }}</span>{% endif %}
 </div>
 
 <div class="card">
@@ -19,8 +18,14 @@
         {% else %}dot-amber{% endif %}">
       </div>
       <div class="visit-info">
-        <div class="vi-name">{{ v.vehicle.title }}</div>
-        <div class="vi-sub">{{ v.scheduled_at|date:"d M · H:i" }} &nbsp;·&nbsp; <span class="pill pill-{{ v.status }}">{{ v.get_status_display }}</span></div>
+        <div class="vi-name">{{ v.vehicle.display_name }}</div>
+        <div class="vi-sub">
+          {{ v.vehicle.plate_number }}
+          &nbsp;·&nbsp;
+          {{ v.scheduled_at|date:"d M · H:i" }}
+          &nbsp;·&nbsp;
+          <span class="pill pill-{{ v.status }}">{{ v.get_status_display }}</span>
+        </div>
       </div>
       <div class="visit-arrow">›</div>
     </div>

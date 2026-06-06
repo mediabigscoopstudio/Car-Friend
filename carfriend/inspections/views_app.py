@@ -27,13 +27,18 @@ def insp_login(request):
 @inspector_required
 def insp_dashboard(request):
     today = timezone.now().date()
-    qs = InspectionVisit.objects.filter(inspector=request.user)
+    qs = InspectionVisit.objects.filter(inspector=request.user).select_related('vehicle')
+    # "pending" = today + overdue (any scheduled visit not yet submitted)
+    pending   = qs.filter(status=InspectionVisit.Status.SCHEDULED)
+    upcoming  = qs.filter(scheduled_at__date__gt=today).exclude(status=InspectionVisit.Status.SCHEDULED)
+    completed = qs.filter(status__in=[InspectionVisit.Status.SUBMITTED, InspectionVisit.Status.APPROVED])
+    inprogress = qs.filter(status=InspectionVisit.Status.INPROGRESS)
     return render(request, "inspection/dashboard.html", {
         "active_tab": "home",
-        "today":     qs.filter(scheduled_at__date=today),
-        "upcoming":  qs.filter(scheduled_at__date__gt=today),
-        "completed": qs.filter(status__in=["submitted", "approved"]),
-        "target":    qs.filter(scheduled_at__date=today).count(),
+        "pending":    pending,
+        "upcoming":   upcoming,
+        "completed":  completed,
+        "inprogress": inprogress,
     })
 
 

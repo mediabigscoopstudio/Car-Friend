@@ -13,7 +13,7 @@
   <a href="/visit/{{ r.visit.id }}" class="back">←</a>
   <div style="flex:1;min-width:0">
     <div class="sf-title">{{ schema.label }}</div>
-    <div class="sf-sub">{{ r.visit.vehicle.title }}</div>
+    <div class="sf-sub">{{ r.visit.vehicle.display_name }}</div>
   </div>
   <div class="sf-prog">{{ current_idx|add:1 }}/{{ sections|length }}</div>
 </div>
