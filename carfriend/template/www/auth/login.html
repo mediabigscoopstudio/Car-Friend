@@ -114,7 +114,7 @@
 
       <div class="divider"><hr><span>or log in with email</span><hr></div>
 
-      <form method="POST" action="{% url 'login' %}">
+      <form method="POST" action="/auth/login/">
         {% csrf_token %}
         {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
         <label class="cf-label">Email address</label>
@@ -125,7 +125,7 @@
       </form>
 
       <p class="auth-footer">
-        Don't have an account? <a href="{% url 'register' %}">Create one free →</a>
+        Don't have an account? <a href="/auth/register/">Create one free →</a>
       </p>
       <p style="text-align:center;font-size:11px;color:#9AA0A8;margin-top:12px;">
         By continuing, you agree to CarFriend's

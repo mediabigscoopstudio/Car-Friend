@@ -194,10 +194,10 @@
           {% else %}
             <a href="/auth/seller/dashboard/" class="cf-btn-primary btn">My Dashboard</a>
           {% endif %}
-          <a href="{% url 'logout' %}" class="cf-btn-outline btn">Logout</a>
+          <a href="/auth/logout/" class="cf-btn-outline btn">Logout</a>
         {% else %}
-          <a href="{% url 'login' %}" class="cf-btn-outline btn">Login</a>
-          <a href="{% url 'register' %}" class="cf-btn-primary btn">Sell My Car</a>
+          <a href="/auth/login/" class="cf-btn-outline btn">Login</a>
+          <a href="/auth/register/" class="cf-btn-primary btn">Sell My Car</a>
         {% endif %}
       </div>
     </div>
