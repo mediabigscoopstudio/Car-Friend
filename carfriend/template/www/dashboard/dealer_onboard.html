@@ -1,0 +1,147 @@
+{% extends 'www/base.html' %}
+{% block title %}Dealer Setup — CarFriend{% endblock %}
+
+{% block extra_css %}
+.onboard-section {
+  min-height: calc(100vh - 130px);
+  background: #F8FAF8;
+  display: flex;
+  align-items: flex-start;
+  padding: 48px 0 80px;
+}
+.onboard-card {
+  background: #fff;
+  border: 1px solid #E5E7EB;
+  border-radius: 16px;
+  padding: 40px 36px;
+  max-width: 560px;
+  width: 100%;
+  margin: 0 auto;
+}
+@media (max-width: 480px) { .onboard-card { padding: 28px 20px; } }
+.onboard-card h2 { font-size: 22px; font-weight: 700; color: #1A1A1A; margin-bottom: 6px; }
+.onboard-card .sub { font-size: 13px; color: #6B7280; margin-bottom: 28px; }
+.section-label {
+  font-family: 'Poppins', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #015310;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  margin-top: 20px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #E5E7EB;
+}
+.cf-label { font-size: 12px; font-weight: 600; color: #6B7280; margin-bottom: 6px; display: block; }
+.cf-field {
+  width: 100%; padding: 11px 14px; border: 1.5px solid #E5E7EB; border-radius: 8px;
+  font-family: 'Inter', sans-serif; font-size: 14px; color: #1A1A1A;
+  outline: none; background: #fff; transition: border-color .2s; margin-bottom: 16px;
+}
+.cf-field:focus { border-color: #015310; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.btn-submit {
+  width: 100%; padding: 13px; background: #015310; color: #fff; border: none;
+  border-radius: 9px; font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: background .2s; margin-top: 8px;
+}
+.btn-submit:hover { background: #013D0C; }
+.error-box {
+  background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 8px;
+  padding: 10px 14px; font-size: 13px; color: #991B1B; margin-bottom: 16px;
+  display: flex; align-items: flex-start; gap: 8px;
+}
+.info-box {
+  background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px;
+  padding: 12px 14px; font-size: 13px; color: #1E40AF; margin-bottom: 20px;
+  display: flex; align-items: flex-start; gap: 8px;
+}
+.step-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #E7F3EA;
+  color: #015310;
+  font-family: 'Poppins', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 50px;
+  margin-bottom: 16px;
+}
+{% endblock %}
+
+{% block content %}
+<section class="onboard-section">
+  <div class="container px-3">
+    <div class="onboard-card">
+
+      <div class="step-badge">
+        <i class="bi bi-buildings"></i> Dealer Setup
+      </div>
+      <h2>Set up your dealer account</h2>
+      <p class="sub">Fill in your business details to unlock live auction access and start bidding on certified cars.</p>
+
+      {% if error %}
+      <div class="error-box">
+        <i class="bi bi-exclamation-circle-fill"></i>{{ error }}
+      </div>
+      {% endif %}
+
+      <div class="info-box">
+        <i class="bi bi-info-circle-fill" style="flex-shrink:0;margin-top:1px;"></i>
+        <div>Your details are reviewed by our team. Full bidding access is unlocked once verification is complete. You can start browsing auctions immediately.</div>
+      </div>
+
+      <form method="POST" action="/auth/dealer/onboard/">
+        {% csrf_token %}
+
+        <div class="section-label"><i class="bi bi-building me-1"></i>Business Details</div>
+
+        <label class="cf-label">Dealership / Business Name <span style="color:#ef4444;">*</span></label>
+        <input type="text" name="dealership_name" class="cf-field" placeholder="e.g. Sharma Auto Sales" required>
+
+        <div class="two-col">
+          <div>
+            <label class="cf-label">City <span style="color:#ef4444;">*</span></label>
+            <input type="text" name="city" class="cf-field" placeholder="e.g. Delhi" required value="{{ request.user.city }}">
+          </div>
+          <div>
+            <label class="cf-label">Mobile Number</label>
+            <input type="tel" name="phone" class="cf-field" placeholder="+91 98765 43210" value="{{ request.user.phone }}">
+          </div>
+        </div>
+
+        <label class="cf-label">GSTIN (GST Number)</label>
+        <input type="text" name="gstin" class="cf-field" placeholder="22AAAAA0000A1Z5" maxlength="15" style="text-transform:uppercase;">
+
+        <div class="section-label"><i class="bi bi-hammer me-1"></i>Auction Preferences (Optional)</div>
+
+        <div class="two-col">
+          <div>
+            <label class="cf-label">Min Budget (₹)</label>
+            <input type="number" name="budget_min" class="cf-field" placeholder="e.g. 200000" min="0">
+          </div>
+          <div>
+            <label class="cf-label">Max Budget (₹)</label>
+            <input type="number" name="budget_max" class="cf-field" placeholder="e.g. 1000000" min="0">
+          </div>
+        </div>
+
+        <label class="cf-label">Brands of Interest</label>
+        <input type="text" name="brand_interest" class="cf-field" placeholder="e.g. Maruti, Hyundai, Tata">
+
+        <button type="submit" class="btn-submit">
+          <i class="bi bi-arrow-right-circle me-2"></i>Activate Dealer Account →
+        </button>
+      </form>
+
+      <p style="text-align:center;font-size:12px;color:#9AA0A8;margin-top:16px;">
+        Prefer to sell instead? <a href="/auth/seller/dashboard/" style="color:#015310;font-weight:600;">Back to Seller Dashboard</a>
+      </p>
+
+    </div>
+  </div>
+</section>
+{% endblock %}

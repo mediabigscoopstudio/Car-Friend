@@ -5,7 +5,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 
 from accounts.decorators import admin_required
 from core.models import log
-from .models import User, Role
+from .models import User, Role, DealerProfile
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -174,6 +174,71 @@ def set_role(request):
 
 
 # ── Dashboards ────────────────────────────────────────────────────────────────
+
+@login_required(login_url="/auth/login/")
+def dealer_onboard(request):
+    """Show dealer details form; on submit create DealerProfile + switch role."""
+    if not request.user.is_authenticated:
+        return redirect("/auth/login/")
+    # If already a dealer with a profile, go straight to dashboard
+    if request.user.is_dealer and hasattr(request.user, "dealer_profile"):
+        return redirect("/auth/dealer/dashboard/")
+    error = None
+    if request.method == "POST":
+        dealership_name = request.POST.get("dealership_name", "").strip()
+        gstin           = request.POST.get("gstin", "").strip().upper()
+        city            = request.POST.get("city", "").strip()
+        phone           = request.POST.get("phone", "").strip()
+        budget_min      = request.POST.get("budget_min", "0").strip() or "0"
+        budget_max      = request.POST.get("budget_max", "0").strip() or "0"
+        brand_interest  = request.POST.get("brand_interest", "").strip()
+
+        if not dealership_name:
+            error = "Dealership / business name is required."
+        elif not city:
+            error = "City is required."
+        else:
+            # Update user role + phone + city
+            request.user.role  = Role.DEALER
+            request.user.city  = city
+            if phone:
+                request.user.phone = phone
+            request.user.save(update_fields=["role", "city", "phone"])
+            # Create or update DealerProfile
+            DealerProfile.objects.update_or_create(
+                user=request.user,
+                defaults={
+                    "dealership_name": dealership_name,
+                    "gstin":           gstin,
+                    "city":            city,
+                    "budget_min":      int(budget_min),
+                    "budget_max":      int(budget_max),
+                    "brand_interest":  brand_interest,
+                },
+            )
+            return redirect("/auth/dealer/dashboard/")
+    return render(request, "www/dashboard/dealer_onboard.html", {"error": error})
+
+
+@login_required(login_url="/auth/login/")
+def switch_role(request):
+    """POST-only: toggle between seller and dealer roles."""
+    if request.method != "POST":
+        return redirect(get_dashboard_url(request.user))
+    target = request.POST.get("target_role", "")
+    if target == Role.DEALER:
+        # Need a DealerProfile first
+        if not hasattr(request.user, "dealer_profile"):
+            return redirect("/auth/dealer/onboard/")
+        request.user.role = Role.DEALER
+        request.user.save(update_fields=["role"])
+        return redirect("/auth/dealer/dashboard/")
+    elif target == Role.SELLER:
+        request.user.role = Role.SELLER
+        request.user.save(update_fields=["role"])
+        return redirect("/auth/seller/dashboard/")
+    return redirect(get_dashboard_url(request.user))
+
 
 @login_required(login_url="/auth/login/")
 def seller_dashboard(request):

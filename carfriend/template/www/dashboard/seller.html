@@ -129,6 +129,26 @@
         </div>
 
         <div class="section-card">
+          <h5><i class="bi bi-buildings me-2"></i>Also Buy as Dealer?</h5>
+          <p style="font-size:13px;color:#6B7280;line-height:1.7;margin-bottom:14px;">
+            Register as a dealer to bid on certified cars in live auctions.
+          </p>
+          {% if request.user.dealer_profile %}
+            <form method="POST" action="/auth/switch-role/">
+              {% csrf_token %}
+              <input type="hidden" name="target_role" value="dealer">
+              <button type="submit" class="btn-dash" style="width:100%;font-size:13px;">
+                <i class="bi bi-arrow-left-right me-2"></i>Switch to Dealer Dashboard
+              </button>
+            </form>
+          {% else %}
+            <a href="/auth/dealer/onboard/" class="btn-dash" style="display:block;text-align:center;font-size:13px;">
+              <i class="bi bi-buildings me-2"></i>Set Up Dealer Account
+            </a>
+          {% endif %}
+        </div>
+
+        <div class="section-card">
           <h5><i class="bi bi-question-circle me-2"></i>Need Help?</h5>
           <p style="font-size:13px;color:#6B7280;line-height:1.7;margin-bottom:14px;">Our team is here to help you list your car or resolve any issue.</p>
           <a href="https://wa.me/919537185783" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#015310;text-decoration:none;">

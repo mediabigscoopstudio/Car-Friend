@@ -7,6 +7,8 @@ urlpatterns = [
     path("logout/",           views.logout_page,       name="logout"),
     path("role-redirect/",    views.role_redirect,     name="role_redirect"),
     path("set-role/",         views.set_role,          name="set_role"),
-    path("seller/dashboard/", views.seller_dashboard,  name="seller_dashboard"),
-    path("dealer/dashboard/", views.dealer_dashboard,  name="dealer_dashboard"),
+    path("seller/dashboard/", views.seller_dashboard,   name="seller_dashboard"),
+    path("dealer/dashboard/", views.dealer_dashboard,   name="dealer_dashboard"),
+    path("dealer/onboard/",   views.dealer_onboard,    name="dealer_onboard"),
+    path("switch-role/",      views.switch_role,       name="switch_role"),
 ]
