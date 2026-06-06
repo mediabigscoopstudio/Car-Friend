@@ -381,9 +381,15 @@
           <a href="/how-it-works/" class="btn btn-white">
             <i class="bi bi-play-circle me-2"></i>How It Works
           </a>
-          <a href="/contact/" class="btn btn-ghost">
-            <i class="bi bi-car-front me-2"></i>Sell My Car
-          </a>
+          {% if request.user.is_authenticated %}
+            <a href="/auth/seller/dashboard/" class="btn btn-ghost">
+              <i class="bi bi-speedometer2 me-2"></i>My Dashboard
+            </a>
+          {% else %}
+            <a href="{% url 'register' %}" class="btn btn-ghost">
+              <i class="bi bi-car-front me-2"></i>Sell My Car
+            </a>
+          {% endif %}
         </div>
         <div class="hero-stats">
           <div>
@@ -591,9 +597,15 @@
         <span class="section-badge">Updated Live</span>
         <h2 class="section-title mb-0">Live Auctions</h2>
       </div>
-      <a href="/auctions/" class="cf-btn-outline btn">
-        View All <i class="bi bi-arrow-right ms-1"></i>
-      </a>
+      {% if request.user.is_authenticated %}
+        <a href="{% if request.user.is_dealer %}/auth/dealer/dashboard/{% else %}/auth/seller/dashboard/{% endif %}" class="cf-btn-outline btn">
+          My Dashboard <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+      {% else %}
+        <a href="{% url 'login' %}" class="cf-btn-outline btn">
+          View All <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+      {% endif %}
     </div>
     <div class="row g-3">
       <!-- Placeholder cards — real data from auctions app in future -->
@@ -642,7 +654,11 @@
           <i class="bi bi-plus-circle" style="font-size:2.5rem;"></i>
           <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:1rem;">More cars coming soon</div>
           <div style="font-size:.82rem;text-align:center;max-width:200px;">Register as a dealer to access full live inventory</div>
-          <a href="/contact/" class="cf-btn-primary btn btn-sm mt-1">Get Access</a>
+          {% if request.user.is_authenticated %}
+            <a href="/auth/dealer/dashboard/" class="cf-btn-primary btn btn-sm mt-1">My Dashboard</a>
+          {% else %}
+            <a href="{% url 'register' %}" class="cf-btn-primary btn btn-sm mt-1">Join as Dealer</a>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -720,9 +736,15 @@
           <div class="sell-step"><i class="bi bi-headset"></i> Dedicated RM</div>
         </div>
         <div class="mt-4 d-flex flex-wrap gap-3">
-          <a href="/contact/" class="btn" style="background:#fff;color:var(--cf-green);font-family:'Poppins',sans-serif;font-weight:700;border-radius:10px;padding:.75rem 1.8rem;">
-            <i class="bi bi-car-front me-2"></i>Sell My Car Now
-          </a>
+          {% if request.user.is_authenticated %}
+            <a href="/auth/seller/dashboard/" class="btn" style="background:#fff;color:var(--cf-green);font-family:'Poppins',sans-serif;font-weight:700;border-radius:10px;padding:.75rem 1.8rem;">
+              <i class="bi bi-speedometer2 me-2"></i>My Dashboard
+            </a>
+          {% else %}
+            <a href="{% url 'register' %}" class="btn" style="background:#fff;color:var(--cf-green);font-family:'Poppins',sans-serif;font-weight:700;border-radius:10px;padding:.75rem 1.8rem;">
+              <i class="bi bi-car-front me-2"></i>Sell My Car Now
+            </a>
+          {% endif %}
           <a href="https://wa.me/919537185783" class="btn btn-ghost" target="_blank" rel="noopener" style="border-color:rgba(255,255,255,.5);color:#fff;border-radius:10px;padding:.72rem 1.6rem;font-family:'Poppins',sans-serif;font-weight:600;border-width:2px;">
             <i class="bi bi-whatsapp me-2"></i>WhatsApp Us
           </a>

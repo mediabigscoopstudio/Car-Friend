@@ -87,25 +87,36 @@ def suspend_user(request, id):
 def login_page(request):
     if request.user.is_authenticated:
         return redirect(get_dashboard_url(request.user))
+    next_url = request.GET.get("next", "").strip()
     error = None
     if request.method == "POST":
         email    = request.POST.get("email", "").strip().lower()
         password = request.POST.get("password", "")
-        # allauth uses email as username when ACCOUNT_USERNAME_REQUIRED=False
+        next_url = request.POST.get("next", "").strip()
         user = authenticate(request, username=email, password=password)
-        if user and not user.is_suspended:
+        if user is None:
+            # fallback: try looking up by email field (covers allauth-created accounts)
+            try:
+                u = User.objects.get(email__iexact=email)
+                user = authenticate(request, username=u.username, password=password)
+            except User.DoesNotExist:
+                pass
+        if user is not None and not user.is_suspended:
             login(request, user, backend="django.contrib.auth.backends.ModelBackend")
-            return redirect(get_dashboard_url(user))
+            dest = next_url if next_url and next_url.startswith("/") else get_dashboard_url(user)
+            return redirect(dest)
         else:
             error = "The email or password you entered is incorrect."
-    return render(request, "www/auth/login.html", {"error": error})
+    return render(request, "www/auth/login.html", {"error": error, "next": next_url})
 
 
 def register_page(request):
     if request.user.is_authenticated:
         return redirect(get_dashboard_url(request.user))
+    next_url = request.GET.get("next", "").strip()
     error = None
     if request.method == "POST":
+        next_url = request.POST.get("next", "").strip()
         first_name = request.POST.get("first_name", "").strip()
         last_name  = request.POST.get("last_name", "").strip()
         email      = request.POST.get("email", "").strip().lower()
@@ -134,8 +145,9 @@ def register_page(request):
             )
             login(request, user, backend="django.contrib.auth.backends.ModelBackend")
             messages.success(request, f"Welcome to CarFriend, {first_name}!")
-            return redirect(get_dashboard_url(user))
-    return render(request, "www/auth/register.html", {"error": error})
+            dest = next_url if next_url and next_url.startswith("/") else get_dashboard_url(user)
+            return redirect(dest)
+    return render(request, "www/auth/register.html", {"error": error, "next": next_url})
 
 
 def logout_page(request):

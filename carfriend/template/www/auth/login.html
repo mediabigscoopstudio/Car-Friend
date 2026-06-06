@@ -116,6 +116,7 @@
 
       <form method="POST" action="{% url 'login' %}">
         {% csrf_token %}
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
         <label class="cf-label">Email address</label>
         <input type="email" name="email" class="cf-field" placeholder="you@example.com" required autocomplete="email">
         <label class="cf-label">Password</label>

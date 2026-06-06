@@ -188,8 +188,17 @@
         <li class="nav-item"><a class="nav-link {% block nav_contact %}{% endblock %}" href="/contact/">Contact</a></li>
       </ul>
       <div class="d-flex gap-2 mt-2 mt-lg-0">
-        <a href="{% url 'login' %}" class="cf-btn-outline btn">Login</a>
-        <a href="{% url 'register' %}" class="cf-btn-primary btn">Sell My Car</a>
+        {% if request.user.is_authenticated %}
+          {% if request.user.is_dealer %}
+            <a href="/auth/dealer/dashboard/" class="cf-btn-primary btn">My Dashboard</a>
+          {% else %}
+            <a href="/auth/seller/dashboard/" class="cf-btn-primary btn">My Dashboard</a>
+          {% endif %}
+          <a href="{% url 'logout' %}" class="cf-btn-outline btn">Logout</a>
+        {% else %}
+          <a href="{% url 'login' %}" class="cf-btn-outline btn">Login</a>
+          <a href="{% url 'register' %}" class="cf-btn-primary btn">Sell My Car</a>
+        {% endif %}
       </div>
     </div>
   </div>
