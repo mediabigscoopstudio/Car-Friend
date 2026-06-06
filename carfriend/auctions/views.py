@@ -74,7 +74,7 @@ def lead_hub(request):
                 title=f"Lead assigned: {lead.seller}",
                 body="New seller lead in your pipeline.",
             )
-        return redirect("/leads")
+        return redirect("leads")
     return render(
         request, "master/leads.html",
         {

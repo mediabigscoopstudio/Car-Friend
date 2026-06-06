@@ -6,14 +6,15 @@
 <div class="section-header"><h2>All Leads</h2></div>
 <div class="table-wrap">
   <table>
-    <thead><tr><th>Seller</th><th>Stage</th><th>Assigned To</th><th>Expected Price</th><th>Assign</th></tr></thead>
+    <thead><tr><th>Vehicle</th><th>Seller</th><th>Stage</th><th>Assigned To</th><th>Expected Price</th><th>Assign</th></tr></thead>
     <tbody>
       {% for lead in leads %}
       <tr>
+        <td><strong>{{ lead.vehicle.display_name }}</strong><br><small style="font-family:monospace;color:#666">{{ lead.vehicle.plate_number }}</small></td>
         <td>{{ lead.seller }}</td>
         <td><span class="pill pill-gray">{{ lead.get_stage_display }}</span></td>
         <td>{{ lead.assigned_to|default:"—" }}</td>
-        <td style="font-family:var(--mono)">₹{{ lead.expected_price|floatformat:0 }}</td>
+        <td style="font-family:var(--mono)">{% if lead.vehicle.expected_price %}&#8377;{{ lead.vehicle.expected_price|floatformat:0 }}{% else %}—{% endif %}</td>
         <td>
           <form method="post" style="display:flex;gap:6px;align-items:center">
             {% csrf_token %}
@@ -27,7 +28,7 @@
         </td>
       </tr>
       {% empty %}
-      <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-2)">No leads yet</td></tr>
+      <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-2)">No leads yet</td></tr>
       {% endfor %}
     </tbody>
   </table>
