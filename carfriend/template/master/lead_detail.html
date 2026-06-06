@@ -44,11 +44,11 @@
     <!-- Assign inspector -->
     <div class="table-wrap" style="margin-bottom:20px">
       <div class="section-header" style="padding:0 0 10px"><h3 style="font-size:15px;margin:0">Assign Inspector</h3></div>
-      {% if inspection_job %}
+      {% if inspection_visit %}
       <p style="font-size:13px;color:var(--text-2);margin:0 0 12px">
-        Currently assigned: <strong>{{ inspection_job.inspector.get_full_name|default:inspection_job.inspector.email }}</strong>
-        &mdash; {{ inspection_job.scheduled_at|date:"d M Y, H:i" }}
-        &mdash; <span class="pill pill-gray">{{ inspection_job.get_status_display }}</span>
+        Currently assigned: <strong>{{ inspection_visit.inspector.get_full_name|default:inspection_visit.inspector.email }}</strong>
+        &mdash; {{ inspection_visit.scheduled_at|date:"d M Y, H:i" }}
+        &mdash; <span class="pill pill-gray">{{ inspection_visit.get_status_display }}</span>
       </p>
       {% endif %}
       {% if inspectors %}

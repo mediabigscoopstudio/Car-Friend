@@ -14,13 +14,19 @@ class InspectionVisit(models.Model):
         REJECTED   = "rejected",   "Rejected"
         REINSPECT  = "reinspect",  "Re-inspection requested"
 
-    vehicle      = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name="visits")
-    inspector    = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
-                                     related_name="inspection_visits")
-    scheduled_at = models.DateTimeField()
-    status       = models.CharField(max_length=12, choices=Status.choices, default=Status.SCHEDULED)
-    created_at   = models.DateTimeField(auto_now_add=True)
-    updated_at   = models.DateTimeField(auto_now=True)
+    lead               = models.OneToOneField(
+                             'crm.Lead', on_delete=models.SET_NULL, null=True, blank=True,
+                             related_name='inspection_visit')
+    vehicle            = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name="visits")
+    inspector          = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+                                           related_name="inspection_visits")
+    assigned_by        = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+                                           blank=True, related_name="visits_assigned")
+    scheduled_at       = models.DateTimeField()
+    inspection_address = models.TextField(blank=True)
+    status             = models.CharField(max_length=12, choices=Status.choices, default=Status.SCHEDULED)
+    created_at         = models.DateTimeField(auto_now_add=True)
+    updated_at         = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["scheduled_at"]

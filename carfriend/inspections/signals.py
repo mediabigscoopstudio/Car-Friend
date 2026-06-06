@@ -6,10 +6,12 @@ from .models import InspectionVisit
 
 @receiver(post_save, sender=InspectionVisit)
 def sync_crm_lead_on_visit_change(sender, instance, **kwargs):
-    """Keep crm.Lead stage in sync when inspector submits/gets approved via inspection app."""
+    """Keep crm.Lead stage in sync when inspector submits/gets approved."""
+    if not instance.lead_id:
+        return
     try:
         from crm.models import Lead
-        lead = Lead.objects.get(vehicle=instance.vehicle)
+        lead = instance.lead
         if instance.status == InspectionVisit.Status.SUBMITTED:
             if lead.stage != Lead.STAGE_INSP_DONE:
                 lead.stage = Lead.STAGE_INSP_DONE

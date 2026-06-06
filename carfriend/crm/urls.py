@@ -24,6 +24,4 @@ urlpatterns = [
 
     # Inspector
     path('inspector/',                               views.inspector_dashboard, name='inspector_dashboard'),
-    path('inspector/<int:job_id>/',                  views.inspector_job,     name='inspector_job'),
-    path('inspector/<int:job_id>/submit/',           views.submit_report,     name='submit_report'),
 ]

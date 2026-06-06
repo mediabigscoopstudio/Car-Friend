@@ -77,12 +77,12 @@
     <!-- Assign Inspector -->
     <div class="cf-card">
       <div class="cf-card-title"><i class="bi bi-person-check"></i> Assign Inspector</div>
-      {% if inspection_job %}
+      {% if inspection_visit %}
       <div style="background:var(--gs);border-radius:8px;padding:12px 16px;margin-bottom:14px;font-size:13px">
         <strong style="color:var(--g1)">Inspector assigned:</strong>
-        {{ inspection_job.inspector.get_full_name|default:inspection_job.inspector.email }} —
-        {{ inspection_job.scheduled_at|date:"d M Y, H:i" }} —
-        <span class="badge-stage badge-{{ inspection_job.status }}">{{ inspection_job.get_status_display }}</span>
+        {{ inspection_visit.inspector.get_full_name|default:inspection_visit.inspector.email }} —
+        {{ inspection_visit.scheduled_at|date:"d M Y, H:i" }} —
+        <span class="badge-stage badge-{{ inspection_visit.status }}">{{ inspection_visit.get_status_display }}</span>
       </div>
       {% endif %}
       <form method="POST" action="{% url 'assign_inspector' lead.id %}">

@@ -1,28 +1,28 @@
 {% extends "base/base_web.html" %}
 {% block title %}Inspector Dashboard · Master{% endblock %}
-{% block page_title %}My Inspection Jobs{% endblock %}
+{% block page_title %}Inspection Schedule{% endblock %}
 
 {% block content %}
 <div class="section-header">
-  <h2>Inspection Jobs <span style="font-size:13px;font-weight:400;color:var(--text-2)">· {{ pending|length }} pending</span></h2>
+  <h2>Inspections <span style="font-size:13px;font-weight:400;color:var(--text-2)">· {{ pending|length }} pending</span></h2>
 </div>
 
 {% if pending %}
 <div class="table-wrap" style="margin-bottom:24px">
-  <div class="section-header" style="padding:0 0 10px"><h3 style="font-size:14px;margin:0;color:var(--brand)">Assigned &amp; Scheduled ({{ pending|length }})</h3></div>
+  <div class="section-header" style="padding:0 0 10px"><h3 style="font-size:14px;margin:0;color:var(--brand)">Scheduled ({{ pending|length }})</h3></div>
   <table>
     <thead>
-      <tr><th>Vehicle</th><th>Plate</th><th>Scheduled</th><th>Address</th><th>Assigned By</th><th></th></tr>
+      <tr><th>Vehicle</th><th>Plate</th><th>Inspector</th><th>Scheduled</th><th>Address</th><th>Assigned By</th></tr>
     </thead>
     <tbody>
-      {% for job in pending %}
+      {% for visit in pending %}
       <tr>
-        <td><strong>{{ job.vehicle.display_name }}</strong></td>
-        <td><code style="font-size:12px">{{ job.vehicle.plate_number }}</code></td>
-        <td style="font-size:13px">{{ job.scheduled_at|date:"d M Y, H:i" }}</td>
-        <td style="font-size:13px;color:var(--text-2)">{{ job.inspection_address|default:"—" }}</td>
-        <td style="font-size:13px;color:var(--text-2)">{{ job.assigned_by.get_full_name|default:job.assigned_by.email }}</td>
-        <td><a href="/inspector/{{ job.id }}/" class="btn btn-primary btn-sm">Open &amp; Fill Report</a></td>
+        <td><strong>{{ visit.vehicle.display_name }}</strong></td>
+        <td><code style="font-size:12px">{{ visit.vehicle.plate_number }}</code></td>
+        <td>{{ visit.inspector.get_full_name|default:visit.inspector.email }}</td>
+        <td style="font-size:13px">{{ visit.scheduled_at|date:"d M Y, H:i" }}</td>
+        <td style="font-size:13px;color:var(--text-2)">{{ visit.inspection_address|default:visit.vehicle.inspection_address|default:"—" }}</td>
+        <td style="font-size:13px;color:var(--text-2)">{{ visit.assigned_by.get_full_name|default:"—" }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -30,10 +30,7 @@
 </div>
 {% else %}
 <div class="table-wrap" style="margin-bottom:24px">
-  <div style="text-align:center;padding:40px;color:var(--text-2)">
-    <p style="font-size:15px;margin:0">No jobs assigned to you yet.</p>
-    <p style="font-size:13px;margin:8px 0 0;color:var(--text-3,#9aa0a8)">Your team lead will assign vehicles once they're ready for inspection.</p>
-  </div>
+  <div style="text-align:center;padding:40px;color:var(--text-2)">No inspections scheduled yet.</div>
 </div>
 {% endif %}
 
@@ -42,20 +39,19 @@
   <div class="section-header" style="padding:0 0 10px"><h3 style="font-size:14px;margin:0">Completed ({{ done|length }})</h3></div>
   <table>
     <thead>
-      <tr><th>Vehicle</th><th>Plate</th><th>Date</th><th>Grade</th><th>Score</th><th>Status</th></tr>
+      <tr><th>Vehicle</th><th>Plate</th><th>Inspector</th><th>Date</th><th>Grade</th><th>Score</th><th>Status</th></tr>
     </thead>
     <tbody>
-      {% for job in done %}
+      {% for visit in done %}
       <tr>
-        <td><strong>{{ job.vehicle.display_name }}</strong></td>
-        <td><code style="font-size:12px">{{ job.vehicle.plate_number }}</code></td>
-        <td style="font-size:13px;color:var(--text-2)">{{ job.scheduled_at|date:"d M Y" }}</td>
-        <td><strong>{{ job.condition_grade|default:"—" }}</strong></td>
-        <td>{{ job.overall_score }}/100</td>
-        <td><span class="pill pill-green">{{ job.get_status_display }}</span></td>
+        <td><strong>{{ visit.vehicle.display_name }}</strong></td>
+        <td><code style="font-size:12px">{{ visit.vehicle.plate_number }}</code></td>
+        <td>{{ visit.inspector.get_full_name|default:visit.inspector.email }}</td>
+        <td style="font-size:13px;color:var(--text-2)">{{ visit.scheduled_at|date:"d M Y" }}</td>
+        <td><strong>{% if visit.report %}{{ visit.report.condition_grade|default:"—" }}{% else %}—{% endif %}</strong></td>
+        <td>{% if visit.report %}{{ visit.report.score }}/100{% else %}—{% endif %}</td>
+        <td><span class="pill pill-green">{{ visit.get_status_display }}</span></td>
       </tr>
-      {% empty %}
-      <tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-2)">No completed reports yet.</td></tr>
       {% endfor %}
     </tbody>
   </table>

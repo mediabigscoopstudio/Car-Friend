@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from accounts.models import User, DealerProfile
 from vehicles.models import Vehicle
-from crm.models import Lead, InspectionJob, Bid
+from crm.models import Lead, Bid
 from inspections.models import InspectionVisit
 
 
@@ -66,16 +66,16 @@ def lead_detail(request, lead_id):
         return redirect('/')
     lead = get_object_or_404(Lead, id=lead_id)
     inspectors = User.objects.filter(role=User.ROLE_INSPECTOR, is_active=True)
-    inspection_job = getattr(lead, 'inspection_job', None)
+    inspection_visit = getattr(lead, 'inspection_visit', None)
     bids = Bid.objects.filter(vehicle=lead.vehicle).order_by('-amount')[:10]
     ctx = {
-        'lead':           lead,
-        'vehicle':        lead.vehicle,
-        'seller':         lead.seller,
-        'inspectors':     inspectors,
-        'inspection_job': inspection_job,
-        'bids':           bids,
-        'stage_choices':  Lead.STAGE_CHOICES,
+        'lead':             lead,
+        'vehicle':          lead.vehicle,
+        'seller':           lead.seller,
+        'inspectors':       inspectors,
+        'inspection_visit': inspection_visit,
+        'bids':             bids,
+        'stage_choices':    Lead.STAGE_CHOICES,
     }
     return render(request, 'teams/lead_detail.html', ctx)
 
@@ -103,53 +103,40 @@ def assign_inspector(request, lead_id):
     if request.method == 'POST':
         inspector_id = request.POST.get('inspector_id', '').strip()
         scheduled_at = request.POST.get('scheduled_at', '').strip()
-        address = request.POST.get('inspection_address', lead.vehicle.inspection_address).strip()
+        address      = request.POST.get('inspection_address', '').strip() or lead.vehicle.inspection_address
 
         if not inspector_id:
-            messages.error(request, 'Please select an inspector. If no inspectors appear, ask an admin to create an inspector account.')
+            messages.error(request, 'Please select an inspector.')
             return redirect('lead_detail', lead_id=lead_id)
         if not scheduled_at:
-            messages.error(request, 'Please pick a date and time for the inspection.')
+            messages.error(request, 'Please pick a date and time.')
             return redirect('lead_detail', lead_id=lead_id)
 
         inspector = get_object_or_404(User, id=inspector_id, role=User.ROLE_INSPECTOR)
 
-        # Create/update InspectionVisit so the inspector sees it in inspection.carfriend.in
-        visit, visit_created = InspectionVisit.objects.get_or_create(
-            vehicle=lead.vehicle,
-            defaults={
-                'inspector':    inspector,
-                'scheduled_at': scheduled_at,
-                'status':       InspectionVisit.Status.SCHEDULED,
-            }
-        )
-        if not visit_created:
-            visit.inspector    = inspector
-            visit.scheduled_at = scheduled_at
-            visit.status       = InspectionVisit.Status.SCHEDULED
-            visit.save()
-
-        job, created = InspectionJob.objects.get_or_create(
+        visit, created = InspectionVisit.objects.get_or_create(
             lead=lead,
             defaults={
-                'vehicle':             lead.vehicle,
-                'inspector':           inspector,
-                'assigned_by':         request.user,
-                'scheduled_at':        scheduled_at,
-                'inspection_address':  address,
-                'status':              InspectionJob.STATUS_SCHEDULED,
+                'vehicle':            lead.vehicle,
+                'inspector':          inspector,
+                'assigned_by':        request.user,
+                'scheduled_at':       scheduled_at,
+                'inspection_address': address,
+                'status':             InspectionVisit.Status.SCHEDULED,
             }
         )
         if not created:
-            job.inspector          = inspector
-            job.scheduled_at       = scheduled_at
-            job.inspection_address = address
-            job.status             = InspectionJob.STATUS_SCHEDULED
-            job.save()
+            visit.inspector          = inspector
+            visit.assigned_by        = request.user
+            visit.scheduled_at       = scheduled_at
+            visit.inspection_address = address
+            visit.status             = InspectionVisit.Status.SCHEDULED
+            visit.save()
 
         lead.stage = Lead.STAGE_INSP_SCHED
         lead.save()
-        lead.vehicle.status = Vehicle.STATUS_INSPECTION
+        lead.vehicle.status             = Vehicle.STATUS_INSPECTION
+        lead.vehicle.inspection_address = address
         lead.vehicle.save()
 
         name = inspector.get_full_name() or inspector.email
@@ -206,74 +193,28 @@ def deal_detail(request, vehicle_id):
         return redirect('/')
     vehicle = get_object_or_404(Vehicle, id=vehicle_id)
     bids = Bid.objects.filter(vehicle=vehicle).select_related('dealer').order_by('-amount')
-    winning = bids.first()
     return render(request, 'teams/deal_detail.html', {
         'vehicle': vehicle,
         'bids':    bids,
-        'winning': winning,
+        'winning': bids.first(),
         'lead':    getattr(vehicle, 'lead', None),
     })
 
 
-# ── Inspector ─────────────────────────────────────────────────────────────────
+# ── Inspector dashboard (teams) ───────────────────────────────────────────────
 
 @login_required(login_url='/auth/login/')
 def inspector_dashboard(request):
     if request.user.role not in [User.ROLE_INSPECTOR, User.ROLE_ADMIN] and not request.user.is_superuser:
         return redirect('/')
-    jobs = InspectionJob.objects.filter(
+    visits = InspectionVisit.objects.filter(
         inspector=request.user
     ).select_related('vehicle', 'lead').order_by('scheduled_at')
 
-    today_jobs = [j for j in jobs if j.status == InspectionJob.STATUS_SCHEDULED]
-    done_jobs  = [j for j in jobs if j.status in [InspectionJob.STATUS_SUBMITTED, InspectionJob.STATUS_APPROVED]]
+    pending = [v for v in visits if v.status == InspectionVisit.Status.SCHEDULED]
+    done    = [v for v in visits if v.status in [InspectionVisit.Status.SUBMITTED, InspectionVisit.Status.APPROVED]]
 
     return render(request, 'teams/inspector_dashboard.html', {
-        'today_jobs': today_jobs,
-        'done_jobs':  done_jobs,
+        'pending': pending,
+        'done':    done,
     })
-
-
-@login_required(login_url='/auth/login/')
-def inspector_job(request, job_id):
-    if request.user.role not in [User.ROLE_INSPECTOR, User.ROLE_ADMIN] and not request.user.is_superuser:
-        return redirect('/')
-    job = get_object_or_404(InspectionJob, id=job_id)
-    return render(request, 'teams/inspector_job.html', {'job': job})
-
-
-@login_required(login_url='/auth/login/')
-def submit_report(request, job_id):
-    if request.user.role not in [User.ROLE_INSPECTOR, User.ROLE_ADMIN] and not request.user.is_superuser:
-        return redirect('/')
-    job = get_object_or_404(InspectionJob, id=job_id)
-
-    if request.method == 'POST':
-        job.exterior_score  = int(request.POST.get('exterior_score', 0))
-        job.interior_score  = int(request.POST.get('interior_score', 0))
-        job.engine_score    = int(request.POST.get('engine_score', 0))
-        job.tyres_score     = int(request.POST.get('tyres_score', 0))
-        job.overall_score   = int(request.POST.get('overall_score', 0))
-        job.condition_grade = job.compute_grade()
-        job.inspector_notes = request.POST.get('inspector_notes', '')
-        job.status          = InspectionJob.STATUS_SUBMITTED
-
-        if request.FILES.get('report_pdf'):
-            job.report_pdf = request.FILES['report_pdf']
-
-        job.save()
-
-        job.vehicle.status                  = Vehicle.STATUS_INSPECTED
-        job.vehicle.inspection_report_ready = True
-        job.vehicle.save()
-
-        try:
-            job.lead.stage = Lead.STAGE_INSP_DONE
-            job.lead.save()
-        except Exception:
-            pass
-
-        messages.success(request, 'Inspection report submitted. Awaiting admin approval.')
-        return redirect('inspector_dashboard')
-
-    return redirect('inspector_job', job_id=job_id)
