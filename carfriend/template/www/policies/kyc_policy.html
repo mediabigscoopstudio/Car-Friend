@@ -1,0 +1,42 @@
+{% extends "www/policies/policy_base.html" %}
+{% block title %}KYC Policy — CarFriend{% endblock %}
+{% block policy_breadcrumb %}KYC Policy{% endblock %}
+{% block policy_title %}KYC Policy{% endblock %}
+
+{% block policy_content %}
+<div class="policy-updated"><i class="bi bi-calendar3"></i> Last updated: June 2025</div>
+
+<h2>1. Purpose</h2>
+<p>CarFriend is committed to maintaining a safe, fraud-free marketplace. Know Your Customer (KYC) verification is mandatory for all users who transact on the Platform, in compliance with applicable Indian regulations including the Prevention of Money Laundering Act (PMLA) and RBI guidelines.</p>
+
+<h2>2. Who Must Complete KYC</h2>
+<ul>
+  <li>All sellers listing a vehicle for auction</li>
+  <li>All buyers and dealers wishing to bid</li>
+  <li>Any user registering a bank account for payment or disbursement</li>
+</ul>
+
+<h2>3. Documents Required</h2>
+<p>You will be required to submit one or more of the following:</p>
+<ul>
+  <li><strong>Identity Proof:</strong> Aadhaar Card, PAN Card, or Passport</li>
+  <li><strong>Address Proof:</strong> Aadhaar (with address), Voter ID, Utility Bill (not older than 3 months)</li>
+  <li><strong>For Businesses:</strong> GST Registration Certificate, Company PAN, Director's KYC</li>
+  <li><strong>Bank Details:</strong> Cancelled cheque or bank statement for payment disbursement</li>
+</ul>
+
+<h2>4. Verification Process</h2>
+<p>KYC documents are verified through a combination of automated government API checks and manual review by our compliance team. Verification typically completes within 24 hours. You will be notified by SMS and email once your KYC is approved.</p>
+
+<h2>5. Data Security</h2>
+<p>All KYC documents are encrypted using AES-256 and stored in a compliant, access-controlled environment. Documents are never shared with third parties except as required by law or for fraud prevention. Please see our <a href="/privacy/" style="color:var(--cf-green);">Privacy Policy</a> for full details.</p>
+
+<h2>6. KYC Rejection</h2>
+<p>If KYC is rejected, you will be notified with the reason. Common reasons include blurry documents, name mismatches, or expired documents. You may resubmit updated documents at any time.</p>
+
+<h2>7. Ongoing Compliance</h2>
+<p>CarFriend may request updated KYC documents periodically or if suspicious activity is detected. Failure to comply within the given timeframe may result in account suspension.</p>
+
+<h2>8. Contact</h2>
+<p>For KYC-related queries, contact us at <a href="mailto:support@carfriend.in" style="color:var(--cf-green);">support@carfriend.in</a>.</p>
+{% endblock %}

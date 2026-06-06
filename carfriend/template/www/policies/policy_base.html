@@ -1,0 +1,145 @@
+{% extends "www/base.html" %}
+
+{% block extra_css %}
+  .policy-hero {
+    background: linear-gradient(135deg, var(--cf-green) 0%, var(--cf-green2) 100%);
+    padding: 3.5rem 0 3rem;
+    color: #fff;
+  }
+  .policy-hero h1 {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 800;
+    font-size: 2rem;
+    margin: 0;
+  }
+  .policy-hero .breadcrumb-item, .policy-hero .breadcrumb-item a,
+  .policy-hero .breadcrumb-item + .breadcrumb-item::before {
+    color: rgba(255,255,255,.7);
+    font-size: .82rem;
+  }
+  .policy-hero .breadcrumb-item.active { color: rgba(255,255,255,.9); }
+  .policy-body {
+    max-width: 800px;
+    margin: 3rem auto;
+    padding: 0 1rem;
+  }
+  .policy-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1.5px solid #e9ecef;
+    padding: 2.5rem;
+  }
+  .policy-card h2 {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: var(--cf-green);
+    margin-top: 2rem;
+    margin-bottom: .6rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e9ecef;
+  }
+  .policy-card h2:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+  .policy-card p { font-size: .9rem; line-height: 1.8; color: #374151; margin-bottom: .75rem; }
+  .policy-card ul, .policy-card ol { font-size: .9rem; color: #374151; line-height: 1.8; padding-left: 1.5rem; margin-bottom: .75rem; }
+  .policy-card li { margin-bottom: .3rem; }
+  .policy-updated {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    font-size: .78rem;
+    color: var(--cf-gray);
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: .35rem .85rem;
+    margin-bottom: 1.5rem;
+  }
+  .policy-contact-box {
+    background: var(--cf-green-light);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-top: 2rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  .policy-contact-box i { color: var(--cf-green); font-size: 1.3rem; flex-shrink: 0; margin-top: .1rem; }
+  .policy-contact-box p { font-size: .85rem; color: #374151; margin: 0; }
+  .policy-contact-box a { color: var(--cf-green); font-weight: 600; text-decoration: none; }
+  .policy-contact-box a:hover { text-decoration: underline; }
+  .policy-nav {
+    position: sticky;
+    top: 76px;
+    background: #fff;
+    border-radius: 12px;
+    border: 1.5px solid #e9ecef;
+    padding: 1.25rem;
+    font-size: .82rem;
+  }
+  .policy-nav h6 {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--cf-gray);
+    margin-bottom: .75rem;
+  }
+  .policy-nav a {
+    display: block;
+    color: #374151;
+    text-decoration: none;
+    padding: .3rem 0;
+    border-radius: 6px;
+    transition: color .15s;
+    font-size: .82rem;
+  }
+  .policy-nav a:hover { color: var(--cf-green); }
+  .policy-nav a.active { color: var(--cf-green); font-weight: 600; }
+{% endblock %}
+
+{% block content %}
+<div class="policy-hero">
+  <div class="container">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-2">
+        <li class="breadcrumb-item"><a href="/" style="color:rgba(255,255,255,.7);text-decoration:none;">Home</a></li>
+        <li class="breadcrumb-item active">{% block policy_breadcrumb %}Policy{% endblock %}</li>
+      </ol>
+    </nav>
+    <h1>{% block policy_title %}Policy{% endblock %}</h1>
+  </div>
+</div>
+
+<div class="container" style="padding-bottom:3rem;">
+  <div class="row">
+    <div class="col-lg-3 d-none d-lg-block">
+      <div style="padding-top:2rem;">
+        <nav class="policy-nav">
+          <h6>All Policies</h6>
+          <a href="/terms/">Terms of Service</a>
+          <a href="/privacy/">Privacy Policy</a>
+          <a href="/cookies/">Cookie Policy</a>
+          <a href="/auction-rules/">Auction Rules</a>
+          <a href="/seller-agreement/">Seller Agreement</a>
+          <a href="/refund-policy/">Refund Policy</a>
+          <a href="/kyc-policy/">KYC Policy</a>
+          <a href="/inspection-policy/">Inspection Policy</a>
+          <a href="/grievance/">Grievance Redressal</a>
+        </nav>
+      </div>
+    </div>
+    <div class="col-lg-9">
+      <div class="policy-body" style="margin:2rem auto 0;max-width:680px;">
+        <div class="policy-card">
+          {% block policy_content %}{% endblock %}
+          <div class="policy-contact-box">
+            <i class="bi bi-envelope-check"></i>
+            <p>Questions about this policy? Contact us at <a href="mailto:support@carfriend.in">support@carfriend.in</a> or call <a href="tel:+919537185783">+91 95371 85783</a>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

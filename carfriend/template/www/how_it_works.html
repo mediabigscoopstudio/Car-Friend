@@ -1,0 +1,304 @@
+{% extends "www/base.html" %}
+{% block title %}How It Works — CarFriend{% endblock %}
+{% block nav_how %}active{% endblock %}
+
+{% block extra_css %}
+  .hiw-hero {
+    background: linear-gradient(135deg, var(--cf-green) 0%, var(--cf-green2) 100%);
+    padding: 4rem 0 3rem;
+    color: #fff;
+  }
+  .hiw-hero h1 { font-family:'Poppins',sans-serif; font-weight:800; font-size:2.4rem; }
+  .hiw-hero p { opacity:.88; font-size:1.05rem; max-width:520px; }
+  .phase-section { padding: 4.5rem 0; }
+  .phase-section:nth-child(even) { background: #f8f9fa; }
+  .phase-label {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    background: var(--cf-green);
+    color: #fff;
+    font-family:'Poppins',sans-serif;
+    font-weight:700;
+    font-size:.75rem;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    padding:.35rem 1rem;
+    border-radius:50px;
+    margin-bottom:1rem;
+  }
+  .phase-title { font-family:'Poppins',sans-serif; font-weight:800; font-size:1.9rem; margin-bottom:.75rem; }
+  .phase-sub { color:var(--cf-gray); font-size:.95rem; line-height:1.7; max-width:480px; }
+  .feature-item {
+    display:flex;
+    align-items:flex-start;
+    gap:1rem;
+    padding:1rem;
+    border-radius:12px;
+    border:1.5px solid #e9ecef;
+    background:#fff;
+    transition: box-shadow .2s, transform .2s;
+  }
+  .feature-item:hover { box-shadow:0 4px 16px rgba(1,83,16,.1); transform:translateY(-2px); }
+  .feature-icon {
+    width:44px; height:44px; flex-shrink:0;
+    border-radius:10px;
+    background:var(--cf-green-light);
+    color:var(--cf-green);
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.15rem;
+  }
+  .feature-item h6 { font-family:'Poppins',sans-serif; font-weight:700; font-size:.9rem; margin-bottom:.2rem; }
+  .feature-item p { font-size:.82rem; color:var(--cf-gray); margin:0; line-height:1.6; }
+  .timeline { position:relative; padding-left:2rem; }
+  .timeline::before {
+    content:"";
+    position:absolute;
+    left:.75rem;
+    top:0; bottom:0;
+    width:2px;
+    background:var(--cf-green-light);
+  }
+  .timeline-item { position:relative; padding-bottom:2rem; }
+  .timeline-dot {
+    position:absolute;
+    left:-2rem;
+    top:.25rem;
+    width:18px; height:18px;
+    border-radius:50%;
+    background:var(--cf-green);
+    border:3px solid var(--cf-green-light);
+  }
+  .timeline-item h6 { font-family:'Poppins',sans-serif; font-weight:700; font-size:.95rem; margin-bottom:.35rem; }
+  .timeline-item p { font-size:.85rem; color:#374151; margin:0; line-height:1.65; }
+  .faq-item { border-bottom:1px solid #e9ecef; padding:1.25rem 0; }
+  .faq-item:last-child { border-bottom:none; }
+  .faq-q { font-family:'Poppins',sans-serif; font-weight:700; font-size:.93rem; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
+  .faq-a { font-size:.875rem; color:#374151; line-height:1.7; padding-top:.6rem; }
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero -->
+<section class="hiw-hero">
+  <div class="container">
+    <span class="section-badge" style="background:rgba(255,255,255,.15);color:#fff;">Simple. Transparent. Trusted.</span>
+    <h1 class="mt-2">How CarFriend Works</h1>
+    <p>From inspection to payment — here's everything you need to know about buying or selling a car on CarFriend.</p>
+  </div>
+</section>
+
+<!-- For Sellers -->
+<section class="phase-section">
+  <div class="container">
+    <div class="row align-items-start g-5">
+      <div class="col-lg-5">
+        <div class="phase-label"><i class="bi bi-car-front"></i> Sellers</div>
+        <h2 class="phase-title">Sell Your Car in 4 Steps</h2>
+        <p class="phase-sub">No haggling, no middlemen. We handle everything from inspection to payment.</p>
+        <div class="mt-4">
+          <a href="/contact/" class="cf-btn-primary btn px-4">
+            <i class="bi bi-calendar-check me-2"></i>Book Free Inspection
+          </a>
+        </div>
+      </div>
+      <div class="col-lg-7">
+        <div class="timeline">
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <h6>1 — Book Your Inspection</h6>
+            <p>Contact us via WhatsApp or email to schedule a free inspection. Our inspector will come to your location at a time that works for you.</p>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <h6>2 — 200-Point Certified Inspection</h6>
+            <p>Our inspector evaluates every aspect of your car — exterior, engine, electricals, steering, AC, documents, and 27 standardised photos. The full report is generated within hours.</p>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <h6>3 — Live Auction to Verified Dealers</h6>
+            <p>Your car goes live to our network of KYC-verified buyers and dealers who bid in real time. You can set a reserve price so you never sell below your minimum.</p>
+          </div>
+          <div class="timeline-item" style="padding-bottom:0;">
+            <div class="timeline-dot"></div>
+            <h6>4 — Accept &amp; Get Paid</h6>
+            <p>Accept the winning bid and receive payment directly to your bank account within 3 business days. Our team handles all RC transfer paperwork.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- For Buyers -->
+<section class="phase-section">
+  <div class="container">
+    <div class="row align-items-start g-5">
+      <div class="col-lg-5 order-lg-2">
+        <div class="phase-label"><i class="bi bi-person-check"></i> Buyers &amp; Dealers</div>
+        <h2 class="phase-title">Buy with Complete Confidence</h2>
+        <p class="phase-sub">Every vehicle comes with a certified inspection report, graded score, and photo documentation. No surprises.</p>
+        <div class="mt-4">
+          <a href="/contact/" class="cf-btn-primary btn px-4">
+            <i class="bi bi-person-plus me-2"></i>Register as Dealer
+          </a>
+        </div>
+      </div>
+      <div class="col-lg-7 order-lg-1">
+        <div class="row g-3">
+          <div class="col-12">
+            <div class="feature-item">
+              <div class="feature-icon"><i class="bi bi-person-badge-fill"></i></div>
+              <div>
+                <h6>Complete KYC</h6>
+                <p>Submit your identity and address proof. Our compliance team verifies within 24 hours. One-time process.</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="feature-item">
+              <div class="feature-icon"><i class="bi bi-file-earmark-check-fill"></i></div>
+              <div>
+                <h6>Review Inspection Reports</h6>
+                <p>Access detailed 200-point reports with photos, grades, and condition details before bidding. No surprises after purchase.</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="feature-item">
+              <div class="feature-icon"><i class="bi bi-hammer"></i></div>
+              <div>
+                <h6>Bid in Live Auctions</h6>
+                <p>Place competitive bids in real-time auctions. Every bid is binding, ensuring serious buyers only.</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="feature-item">
+              <div class="feature-icon"><i class="bi bi-truck"></i></div>
+              <div>
+                <h6>Complete the Purchase</h6>
+                <p>Pay within 24 hours of winning. RC transfer is handled by CarFriend — you receive full ownership documents.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Inspection Detail -->
+<section class="phase-section" style="background:#f8f9fa;">
+  <div class="container">
+    <div class="text-center mb-5">
+      <span class="section-badge">Our Process</span>
+      <h2 class="section-title">The Inspection in Detail</h2>
+      <p class="section-sub mx-auto">Our 200-point check covers every component that matters to buyers and sellers alike.</p>
+    </div>
+    <div class="row g-3">
+      {% for item in "car_details,Exterior,Electricals,Engine,Steering & Suspension,AC & Comfort,Photos & Media"|split:"," %}
+      {% endfor %}
+      <div class="col-6 col-md-4 col-lg-3">
+        <div style="background:#fff;border-radius:12px;border:1.5px solid #e9ecef;padding:1.25rem;text-align:center;">
+          <div style="font-size:1.6rem;color:var(--cf-green);margin-bottom:.5rem;"><i class="bi bi-file-text"></i></div>
+          <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.88rem;">Car Details</div>
+          <div style="font-size:.75rem;color:var(--cf-gray);margin-top:.25rem;">RC, Insurance, Odometer, Ownership</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-3">
+        <div style="background:#fff;border-radius:12px;border:1.5px solid #e9ecef;padding:1.25rem;text-align:center;">
+          <div style="font-size:1.6rem;color:var(--cf-green);margin-bottom:.5rem;"><i class="bi bi-car-front-fill"></i></div>
+          <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.88rem;">Exterior</div>
+          <div style="font-size:.75rem;color:var(--cf-gray);margin-top:.25rem;">Body, Paint, Glass, Lights, Tyres</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-3">
+        <div style="background:#fff;border-radius:12px;border:1.5px solid #e9ecef;padding:1.25rem;text-align:center;">
+          <div style="font-size:1.6rem;color:var(--cf-green);margin-bottom:.5rem;"><i class="bi bi-lightning-charge-fill"></i></div>
+          <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.88rem;">Electricals</div>
+          <div style="font-size:.75rem;color:var(--cf-gray);margin-top:.25rem;">Battery, Wiring, Sensors, Warning Lights</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-3">
+        <div style="background:#fff;border-radius:12px;border:1.5px solid #e9ecef;padding:1.25rem;text-align:center;">
+          <div style="font-size:1.6rem;color:var(--cf-green);margin-bottom:.5rem;"><i class="bi bi-gear-fill"></i></div>
+          <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.88rem;">Engine</div>
+          <div style="font-size:.75rem;color:var(--cf-gray);margin-top:.25rem;">Oil, Cooling, Belts, Exhaust, Starting</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-3">
+        <div style="background:#fff;border-radius:12px;border:1.5px solid #e9ecef;padding:1.25rem;text-align:center;">
+          <div style="font-size:1.6rem;color:var(--cf-green);margin-bottom:.5rem;"><i class="bi bi-arrows-move"></i></div>
+          <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.88rem;">Steering &amp; Suspension</div>
+          <div style="font-size:.75rem;color:var(--cf-gray);margin-top:.25rem;">Play, Shocks, Alignment, Bushings</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-3">
+        <div style="background:#fff;border-radius:12px;border:1.5px solid #e9ecef;padding:1.25rem;text-align:center;">
+          <div style="font-size:1.6rem;color:var(--cf-green);margin-bottom:.5rem;"><i class="bi bi-thermometer-snow"></i></div>
+          <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.88rem;">AC &amp; Comfort</div>
+          <div style="font-size:.75rem;color:var(--cf-gray);margin-top:.25rem;">Cooling Performance, Blower, Vents</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-3">
+        <div style="background:#fff;border-radius:12px;border:1.5px solid #e9ecef;padding:1.25rem;text-align:center;">
+          <div style="font-size:1.6rem;color:var(--cf-green);margin-bottom:.5rem;"><i class="bi bi-camera-fill"></i></div>
+          <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.88rem;">27 Photo Slots</div>
+          <div style="font-size:.75rem;color:var(--cf-gray);margin-top:.25rem;">Standardised views + Video + Engine Audio</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-3">
+        <div style="background:var(--cf-green);border-radius:12px;border:1.5px solid var(--cf-green);padding:1.25rem;text-align:center;color:#fff;">
+          <div style="font-size:1.6rem;margin-bottom:.5rem;"><i class="bi bi-trophy-fill" style="color:var(--cf-gold);"></i></div>
+          <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.88rem;">Grade A–D</div>
+          <div style="font-size:.75rem;opacity:.8;margin-top:.25rem;">Score out of 100, published with listing</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="phase-section">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="text-center mb-4">
+          <span class="section-badge">FAQ</span>
+          <h2 class="section-title">Frequently Asked Questions</h2>
+        </div>
+        <div>
+          <div class="faq-item">
+            <div class="faq-q">Is the inspection really free? <i class="bi bi-plus-circle"></i></div>
+            <div class="faq-a">Yes. The 200-point inspection is completely free for sellers. CarFriend earns a small platform fee only on successful sales.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q">How long does the whole process take? <i class="bi bi-plus-circle"></i></div>
+            <div class="faq-a">Inspection is typically done within 24 hours of scheduling. Once the report is approved, auctions run for a set duration (usually a few hours). Most sellers complete the full process — inspection to payment — within 48–72 hours.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q">Can I set a minimum price for my car? <i class="bi bi-plus-circle"></i></div>
+            <div class="faq-a">Yes. You can set a reserve price before the auction goes live. The reserve is not disclosed to bidders. If no bid meets your reserve, the auction ends without a sale and you can choose to relist or adjust the reserve.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q">Do I need to be present during the inspection? <i class="bi bi-plus-circle"></i></div>
+            <div class="faq-a">It is recommended but not mandatory. You or a representative with access to the vehicle and documents should be present for the first 10–15 minutes. Our inspector is trained to be efficient.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q">How do dealers get access to bid? <i class="bi bi-plus-circle"></i></div>
+            <div class="faq-a">Dealers register on the Platform, complete KYC verification, and gain access to all live auctions. Registration is free — contact us to get started.</div>
+          </div>
+        </div>
+        <div class="text-center mt-4">
+          <p style="color:var(--cf-gray);font-size:.88rem;">Still have questions?</p>
+          <a href="https://wa.me/919537185783" class="cf-btn-primary btn px-4" target="_blank" rel="noopener">
+            <i class="bi bi-whatsapp me-2"></i>Chat on WhatsApp
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

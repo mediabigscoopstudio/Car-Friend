@@ -1,0 +1,182 @@
+{% extends "www/base.html" %}
+{% block title %}About Us — CarFriend{% endblock %}
+{% block nav_about %}active{% endblock %}
+
+{% block extra_css %}
+  .about-hero {
+    background: linear-gradient(135deg, var(--cf-green) 0%, var(--cf-green2) 100%);
+    padding: 4.5rem 0 3.5rem;
+    color: #fff;
+  }
+  .about-hero h1 { font-family:'Poppins',sans-serif; font-weight:800; font-size:2.4rem; }
+  .value-card {
+    padding:1.75rem;
+    border-radius:16px;
+    border:1.5px solid #e9ecef;
+    height:100%;
+    transition: box-shadow .2s, transform .2s;
+  }
+  .value-card:hover { box-shadow:0 6px 24px rgba(1,83,16,.1); transform:translateY(-3px); }
+  .value-icon {
+    width:52px; height:52px;
+    border-radius:12px;
+    background:var(--cf-green-light);
+    color:var(--cf-green);
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.3rem;
+    margin-bottom:1rem;
+  }
+  .value-card h5 { font-family:'Poppins',sans-serif; font-weight:700; font-size:.95rem; margin-bottom:.4rem; }
+  .value-card p { font-size:.85rem; color:#374151; margin:0; line-height:1.65; }
+  .stat-block { text-align:center; padding:1.5rem; }
+  .stat-block .num { font-family:'Poppins',sans-serif; font-weight:800; font-size:2.2rem; color:var(--cf-green); }
+  .stat-block .lbl { font-size:.82rem; color:var(--cf-gray); margin-top:.2rem; }
+{% endblock %}
+
+{% block content %}
+
+<section class="about-hero">
+  <div class="container">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-7">
+        <span class="section-badge" style="background:rgba(255,255,255,.15);color:#fff;">Our Story</span>
+        <h1 class="mt-2">Redefining How India<br>Buys &amp; Sells Cars</h1>
+        <p style="font-size:1.05rem;opacity:.9;max-width:520px;line-height:1.7;margin-top:.75rem;">
+          CarFriend was founded on a simple belief: every used car transaction should be transparent, fair, and stress-free — for both buyers and sellers.
+        </p>
+      </div>
+      <div class="col-lg-5">
+        <div class="row g-3">
+          <div class="col-6">
+            <div style="background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);border-radius:16px;padding:1.25rem;text-align:center;">
+              <div style="font-family:'Poppins',sans-serif;font-weight:800;font-size:2rem;color:#fff;">500+</div>
+              <div style="font-size:.78rem;opacity:.8;">Cars Inspected</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div style="background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);border-radius:16px;padding:1.25rem;text-align:center;">
+              <div style="font-family:'Poppins',sans-serif;font-weight:800;font-size:2rem;color:#fff;">48hrs</div>
+              <div style="font-size:.78rem;opacity:.8;">Avg. Sale Time</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div style="background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);border-radius:16px;padding:1.25rem;text-align:center;">
+              <div style="font-family:'Poppins',sans-serif;font-weight:800;font-size:2rem;color:#fff;">₹0</div>
+              <div style="font-size:.78rem;opacity:.8;">Seller Inspection Fee</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div style="background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);border-radius:16px;padding:1.25rem;text-align:center;">
+              <div style="font-family:'Poppins',sans-serif;font-weight:800;font-size:2rem;color:#fff;">200</div>
+              <div style="font-size:.78rem;opacity:.8;">Inspection Points</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Mission -->
+<section style="padding:4.5rem 0;">
+  <div class="container">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-6">
+        <span class="section-badge">Our Mission</span>
+        <h2 class="section-title mt-1">Transparency at Every Step</h2>
+        <p style="color:#374151;font-size:.95rem;line-height:1.8;margin-top:.75rem;">
+          India's used car market is plagued by information asymmetry — buyers don't know what they're getting, and sellers don't know if they're getting a fair price.
+        </p>
+        <p style="color:#374151;font-size:.95rem;line-height:1.8;">
+          CarFriend changes this by putting a certified inspection report at the center of every transaction. When both parties have access to the same objective data, trust happens naturally — and deals close faster at better prices.
+        </p>
+        <p style="color:#374151;font-size:.95rem;line-height:1.8;">
+          Our platform combines rigorous inspections, real-time competitive auctions, and dedicated relationship managers to deliver an experience that's genuinely better for everyone involved.
+        </p>
+      </div>
+      <div class="col-lg-6">
+        <div class="row g-3">
+          <div class="col-12">
+            <div class="value-card">
+              <div class="value-icon"><i class="bi bi-shield-check-fill"></i></div>
+              <h5>Certified Trust</h5>
+              <p>Every listing is backed by a documented, grade-stamped inspection report — not an estimate or a description from the seller.</p>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="value-card">
+              <div class="value-icon"><i class="bi bi-eye"></i></div>
+              <h5>Full Transparency</h5>
+              <p>All auction bids are visible in real time. No back-room deals.</p>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="value-card">
+              <div class="value-icon"><i class="bi bi-people-fill"></i></div>
+              <h5>People First</h5>
+              <p>Every seller gets a dedicated relationship manager — a real human, not just a chatbot.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Values -->
+<section style="background:#f8f9fa;padding:4.5rem 0;">
+  <div class="container">
+    <div class="text-center mb-5">
+      <span class="section-badge">What We Stand For</span>
+      <h2 class="section-title">Our Core Values</h2>
+    </div>
+    <div class="row g-3">
+      <div class="col-6 col-md-4 col-lg-3">
+        <div class="value-card">
+          <div class="value-icon"><i class="bi bi-shield-check-fill"></i></div>
+          <h5>Integrity</h5>
+          <p>We never misrepresent a vehicle. If there's an issue, it's in the report.</p>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-3">
+        <div class="value-card">
+          <div class="value-icon"><i class="bi bi-lightning-fill"></i></div>
+          <h5>Speed</h5>
+          <p>We respect your time. 48-hour sale, 3-day payment, fast RC transfer.</p>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-3">
+        <div class="value-card">
+          <div class="value-icon"><i class="bi bi-graph-up-arrow"></i></div>
+          <h5>Value</h5>
+          <p>Competitive auctions mean you always get market or above-market price.</p>
+        </div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-3">
+        <div class="value-card">
+          <div class="value-icon"><i class="bi bi-lock-fill"></i></div>
+          <h5>Security</h5>
+          <p>KYC-verified buyers, escrow payments, and encrypted data — end to end.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section style="padding:4rem 0;text-align:center;">
+  <div class="container">
+    <h2 class="section-title mb-2">Ready to Experience CarFriend?</h2>
+    <p class="section-sub mx-auto mb-4">Whether you're selling your car or looking to buy, we're here to make it simple.</p>
+    <div class="d-flex justify-content-center flex-wrap gap-3">
+      <a href="/contact/" class="cf-btn-primary btn px-4">
+        <i class="bi bi-car-front me-2"></i>Sell My Car
+      </a>
+      <a href="https://wa.me/919537185783" class="cf-btn-outline btn px-4" target="_blank" rel="noopener">
+        <i class="bi bi-whatsapp me-2"></i>WhatsApp Us
+      </a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

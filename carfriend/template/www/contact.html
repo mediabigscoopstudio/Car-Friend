@@ -1,0 +1,166 @@
+{% extends "www/base.html" %}
+{% block title %}Contact Us — CarFriend{% endblock %}
+{% block nav_contact %}active{% endblock %}
+
+{% block extra_css %}
+  .contact-hero {
+    background: linear-gradient(135deg, var(--cf-green) 0%, var(--cf-green2) 100%);
+    padding: 4rem 0 3rem;
+    color: #fff;
+  }
+  .contact-hero h1 { font-family:'Poppins',sans-serif; font-weight:800; font-size:2.2rem; }
+  .contact-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1.5px solid #e9ecef;
+    padding: 2rem;
+    height: 100%;
+    transition: box-shadow .2s, transform .2s;
+  }
+  .contact-card:hover { box-shadow: 0 6px 24px rgba(1,83,16,.1); transform: translateY(-2px); }
+  .contact-icon {
+    width: 56px; height: 56px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+  }
+  .contact-card h5 { font-family:'Poppins',sans-serif; font-weight:700; font-size:.95rem; margin-bottom:.35rem; }
+  .contact-card .val { font-weight:600; color: var(--cf-dark); font-size:.95rem; }
+  .contact-card p { font-size:.83rem; color: var(--cf-gray); margin-top:.25rem; margin-bottom:0; }
+  .form-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1.5px solid #e9ecef;
+    padding: 2.5rem;
+  }
+  .form-card .form-control, .form-card .form-select {
+    border-radius: 10px;
+    border: 1.5px solid #e9ecef;
+    padding: .65rem 1rem;
+    font-size: .9rem;
+  }
+  .form-card .form-control:focus, .form-card .form-select:focus {
+    border-color: var(--cf-green);
+    box-shadow: 0 0 0 3px rgba(1,83,16,.1);
+  }
+  .form-card label { font-weight: 600; font-size: .85rem; margin-bottom: .4rem; }
+{% endblock %}
+
+{% block content %}
+
+<section class="contact-hero">
+  <div class="container">
+    <span class="section-badge" style="background:rgba(255,255,255,.15);color:#fff;">Get in Touch</span>
+    <h1 class="mt-2">We're Here to Help</h1>
+    <p style="opacity:.88;font-size:1rem;max-width:480px;margin-top:.5rem;">Have a question, want to sell your car, or become a dealer? Reach out — we respond fast.</p>
+  </div>
+</section>
+
+<section style="padding:4rem 0;background:#f8f9fa;">
+  <div class="container">
+    <div class="row g-4">
+
+      <!-- Contact Channels -->
+      <div class="col-lg-4">
+        <div class="d-flex flex-column gap-3">
+          <div class="contact-card">
+            <div class="contact-icon" style="background:#dcfce7;color:#16a34a;">
+              <i class="bi bi-whatsapp"></i>
+            </div>
+            <h5>WhatsApp</h5>
+            <a href="https://wa.me/919537185783" class="val d-block text-decoration-none" target="_blank" rel="noopener">+91 95371 85783</a>
+            <p>Fastest response — most queries resolved in minutes</p>
+            <a href="https://wa.me/919537185783" class="cf-btn-primary btn btn-sm mt-2" target="_blank" rel="noopener">
+              <i class="bi bi-whatsapp me-1"></i> Chat Now
+            </a>
+          </div>
+          <div class="contact-card">
+            <div class="contact-icon" style="background:var(--cf-green-light);color:var(--cf-green);">
+              <i class="bi bi-envelope-fill"></i>
+            </div>
+            <h5>Email</h5>
+            <a href="mailto:support@carfriend.in" class="val d-block text-decoration-none">support@carfriend.in</a>
+            <p>For detailed queries, documents, or formal communication</p>
+          </div>
+          <div class="contact-card">
+            <div class="contact-icon" style="background:#fef3c7;color:#d97706;">
+              <i class="bi bi-telephone-fill"></i>
+            </div>
+            <h5>Phone</h5>
+            <a href="tel:+919537185783" class="val d-block text-decoration-none">+91 95371 85783</a>
+            <p>Mon – Sat &nbsp;·&nbsp; 9 AM – 7 PM IST</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact Form -->
+      <div class="col-lg-8">
+        <div class="form-card">
+          <h4 style="font-family:'Poppins',sans-serif;font-weight:700;margin-bottom:.25rem;">Send Us a Message</h4>
+          <p style="color:var(--cf-gray);font-size:.875rem;margin-bottom:1.75rem;">Fill in your details and we'll get back to you within a few hours.</p>
+          <form>
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Full Name *</label>
+                <input type="text" class="form-control" placeholder="Your name" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Phone Number *</label>
+                <input type="tel" class="form-control" placeholder="+91 XXXXX XXXXX" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Email Address</label>
+                <input type="email" class="form-control" placeholder="your@email.com">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">I want to…</label>
+                <select class="form-select">
+                  <option value="">Select an option</option>
+                  <option>Sell my car</option>
+                  <option>Register as a dealer/buyer</option>
+                  <option>Know more about the process</option>
+                  <option>Raise a complaint</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Message</label>
+                <textarea class="form-control" rows="4" placeholder="Tell us how we can help…" style="resize:vertical;"></textarea>
+              </div>
+              <div class="col-12">
+                <button type="submit" class="cf-btn-primary btn px-4 py-2">
+                  <i class="bi bi-send me-2"></i>Send Message
+                </button>
+                <p style="font-size:.78rem;color:var(--cf-gray);margin-top:.75rem;margin-bottom:0;">
+                  Or skip the form — <a href="https://wa.me/919537185783" style="color:var(--cf-green);font-weight:600;" target="_blank" rel="noopener">WhatsApp us directly</a> for an immediate response.
+                </p>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Bottom note -->
+<section style="padding:2.5rem 0;border-top:1px solid #e9ecef;background:#fff;">
+  <div class="container">
+    <div class="row align-items-center g-3">
+      <div class="col-md-8">
+        <h5 style="font-family:'Poppins',sans-serif;font-weight:700;margin-bottom:.3rem;">Looking to sell your car quickly?</h5>
+        <p style="font-size:.875rem;color:var(--cf-gray);margin:0;">Book a free inspection in under a minute — our team will reach out to schedule within 2 hours.</p>
+      </div>
+      <div class="col-md-4 text-md-end">
+        <a href="https://wa.me/919537185783?text=Hi%2C%20I%20want%20to%20sell%20my%20car" class="cf-btn-primary btn px-4" target="_blank" rel="noopener">
+          <i class="bi bi-whatsapp me-2"></i>Book Free Inspection
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
