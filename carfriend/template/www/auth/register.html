@@ -1,0 +1,169 @@
+{% extends 'www/base.html' %}
+{% block title %}Create Account — CarFriend{% endblock %}
+
+{% block extra_css %}
+.auth-section {
+  min-height: calc(100vh - 130px);
+  background: #F8FAF8;
+  display: flex;
+  align-items: flex-start;
+  padding: 48px 0 80px;
+}
+.auth-card {
+  background: #fff; border: 1px solid #E5E7EB; border-radius: 16px;
+  padding: 40px 36px; max-width: 500px; width: 100%; margin: 0 auto;
+}
+@media (max-width: 480px) { .auth-card { padding: 28px 20px; border-radius: 12px; } }
+.auth-logo { display: flex; align-items: center; gap: 8px; margin-bottom: 28px; text-decoration: none; }
+.auth-logo-icon { width: 32px; height: 32px; background: #015310; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.auth-logo-icon svg { width: 18px; height: 18px; }
+.auth-logo-text { font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 18px; color: #0E110E; }
+.auth-logo-text span { color: #015310; }
+.auth-card h2 { font-size: 22px; font-weight: 700; color: #1A1A1A; margin-bottom: 4px; }
+.auth-card .sub { font-size: 13px; color: #6B7280; margin-bottom: 28px; }
+.cf-label { font-size: 12px; font-weight: 600; color: #6B7280; margin-bottom: 6px; display: block; }
+.cf-field {
+  width: 100%; padding: 11px 14px; border: 1.5px solid #E5E7EB; border-radius: 8px;
+  font-family: 'Inter', sans-serif; font-size: 14px; color: #1A1A1A;
+  outline: none; background: #fff; transition: border-color .2s; margin-bottom: 16px;
+}
+.cf-field:focus { border-color: #015310; }
+.role-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.role-card input[type="radio"] { display: none; }
+.role-card label {
+  display: block; border: 2px solid #E5E7EB; border-radius: 10px;
+  padding: 16px 14px; cursor: pointer; transition: all .2s; text-align: center;
+}
+.role-card input[type="radio"]:checked + label { border-color: #015310; background: #E7F3EA; }
+.role-card label:hover { border-color: #0B7D24; }
+.role-icon { font-size: 24px; display: block; margin-bottom: 8px; }
+.role-title { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 14px; color: #1A1A1A; margin-bottom: 4px; }
+.role-desc { font-size: 12px; color: #6B7280; line-height: 1.4; }
+.btn-register {
+  width: 100%; padding: 13px; background: #015310; color: #fff; border: none;
+  border-radius: 9px; font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: background .2s; margin-bottom: 16px;
+}
+.btn-register:hover { background: #013D0C; }
+.divider { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
+.divider hr { flex: 1; border: none; border-top: 1px solid #E5E7EB; margin: 0; }
+.divider span { font-size: 12px; color: #9AA0A8; white-space: nowrap; }
+.btn-google {
+  width: 100%; padding: 11px; background: #fff; border: 1.5px solid #E5E7EB; border-radius: 9px;
+  font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 600; color: #1A1A1A;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+  transition: border-color .2s, background .2s; text-decoration: none;
+}
+.btn-google:hover { border-color: #015310; background: #F8FAF8; color: #1A1A1A; }
+.btn-google svg { width: 18px; height: 18px; flex-shrink: 0; }
+.auth-footer { text-align: center; margin-top: 20px; font-size: 13px; color: #6B7280; }
+.auth-footer a { color: #015310; font-weight: 600; text-decoration: none; }
+.error-box {
+  background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 8px;
+  padding: 10px 14px; font-size: 13px; color: #991B1B; margin-bottom: 16px;
+  display: flex; align-items: flex-start; gap: 8px;
+}
+.section-label {
+  font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 700;
+  color: #015310; letter-spacing: .8px; text-transform: uppercase;
+  margin-bottom: 12px; margin-top: 4px;
+}
+.name-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+  <div class="container px-3">
+    <div class="auth-card">
+
+      <a class="auth-logo" href="/">
+        <div class="auth-logo-icon">
+          <svg viewBox="0 0 20 20" fill="none">
+            <path d="M3 13h14M5 13L6.5 8h7L15 13" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="6.5" cy="15.5" r="1.5" fill="#fff"/>
+            <circle cx="13.5" cy="15.5" r="1.5" fill="#fff"/>
+          </svg>
+        </div>
+        <span class="auth-logo-text">Car<span>Friend</span></span>
+      </a>
+
+      <h2>Create your account</h2>
+      <p class="sub">Join CarFriend — it's free and takes 2 minutes</p>
+
+      {% if error %}
+      <div class="error-box">
+        <i class="bi bi-exclamation-circle-fill"></i>{{ error }}
+      </div>
+      {% endif %}
+
+      <a href="/accounts/google/login/" class="btn-google">
+        <svg viewBox="0 0 18 18" fill="none">
+          <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+          <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+          <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+          <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+        </svg>
+        Continue with Google
+      </a>
+
+      <div class="divider"><hr><span>or create account with email</span><hr></div>
+
+      <form method="POST" action="{% url 'register' %}">
+        {% csrf_token %}
+
+        <div class="section-label">Step 1 — I want to</div>
+        <div class="role-selector">
+          <div class="role-card">
+            <input type="radio" id="role_seller" name="role" value="seller" checked>
+            <label for="role_seller">
+              <span class="role-icon">🚗</span>
+              <div class="role-title">Sell My Car</div>
+              <div class="role-desc">List your car, get it inspected, sell via live auction</div>
+            </label>
+          </div>
+          <div class="role-card">
+            <input type="radio" id="role_dealer" name="role" value="dealer">
+            <label for="role_dealer">
+              <span class="role-icon">🏢</span>
+              <div class="role-title">Buy as Dealer</div>
+              <div class="role-desc">Bid on verified cars in live auctions as a registered dealer</div>
+            </label>
+          </div>
+        </div>
+
+        <div class="section-label">Step 2 — Your details</div>
+        <div class="name-row">
+          <div>
+            <label class="cf-label">First Name</label>
+            <input type="text" name="first_name" class="cf-field" placeholder="Rahul" required autocomplete="given-name">
+          </div>
+          <div>
+            <label class="cf-label">Last Name</label>
+            <input type="text" name="last_name" class="cf-field" placeholder="Sharma" required autocomplete="family-name">
+          </div>
+        </div>
+        <label class="cf-label">Email address</label>
+        <input type="email" name="email" class="cf-field" placeholder="rahul@example.com" required autocomplete="email">
+        <label class="cf-label">Mobile Number</label>
+        <input type="tel" name="phone" class="cf-field" placeholder="+91 98765 43210" autocomplete="tel">
+        <label class="cf-label">Password</label>
+        <input type="password" name="password1" class="cf-field" placeholder="At least 8 characters" required autocomplete="new-password">
+        <label class="cf-label">Confirm Password</label>
+        <input type="password" name="password2" class="cf-field" placeholder="Repeat your password" required autocomplete="new-password">
+
+        <button type="submit" class="btn-register">Create My CarFriend Account →</button>
+      </form>
+
+      <p class="auth-footer">
+        Already have an account? <a href="{% url 'login' %}">Log in →</a>
+      </p>
+      <p style="text-align:center;font-size:11px;color:#9AA0A8;margin-top:10px;">
+        By signing up, you agree to CarFriend's
+        <a href="{% url 'terms' %}" style="color:#6B7280;">Terms</a> and
+        <a href="{% url 'privacy' %}" style="color:#6B7280;">Privacy Policy</a>
+      </p>
+
+    </div>
+  </div>
+</section>
+{% endblock %}

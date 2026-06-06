@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -20,12 +21,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-ll@5=mw0mx%0rx92ed$4^3_u6)rr9ea+h@uo)+r^%h@d0^lhln"
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = [".localhost", ".carfriend.in", "localhost", "127.0.0.1"]
+SECRET_KEY = config("SECRET_KEY", default="django-insecure-ll@5=mw0mx%0rx92ed$4^3_u6)rr9ea+h@uo)+r^%h@d0^lhln")
+DEBUG      = config("DEBUG", default=True, cast=bool)
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", default=".localhost,.carfriend.in,localhost,127.0.0.1").split(",")
 
 AUTH_USER_MODEL = "accounts.User"
 
@@ -40,8 +38,16 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sites",
+    # allauth
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
+    # third-party
     "rest_framework",
     "channels",
+    # carfriend apps
     "core",
     "accounts",
     "kyc",
@@ -55,10 +61,13 @@ INSTALLED_APPS = [
     "www",
 ]
 
+SITE_ID = 1
+
 MIDDLEWARE = [
     "django_hosts.middleware.HostsRequestMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -79,6 +88,7 @@ TEMPLATES = [
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
+                "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
@@ -86,6 +96,37 @@ TEMPLATES = [
         },
     },
 ]
+
+# ── Authentication ──────────────────────────────────────────────────────────
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
+
+# ── django-allauth ──────────────────────────────────────────────────────────
+ACCOUNT_LOGIN_METHODS         = {"email"}
+ACCOUNT_EMAIL_REQUIRED        = True
+ACCOUNT_USERNAME_REQUIRED     = False
+ACCOUNT_EMAIL_VERIFICATION    = "none"
+ACCOUNT_SIGNUP_REDIRECT_URL   = "/auth/role-redirect/"
+LOGIN_REDIRECT_URL            = "/auth/role-redirect/"
+LOGOUT_REDIRECT_URL           = "/"
+ACCOUNT_LOGOUT_ON_GET         = True
+
+SOCIALACCOUNT_AUTO_SIGNUP     = True
+SOCIALACCOUNT_LOGIN_ON_GET    = True
+
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "APP": {
+            "client_id": config("GOOGLE_CLIENT_ID", default=""),
+            "secret":    config("GOOGLE_CLIENT_SECRET", default=""),
+            "key":       "",
+        },
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"access_type": "online"},
+    }
+}
 
 WSGI_APPLICATION = "carfriend.wsgi.application"
 ASGI_APPLICATION = "carfriend.asgi.application"

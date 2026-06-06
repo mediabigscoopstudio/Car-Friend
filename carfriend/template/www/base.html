@@ -188,8 +188,8 @@
         <li class="nav-item"><a class="nav-link {% block nav_contact %}{% endblock %}" href="/contact/">Contact</a></li>
       </ul>
       <div class="d-flex gap-2 mt-2 mt-lg-0">
-        <a href="/accounts/login/" class="cf-btn-outline btn">Login</a>
-        <a href="/contact/" class="cf-btn-primary btn">Sell My Car</a>
+        <a href="{% url 'login' %}" class="cf-btn-outline btn">Login</a>
+        <a href="{% url 'register' %}" class="cf-btn-primary btn">Sell My Car</a>
       </div>
     </div>
   </div>

@@ -1,0 +1,66 @@
+{% extends 'www/base.html' %}
+{% block title %}Choose Account Type — CarFriend{% endblock %}
+
+{% block extra_css %}
+.auth-section {
+  min-height: calc(100vh - 130px); background: #F8FAF8;
+  display: flex; align-items: center; padding: 48px 0;
+}
+.auth-card {
+  background: #fff; border: 1px solid #E5E7EB; border-radius: 16px;
+  padding: 40px 36px; max-width: 480px; width: 100%; margin: 0 auto; text-align: center;
+}
+.auth-card h2 { font-size: 22px; font-weight: 700; color: #1A1A1A; margin-bottom: 8px; }
+.auth-card .sub { font-size: 14px; color: #6B7280; margin-bottom: 32px; }
+.role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 24px; }
+.role-card input[type="radio"] { display: none; }
+.role-card label {
+  display: block; border: 2px solid #E5E7EB; border-radius: 12px;
+  padding: 24px 16px; cursor: pointer; transition: all .2s;
+}
+.role-card input[type="radio"]:checked + label { border-color: #015310; background: #E7F3EA; }
+.role-card label:hover { border-color: #0B7D24; }
+.role-icon { font-size: 32px; display: block; margin-bottom: 10px; }
+.role-title { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 15px; color: #1A1A1A; margin-bottom: 6px; }
+.role-desc { font-size: 12px; color: #6B7280; line-height: 1.5; }
+.btn-confirm {
+  width: 100%; padding: 13px; background: #015310; color: #fff; border: none;
+  border-radius: 9px; font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: background .2s;
+}
+.btn-confirm:hover { background: #013D0C; }
+{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+  <div class="container px-3">
+    <div class="auth-card">
+      <div style="font-size:40px;margin-bottom:16px;">🎉</div>
+      <h2>Welcome to CarFriend{% if request.user.first_name %}, {{ request.user.first_name }}{% endif %}!</h2>
+      <p class="sub">One quick question — are you here to sell your car or buy as a dealer?</p>
+      <form method="POST" action="{% url 'set_role' %}">
+        {% csrf_token %}
+        <div class="role-grid">
+          <div class="role-card">
+            <input type="radio" id="r_seller" name="role" value="seller" checked>
+            <label for="r_seller">
+              <span class="role-icon">🚗</span>
+              <div class="role-title">Sell My Car</div>
+              <div class="role-desc">List, inspect &amp; sell your car via live auction</div>
+            </label>
+          </div>
+          <div class="role-card">
+            <input type="radio" id="r_dealer" name="role" value="dealer">
+            <label for="r_dealer">
+              <span class="role-icon">🏢</span>
+              <div class="role-title">Buy as Dealer</div>
+              <div class="role-desc">Bid on certified cars in live 30-min auctions</div>
+            </label>
+          </div>
+        </div>
+        <button type="submit" class="btn-confirm">Continue to my Dashboard →</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -12,10 +12,21 @@ class Role(models.TextChoices):
 
 
 class User(AbstractUser):
+    # Class-level constants for use in views
+    ROLE_SELLER    = Role.SELLER
+    ROLE_DEALER    = Role.DEALER
+    ROLE_RETAIL    = Role.RETAIL
+    ROLE_SALES     = Role.SALES
+    ROLE_INSPECTOR = Role.INSPECTOR
+    ROLE_ADMIN     = Role.ADMIN
+
     role         = models.CharField(max_length=20, choices=Role.choices, default=Role.SELLER)
     phone        = models.CharField(max_length=15, blank=True)
+    city         = models.CharField(max_length=120, blank=True)
     is_internal  = models.BooleanField(default=False)
     is_suspended = models.BooleanField(default=False)
+    is_kyc_done  = models.BooleanField(default=False)
+    is_approved  = models.BooleanField(default=False)
     fcm_token    = models.CharField(max_length=255, blank=True)
     created_at   = models.DateTimeField(auto_now_add=True)
     updated_at   = models.DateTimeField(auto_now=True)
@@ -31,6 +42,13 @@ class User(AbstractUser):
     def is_sales(self):     return self.role == Role.SALES
     @property
     def is_inspector(self): return self.role == Role.INSPECTOR
+    @property
+    def is_seller(self):    return self.role == Role.SELLER
+    @property
+    def is_dealer(self):    return self.role == Role.DEALER
+
+    def is_staff_role(self):
+        return self.role in [Role.RETAIL, Role.SALES, Role.INSPECTOR, Role.ADMIN]
 
 
 class SellerProfile(models.Model):

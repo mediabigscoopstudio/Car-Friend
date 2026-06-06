@@ -1,14 +1,18 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, SellerProfile, DealerProfile
+from .models import User, SellerProfile, DealerProfile, Role
 
 
 @admin.register(User)
 class CFUserAdmin(UserAdmin):
-    list_display  = ("username", "email", "role", "is_internal", "is_suspended", "created_at")
-    list_filter   = ("role", "is_internal", "is_suspended")
+    list_display  = ("email", "first_name", "last_name", "role", "is_kyc_done", "is_approved", "is_internal", "is_suspended", "created_at")
+    list_filter   = ("role", "is_kyc_done", "is_approved", "is_internal", "is_suspended", "is_active")
+    search_fields = ("email", "first_name", "last_name", "phone")
+    ordering      = ("-created_at",)
     fieldsets     = UserAdmin.fieldsets + (
-        ("Car Friend", {"fields": ("role", "phone", "is_internal", "is_suspended", "fcm_token")}),
+        ("CarFriend Profile", {
+            "fields": ("role", "phone", "city", "is_internal", "is_suspended", "is_kyc_done", "is_approved", "fcm_token")
+        }),
     )
 
 

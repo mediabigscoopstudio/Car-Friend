@@ -1,0 +1,172 @@
+{% extends 'www/base.html' %}
+{% block title %}Dealer Dashboard — CarFriend{% endblock %}
+
+{% block extra_css %}
+.dash-hero { background: #0E110E; padding: 36px 0 32px; border-bottom: 1px solid rgba(255,255,255,.06); }
+.dash-hero h1 { font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+.dash-hero p { font-size: 14px; color: rgba(255,255,255,.55); margin: 0; }
+.dash-body { background: #F8FAF8; padding: 40px 0 80px; }
+.stat-card { background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 20px; height: 100%; }
+.stat-card .lbl { font-size: 12px; font-weight: 600; color: #6B7280; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+.stat-card .val { font-family: 'Poppins', sans-serif; font-size: 26px; font-weight: 800; color: #1A1A1A; }
+.stat-card .sub { font-size: 12px; color: #9AA0A8; margin-top: 4px; }
+.section-card { background: #fff; border: 1px solid #E5E7EB; border-radius: 14px; padding: 24px; margin-bottom: 20px; }
+.section-card h5 { font-size: 15px; font-weight: 700; color: #1A1A1A; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #E5E7EB; }
+.empty-state { text-align: center; padding: 40px 20px; color: #9AA0A8; font-size: 14px; }
+.empty-state .icon { font-size: 36px; margin-bottom: 12px; }
+.btn-dash { background: #015310; color: #fff; border: none; border-radius: 8px; font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 600; padding: 10px 22px; cursor: pointer; text-decoration: none; display: inline-block; transition: background .2s; }
+.btn-dash:hover { background: #013D0C; color: #fff; }
+.badge-status { font-size: 11px; font-weight: 600; font-family: 'Poppins', sans-serif; padding: 4px 10px; border-radius: 100px; }
+.badge-pending { background: #FCF1DC; color: #92400E; }
+.badge-active  { background: #E7F3EA; color: #015310; }
+.live-badge { background: #FEF2F2; color: #991B1B; font-size: 11px; font-weight: 700; font-family: 'Poppins', sans-serif; padding: 4px 10px; border-radius: 100px; }
+.kyc-banner { background: #FFF7ED; border: 1px solid #FCD34D; border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; gap: 12px; margin-bottom: 24px; font-size: 13px; color: #92400E; }
+.kyc-banner i { font-size: 18px; flex-shrink: 0; }
+.kyc-banner a { color: #92400E; font-weight: 700; }
+.step-num { width: 24px; height: 24px; background: #E7F3EA; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #015310; flex-shrink: 0; }
+{% endblock %}
+
+{% block content %}
+
+<div class="dash-hero">
+  <div class="container">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <h1>Welcome, {{ request.user.first_name|default:request.user.email }} 👋</h1>
+        <p>Browse live auctions and manage your bids</p>
+      </div>
+      <a href="/auctions/" class="btn-dash">
+        <i class="bi bi-broadcast me-2"></i>View Live Auctions
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="dash-body">
+  <div class="container">
+
+    {% if not request.user.is_kyc_done %}
+    <div class="kyc-banner">
+      <i class="bi bi-shield-exclamation"></i>
+      <div>
+        <strong>Complete dealer verification to place bids.</strong>
+        GST + PAN + business document verification required.
+        <a href="{% url 'contact' %}">Get Started →</a>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="lbl">Active Bids</div>
+          <div class="val">0</div>
+          <div class="sub">Bids placed this week</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="lbl">Auctions Won</div>
+          <div class="val">0</div>
+          <div class="sub">Total since joining</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="lbl">Cars Purchased</div>
+          <div class="val">0</div>
+          <div class="sub">Successfully closed</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="lbl">Live Now</div>
+          <div class="val">—</div>
+          <div class="sub">Auctions running</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-12 col-lg-8">
+        <div class="section-card">
+          <h5>
+            <i class="bi bi-broadcast me-2"></i>Live Auctions
+            <span class="live-badge ms-2">● LIVE</span>
+          </h5>
+          <div class="empty-state">
+            <div class="icon">⚡</div>
+            <p>Complete your dealer KYC to start bidding on live auctions.<br>Once verified, you'll see all active auctions here.</p>
+            <a href="/auctions/" class="btn-dash" style="font-size:13px;padding:9px 20px;">Browse All Auctions →</a>
+          </div>
+        </div>
+        <div class="section-card">
+          <h5><i class="bi bi-clock-history me-2"></i>My Bid History</h5>
+          <div class="empty-state">
+            <div class="icon">📋</div>
+            <p>Your bid history will appear here once you start participating in auctions.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-lg-4">
+        <div class="section-card">
+          <h5><i class="bi bi-person-check me-2"></i>Account Status</h5>
+          <div class="d-flex flex-column gap-2">
+            <div class="d-flex align-items-center justify-content-between">
+              <span style="font-size:13px;color:#6B7280;">KYC Verification</span>
+              {% if request.user.is_kyc_done %}
+              <span class="badge-status badge-active">✓ Verified</span>
+              {% else %}
+              <span class="badge-status badge-pending">Pending</span>
+              {% endif %}
+            </div>
+            <div class="d-flex align-items-center justify-content-between">
+              <span style="font-size:13px;color:#6B7280;">Account Type</span>
+              <span class="badge-status badge-active">Dealer</span>
+            </div>
+            <div class="d-flex align-items-center justify-content-between">
+              <span style="font-size:13px;color:#6B7280;">Email</span>
+              <span style="font-size:12px;color:#1A1A1A;">{{ request.user.email }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <h5><i class="bi bi-question-circle me-2"></i>Need Help?</h5>
+          <p style="font-size:13px;color:#6B7280;line-height:1.7;margin-bottom:14px;">Questions about verification, bidding, or a specific car?</p>
+          <a href="https://wa.me/919537185783" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#015310;text-decoration:none;">
+            <i class="bi bi-whatsapp" style="color:#25D366;"></i>+91 9537185783
+          </a>
+          <a href="mailto:support@carfriend.in" style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#015310;text-decoration:none;margin-top:8px;">
+            <i class="bi bi-envelope"></i>support@carfriend.in
+          </a>
+        </div>
+
+        <div class="section-card">
+          <h5><i class="bi bi-signpost-split me-2"></i>Get Started as a Dealer</h5>
+          <div class="d-flex flex-column gap-3">
+            <div class="d-flex gap-2 align-items-start">
+              <div class="step-num">1</div>
+              <div style="font-size:13px;color:#6B7280;line-height:1.5;">Complete GST + PAN + business doc verification</div>
+            </div>
+            <div class="d-flex gap-2 align-items-start">
+              <div class="step-num">2</div>
+              <div style="font-size:13px;color:#6B7280;line-height:1.5;">Browse car listings with full inspection reports</div>
+            </div>
+            <div class="d-flex gap-2 align-items-start">
+              <div class="step-num">3</div>
+              <div style="font-size:13px;color:#6B7280;line-height:1.5;">Join 30-min live auctions and place real-time bids</div>
+            </div>
+            <div class="d-flex gap-2 align-items-start">
+              <div class="step-num">4</div>
+              <div style="font-size:13px;color:#6B7280;line-height:1.5;">Win the auction and close the deal</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
