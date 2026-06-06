@@ -1,0 +1,48 @@
+{% extends 'teams/base.html' %}
+{% block title %}My Jobs — Inspector{% endblock %}
+{% block nav_inspector %}active{% endblock %}
+{% block page_title %}My Inspection Jobs{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+  <div class="col-12 col-lg-8">
+    <div class="cf-card">
+      <div class="cf-card-title"><i class="bi bi-calendar-check"></i> Assigned Jobs ({{ today_jobs|length }})</div>
+      {% if today_jobs %}
+        {% for job in today_jobs %}
+        <div style="border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+            <div>
+              <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:15px;margin-bottom:4px">{{ job.vehicle.display_name }}</div>
+              <div style="font-size:12px;color:var(--txt3);margin-bottom:6px">{{ job.vehicle.plate_number }}</div>
+              <div style="font-size:13px;color:var(--txt2);margin-bottom:4px"><i class="bi bi-calendar3 me-1"></i>{{ job.scheduled_at|date:"d M Y, H:i" }}</div>
+              <div style="font-size:13px;color:var(--txt2)"><i class="bi bi-geo-alt me-1"></i>{{ job.inspection_address }}</div>
+            </div>
+            <span class="badge-stage badge-scheduled" style="flex-shrink:0">{{ job.get_status_display }}</span>
+          </div>
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
+            <a href="{% url 'inspector_job' job.id %}" class="btn-cf"><i class="bi bi-clipboard2-check me-1"></i>Open &amp; Fill Report</a>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+      <div style="text-align:center;padding:40px;color:var(--txt3)">No jobs assigned to you yet.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-4">
+    <div class="cf-card">
+      <div class="cf-card-title"><i class="bi bi-check-circle"></i> Completed ({{ done_jobs|length }})</div>
+      {% for job in done_jobs %}
+      <div style="border-bottom:1px solid var(--line);padding:10px 0;font-size:13px">
+        <div style="font-weight:600">{{ job.vehicle.display_name }}</div>
+        <div style="color:var(--txt3);font-size:12px">{{ job.scheduled_at|date:"d M Y" }} — Grade {{ job.condition_grade|default:"N/A" }}</div>
+      </div>
+      {% empty %}
+      <div style="color:var(--txt3);font-size:13px;padding:12px 0">No completed reports yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

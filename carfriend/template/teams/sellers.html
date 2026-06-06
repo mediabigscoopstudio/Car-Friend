@@ -1,0 +1,38 @@
+{% extends 'teams/base.html' %}
+{% block title %}Sellers — CarFriend Teams{% endblock %}
+{% block nav_sellers %}active{% endblock %}
+{% block page_title %}Sellers{% endblock %}
+
+{% block content %}
+<div class="cf-card">
+  <div class="cf-card-title"><i class="bi bi-people"></i> All Sellers ({{ sellers|length }})</div>
+  {% if sellers %}
+  <table class="cf-table">
+    <thead>
+      <tr><th>Name</th><th>Email</th><th>Phone</th><th>Cars Listed</th><th>KYC</th><th>Joined</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for seller in sellers %}
+      <tr>
+        <td><strong>{{ seller.get_full_name|default:"—" }}</strong></td>
+        <td><a href="mailto:{{ seller.email }}" style="color:var(--g1)">{{ seller.email }}</a></td>
+        <td>{{ seller.phone|default:"—" }}</td>
+        <td>{{ seller.vehicles.count }}</td>
+        <td>{% if seller.is_kyc_done %}<span class="badge-stage badge-admin_approved">Verified</span>{% else %}<span class="badge-stage badge-new">Pending</span>{% endif %}</td>
+        <td style="color:var(--txt3);font-size:12px">{{ seller.created_at|date:"d M Y" }}</td>
+        <td>
+          {% for lead in seller.leads.all %}
+          <a href="{% url 'lead_detail' lead.id %}" class="btn-cf btn-sm-cf">View Lead</a>
+          {% empty %}
+          <span style="color:var(--txt3);font-size:12px">No leads</span>
+          {% endfor %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div style="text-align:center;padding:40px;color:var(--txt3)">No sellers registered yet.</div>
+  {% endif %}
+</div>
+{% endblock %}

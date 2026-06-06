@@ -1,26 +1,30 @@
-{% extends "base/base_web.html" %}
-{% block title %}Dealers · Teams{% endblock %}
-{% block page_title %}Dealer Database{% endblock %}
+{% extends 'teams/base.html' %}
+{% block title %}Dealer Network — CarFriend Teams{% endblock %}
+{% block nav_dealers %}active{% endblock %}
+{% block page_title %}Dealer Network{% endblock %}
 
 {% block content %}
-<div class="section-header"><h2>Dealers</h2></div>
-<div class="table-wrap">
-  <table>
-    <thead><tr><th>Dealership</th><th>City</th><th>Budget Range</th><th>Brand Interest</th><th>Status</th><th></th></tr></thead>
+<div class="cf-card">
+  <div class="cf-card-title"><i class="bi bi-building"></i> All Dealers ({{ dealers|length }})</div>
+  {% if dealers %}
+  <table class="cf-table">
+    <thead><tr><th>Dealership</th><th>Email</th><th>City</th><th>GST</th><th>Verified</th><th>Joined</th><th></th></tr></thead>
     <tbody>
-      {% for d in dealers %}
+      {% for dealer in dealers %}
       <tr>
-        <td><strong>{{ d.dealership_name }}</strong></td>
-        <td>{{ d.city|default:"—" }}</td>
-        <td style="font-family:var(--mono);font-size:12px">₹{{ d.budget_min|floatformat:0 }} – ₹{{ d.budget_max|floatformat:0 }}</td>
-        <td style="font-size:12px">{{ d.brand_interest|default:"—" }}</td>
-        <td>{% if d.is_banned %}<span class="pill pill-red">Banned</span>{% else %}<span class="pill pill-green">Active</span>{% endif %}</td>
-        <td><a href="/dealer/{{ d.id }}" class="btn btn-secondary btn-sm">View</a></td>
+        <td><strong>{{ dealer.dealership_name|default:dealer.user.get_full_name|default:"—" }}</strong></td>
+        <td><a href="mailto:{{ dealer.user.email }}" style="color:var(--g1)">{{ dealer.user.email }}</a></td>
+        <td>{{ dealer.city|default:"—" }}</td>
+        <td style="font-family:monospace;font-size:12px">{{ dealer.gstin|default:"—" }}</td>
+        <td>{% if dealer.is_verified %}<span class="badge-stage badge-admin_approved">Verified</span>{% else %}<span class="badge-stage badge-new">Pending</span>{% endif %}</td>
+        <td style="color:var(--txt3);font-size:12px">{{ dealer.created_at|date:"d M Y" }}</td>
+        <td><a href="{% url 'dealer_detail' dealer.id %}" class="btn-cf btn-sm-cf">View</a></td>
       </tr>
-      {% empty %}
-      <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-2)">No dealers yet</td></tr>
       {% endfor %}
     </tbody>
   </table>
+  {% else %}
+  <div style="text-align:center;padding:40px;color:var(--txt3)">No dealers registered yet.</div>
+  {% endif %}
 </div>
 {% endblock %}

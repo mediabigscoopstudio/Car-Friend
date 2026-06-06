@@ -1,0 +1,60 @@
+{% extends 'teams/base.html' %}
+{% block title %}Dashboard — CarFriend Teams{% endblock %}
+{% block nav_dash %}active{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3"><div class="stat-mini"><span class="val">{{ total_leads }}</span><span class="lbl">Total Leads</span></div></div>
+  <div class="col-6 col-md-3"><div class="stat-mini"><span class="val" style="color:#1E40AF">{{ new_leads }}</span><span class="lbl">New Leads</span></div></div>
+  <div class="col-6 col-md-3"><div class="stat-mini"><span class="val" style="color:#92400E">{{ in_inspection }}</span><span class="lbl">In Inspection</span></div></div>
+  <div class="col-6 col-md-3"><div class="stat-mini"><span class="val" style="color:#991B1B">{{ in_auction }}</span><span class="lbl">In Auction</span></div></div>
+</div>
+
+<div class="row g-3">
+  <div class="col-12 col-lg-8">
+    <div class="cf-card">
+      <div class="cf-card-title"><i class="bi bi-clock-history"></i> Recent Leads</div>
+      {% if recent_leads %}
+      <table class="cf-table">
+        <thead>
+          <tr><th>Vehicle</th><th>Seller</th><th>Stage</th><th>Listed</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for lead in recent_leads %}
+          <tr>
+            <td><strong>{{ lead.vehicle.display_name }}</strong><br><small style="color:var(--txt3)">{{ lead.vehicle.plate_number }}</small></td>
+            <td>{{ lead.seller.get_full_name|default:lead.seller.email }}</td>
+            <td><span class="badge-stage badge-{{ lead.stage }}">{{ lead.stage_label }}</span></td>
+            <td style="color:var(--txt3);font-size:12px">{{ lead.created_at|date:"d M Y" }}</td>
+            <td><a href="{% url 'lead_detail' lead.id %}" class="btn-cf btn-sm-cf">View</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div style="text-align:center;padding:32px;color:var(--txt3)">No leads yet. They appear here when sellers list their cars.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-4">
+    <div class="cf-card">
+      <div class="cf-card-title"><i class="bi bi-bar-chart"></i> Quick Stats</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--txt2)">Deals Closed</span><strong>{{ closed }}</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--txt2)">Dealer Network</span><strong>{{ total_dealers }}</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--txt2)">Total Bids Placed</span><strong>{{ total_bids }}</strong></div>
+      </div>
+    </div>
+    <div class="cf-card">
+      <div class="cf-card-title"><i class="bi bi-lightning"></i> Quick Actions</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <a href="{% url 'pipeline' %}" class="btn-cf" style="justify-content:center">View Lead Pipeline</a>
+        <a href="{% url 'sellers' %}" class="btn-cf-ghost" style="justify-content:center">All Sellers</a>
+        <a href="{% url 'deals' %}" class="btn-cf-ghost" style="justify-content:center">View Deals</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

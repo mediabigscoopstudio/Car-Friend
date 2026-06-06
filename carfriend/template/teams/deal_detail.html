@@ -1,0 +1,60 @@
+{% extends 'teams/base.html' %}
+{% block title %}Deal — {{ vehicle.display_name }}{% endblock %}
+{% block nav_deals %}active{% endblock %}
+{% block page_title %}Deal: {{ vehicle.display_name }}{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+  <div class="col-12 col-lg-8">
+    <div class="cf-card">
+      <div class="cf-card-title"><i class="bi bi-hammer"></i> All Bids — {{ bids.count }} total</div>
+      {% if bids %}
+      <table class="cf-table">
+        <thead><tr><th>Rank</th><th>Dealer</th><th>Bid Amount</th><th>Time</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for bid in bids %}
+          <tr {% if forloop.first %}style="background:#F0FDF4"{% endif %}>
+            <td><strong style="font-family:'Poppins',sans-serif;font-size:16px;color:{% if forloop.first %}var(--g1){% else %}var(--txt3){% endif %}">#{{ forloop.counter }}</strong></td>
+            <td>
+              <strong>{{ bid.dealer.get_full_name|default:bid.dealer.email }}</strong><br>
+              <small style="color:var(--txt3)">{{ bid.dealer.email }}</small>
+            </td>
+            <td><strong style="font-family:'Poppins',sans-serif;font-size:16px;color:{% if forloop.first %}var(--g1){% else %}var(--txt){% endif %}">&#8377;{{ bid.amount|floatformat:0 }}</strong></td>
+            <td style="color:var(--txt3);font-size:12px">{{ bid.created_at|date:"d M Y, H:i" }}</td>
+            <td>{% if forloop.first %}<span class="badge-stage badge-admin_approved">Winning</span>{% else %}<span class="badge-stage badge-closed">Outbid</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div style="text-align:center;padding:40px;color:var(--txt3)">No bids placed on this vehicle yet.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-4">
+    <div class="cf-card">
+      <div class="cf-card-title"><i class="bi bi-car-front"></i> Vehicle</div>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+        <div><span style="color:var(--txt2)">Car: </span><strong>{{ vehicle.display_name }}</strong></div>
+        <div><span style="color:var(--txt2)">Plate: </span><code>{{ vehicle.plate_number }}</code></div>
+        <div><span style="color:var(--txt2)">Year: </span>{{ vehicle.year }}</div>
+        <div><span style="color:var(--txt2)">Fuel: </span>{{ vehicle.get_fuel_type_display }}</div>
+        <div><span style="color:var(--txt2)">Status: </span><span class="badge-stage badge-{{ vehicle.status }}">{{ vehicle.get_status_display }}</span></div>
+        {% if vehicle.expected_price %}<div><span style="color:var(--txt2)">Expected: </span><strong style="color:var(--g1)">&#8377;{{ vehicle.expected_price|floatformat:0 }}</strong></div>{% endif %}
+      </div>
+    </div>
+
+    {% if winning %}
+    <div class="cf-card" style="border-color:var(--g1)">
+      <div class="cf-card-title" style="color:var(--g1)"><i class="bi bi-trophy"></i> Winning Bid</div>
+      <div style="font-family:'Poppins',sans-serif;font-size:28px;font-weight:800;color:var(--g1);margin-bottom:8px">&#8377;{{ winning.amount|floatformat:0 }}</div>
+      <div style="font-size:13px;color:var(--txt2)">{{ winning.dealer.get_full_name|default:winning.dealer.email }}</div>
+      <div style="font-size:12px;color:var(--txt3);margin-top:4px">{{ winning.created_at|date:"d M Y, H:i" }}</div>
+    </div>
+    {% endif %}
+
+    <a href="{% url 'deals' %}" class="btn-cf-ghost" style="width:100%;justify-content:center">← Back to Deals</a>
+  </div>
+</div>
+{% endblock %}

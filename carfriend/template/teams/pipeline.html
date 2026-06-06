@@ -1,206 +1,51 @@
-{% extends "base/base_web.html" %}
-{% load static %}
+{% extends 'teams/base.html' %}
+{% block title %}Lead Pipeline — CarFriend Teams{% endblock %}
+{% block nav_pipeline %}active{% endblock %}
+{% block page_title %}Lead Pipeline{% endblock %}
 
-{% block title %}Lead Pipeline · Car Friend{% endblock %}
-
-{% block extra_head %}
-<style>
-/* ── Kanban board ── */
-.board-header {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-.board-header h1 {
-  font-family: var(--font-b);
-  font-size: 22px;
-  font-weight: 700;
-  margin: 0;
-}
-.board-header .total-badge {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--txt-2);
-  background: var(--mist-2);
-  padding: 3px 10px;
-  border-radius: 20px;
-}
-
-.kanban-scroll {
-  overflow-x: auto;
-  padding-bottom: 16px;
-  /* full-bleed past sidebar padding */
-  margin: 0 -24px;
-  padding-left: 24px;
-  padding-right: 24px;
-}
-
-.kanban-board {
-  display: flex;
-  gap: 14px;
-  /* enough width so all 7 columns are visible; user scrolls horizontally */
-  min-width: max-content;
-  align-items: flex-start;
-}
-
-/* ── Column ── */
-.k-col {
-  width: 240px;
-  flex-shrink: 0;
-  background: var(--mist-2, #f3f5f3);
-  border-radius: 14px;
-  padding: 14px 12px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.k-col-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 2px;
-}
-.k-col-label {
-  font-family: var(--font-b);
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .04em;
-  color: var(--txt-2);
-}
-.k-count {
-  font-size: 11px;
-  font-weight: 700;
-  background: var(--paper);
-  color: var(--txt-2);
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  padding: 2px 8px;
-  min-width: 24px;
-  text-align: center;
-}
-.k-count.has-leads {
-  background: var(--green);
-  color: #fff;
-  border-color: var(--green);
-}
-
-/* ── Card ── */
-.k-card {
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 14px;
-  text-decoration: none;
-  color: inherit;
-  display: block;
-  transition: box-shadow .15s, transform .15s;
-}
-.k-card:hover {
-  box-shadow: 0 4px 16px rgba(0,0,0,.08);
-  transform: translateY(-2px);
-  border-color: var(--green);
-}
-
-.k-card-name {
-  font-family: var(--font-b);
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--txt);
-  margin-bottom: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.k-card-car {
-  font-size: 12px;
-  color: var(--txt-2);
-  margin-bottom: 8px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.k-card-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-}
-.k-price {
-  font-family: var(--font-b);
-  font-size: 14px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--green);
-}
-.k-pill {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .04em;
-  padding: 3px 8px;
-  border-radius: 20px;
-}
-
-/* stage colours */
-.pill-new          { background: #e8f5e9; color: #2e7d32; }
-.pill-qualified    { background: #e3f2fd; color: #1565c0; }
-.pill-insp_sched   { background: #fff3e0; color: #e65100; }
-.pill-admin_ok     { background: #e8f5e9; color: #015310; }
-.pill-negotiation  { background: #fce4ec; color: #880e4f; }
-.pill-auction_made { background: #f3e5f5; color: #6a1b9a; }
-.pill-closed       { background: #f5f5f5; color: #424242; }
-
-/* empty column */
-.k-empty {
-  font-size: 12px;
-  color: var(--txt-2);
-  text-align: center;
-  padding: 20px 0;
-  opacity: .6;
-}
-</style>
+{% block extra_css %}
+.pipeline-board { display:flex; gap:16px; overflow-x:auto; padding-bottom:16px; align-items:flex-start }
+.pipeline-col { min-width:240px; max-width:260px; flex-shrink:0 }
+.pipeline-col-header { background:var(--ink); border-radius:10px 10px 0 0; padding:10px 14px; display:flex; align-items:center; justify-content:space-between }
+.pipeline-col-title { font-family:'Poppins',sans-serif; font-size:12px; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:.5px }
+.pipeline-col-count { background:rgba(255,255,255,.15); color:#fff; font-size:11px; font-weight:700; font-family:'Poppins',sans-serif; padding:2px 8px; border-radius:100px }
+.pipeline-col-body { background:#fff; border:1px solid var(--line); border-top:none; border-radius:0 0 10px 10px; padding:10px; min-height:200px; display:flex; flex-direction:column; gap:8px }
+.lead-card { background:var(--mist); border:1px solid var(--line); border-radius:8px; padding:12px; cursor:pointer; transition:all .2s; text-decoration:none; display:block }
+.lead-card:hover { border-color:var(--g1); box-shadow:0 2px 8px rgba(1,83,16,.1) }
+.lead-car-name { font-family:'Poppins',sans-serif; font-weight:700; font-size:13px; color:var(--txt); margin-bottom:3px }
+.lead-plate { font-size:11px; color:var(--txt3); font-family:monospace; margin-bottom:6px }
+.lead-seller { font-size:12px; color:var(--txt2) }
+.lead-price { font-size:12px; font-weight:600; color:var(--g1); margin-top:4px }
+.lead-date { font-size:11px; color:var(--txt3); margin-top:4px }
+.col-empty { font-size:12px; color:var(--txt3); text-align:center; padding:20px 10px }
 {% endblock %}
 
 {% block content %}
-<div class="board-header">
-  <h1>Lead Pipeline</h1>
-  <span class="total-badge">{{ total }} lead{{ total|pluralize }}</span>
-</div>
-
-<div class="kanban-scroll">
-  <div class="kanban-board">
-    {% for col in columns %}
-    <div class="k-col">
-      <div class="k-col-head">
-        <span class="k-col-label">{{ col.label }}</span>
-        <span class="k-count {% if col.leads %}has-leads{% endif %}">{{ col.leads|length }}</span>
-      </div>
-
-      {% for lead in col.leads %}
-      <a class="k-card" href="/seller/{{ lead.id }}">
-        <div class="k-card-name">
-          {{ lead.seller.get_full_name|default:lead.seller.username }}
-        </div>
-        {% if lead.vehicle %}
-        <div class="k-card-car">
-          {{ lead.vehicle.make }} {{ lead.vehicle.model }} {{ lead.vehicle.variant }} · {{ lead.vehicle.year }}
-        </div>
-        {% else %}
-        <div class="k-card-car">No vehicle linked</div>
-        {% endif %}
-        <div class="k-card-footer">
-          <span class="k-price">₹{{ lead.expected_price|floatformat:0 }}</span>
-          <span class="k-pill pill-{{ col.key }}">{{ col.label }}</span>
-        </div>
-      </a>
-      {% empty %}
-      <div class="k-empty">No leads</div>
-      {% endfor %}
+<div class="pipeline-board">
+  {% for stage_val, stage_data in stages.items %}
+  <div class="pipeline-col">
+    <div class="pipeline-col-header">
+      <span class="pipeline-col-title">{{ stage_data.label }}</span>
+      <span class="pipeline-col-count">{{ stage_data.count }}</span>
     </div>
-    {% endfor %}
+    <div class="pipeline-col-body">
+      {% if stage_data.leads %}
+        {% for lead in stage_data.leads %}
+        <a class="lead-card" href="{% url 'lead_detail' lead.id %}">
+          <div class="lead-car-name">{{ lead.vehicle.display_name }}</div>
+          <div class="lead-plate">{{ lead.vehicle.plate_number }}</div>
+          <div class="lead-seller"><i class="bi bi-person me-1"></i>{{ lead.seller.get_full_name|default:lead.seller.email }}</div>
+          {% if lead.vehicle.expected_price %}
+          <div class="lead-price">&#8377;{{ lead.vehicle.expected_price|floatformat:0 }}</div>
+          {% endif %}
+          <div class="lead-date">{{ lead.created_at|date:"d M Y" }}</div>
+        </a>
+        {% endfor %}
+      {% else %}
+        <div class="col-empty">No leads in this stage</div>
+      {% endif %}
+    </div>
   </div>
+  {% endfor %}
 </div>
 {% endblock %}

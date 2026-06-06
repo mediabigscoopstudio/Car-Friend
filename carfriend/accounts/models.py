@@ -76,4 +76,8 @@ class DealerProfile(models.Model):
     created_at      = models.DateTimeField(auto_now_add=True)
     updated_at      = models.DateTimeField(auto_now=True)
 
+    @property
+    def is_verified(self):
+        return not self.is_banned and self.status == 'Enabled'
+
     def __str__(self): return self.dealership_name

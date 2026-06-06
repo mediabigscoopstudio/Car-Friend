@@ -1,0 +1,75 @@
+{% extends 'teams/base.html' %}
+{% block title %}Dealer — {{ dealer.dealership_name|default:dealer.user.email }}{% endblock %}
+{% block nav_dealers %}active{% endblock %}
+{% block page_title %}Dealer: {{ dealer.dealership_name|default:dealer.user.email }}{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+  <div class="col-12 col-lg-8">
+    <div class="cf-card">
+      <div class="cf-card-title"><i class="bi bi-hammer"></i> Bid History ({{ bids.count }})</div>
+      {% if bids %}
+      <table class="cf-table">
+        <thead><tr><th>Vehicle</th><th>Bid Amount</th><th>Date</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for bid in bids %}
+          <tr>
+            <td>
+              <strong>{{ bid.vehicle.display_name }}</strong><br>
+              <small style="color:var(--txt3);font-family:monospace">{{ bid.vehicle.plate_number }}</small>
+            </td>
+            <td><strong style="color:var(--g1)">&#8377;{{ bid.amount|floatformat:0 }}</strong></td>
+            <td style="color:var(--txt3);font-size:12px">{{ bid.created_at|date:"d M Y, H:i" }}</td>
+            <td>{% if bid.is_winning %}<span class="badge-stage badge-admin_approved">Winning</span>{% else %}<span class="badge-stage badge-closed">Outbid</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div style="text-align:center;padding:40px;color:var(--txt3)">No bids placed yet.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-4">
+    <div class="cf-card">
+      <div class="cf-card-title"><i class="bi bi-building"></i> Dealer Profile</div>
+      <div style="display:flex;flex-direction:column;gap:10px;font-size:13px">
+        <div>
+          <div style="font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Dealership</div>
+          <div style="font-weight:600;font-size:14px">{{ dealer.dealership_name|default:"—" }}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Email</div>
+          <div><a href="mailto:{{ dealer.user.email }}" style="color:var(--g1)">{{ dealer.user.email }}</a></div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">City</div>
+          <div>{{ dealer.city|default:"—" }}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">GST Number</div>
+          <div style="font-family:monospace">{{ dealer.gstin|default:"—" }}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Budget Range</div>
+          <div>&#8377;{{ dealer.budget_min|default:"0" }} — &#8377;{{ dealer.budget_max|default:"0" }}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Brand Interest</div>
+          <div>{{ dealer.brand_interest|default:"—" }}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Verification</div>
+          <div>{% if dealer.is_verified %}<span class="badge-stage badge-admin_approved">Verified</span>{% else %}<span class="badge-stage badge-new">Pending</span>{% endif %}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Joined</div>
+          <div>{{ dealer.created_at|date:"d M Y" }}</div>
+        </div>
+      </div>
+    </div>
+    <a href="{% url 'dealers' %}" class="btn-cf-ghost" style="width:100%;justify-content:center">← Back to Dealers</a>
+  </div>
+</div>
+{% endblock %}

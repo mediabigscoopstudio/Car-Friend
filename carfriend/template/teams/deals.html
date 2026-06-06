@@ -1,25 +1,40 @@
-{% extends "base/base_web.html" %}
-{% block title %}Deal Pipeline · Teams{% endblock %}
-{% block page_title %}My Deal Pipeline{% endblock %}
+{% extends 'teams/base.html' %}
+{% block title %}Deals — CarFriend Teams{% endblock %}
+{% block nav_deals %}active{% endblock %}
+{% block page_title %}Deals{% endblock %}
 
 {% block content %}
-<div class="section-header"><h2>Assigned Deals</h2></div>
-<div class="table-wrap">
-  <table>
-    <thead><tr><th>Vehicle</th><th>Seller</th><th>Dealer</th><th>Final Price</th><th>Status</th></tr></thead>
+<div class="cf-card">
+  <div class="cf-card-title"><i class="bi bi-hammer"></i> All Active Deals ({{ vehicles|length }})</div>
+  {% if vehicles %}
+  <table class="cf-table">
+    <thead>
+      <tr><th>Vehicle</th><th>Seller</th><th>Expected Price</th><th>Highest Bid</th><th>Total Bids</th><th>Status</th><th></th></tr>
+    </thead>
     <tbody>
-      {% for d in deals %}
+      {% for vehicle in vehicles %}
       <tr>
-        <td>{{ d.vehicle.title }}</td>
-        <td>{{ d.seller.get_full_name|default:d.seller.username }}</td>
-        <td>{{ d.dealer.get_full_name|default:d.dealer.username }}</td>
-        <td style="font-family:var(--mono)">₹{{ d.final_price|floatformat:0 }}</td>
-        <td><span class="pill {% if d.status == 'closed' %}pill-green{% elif d.status == 'paid' %}pill-green{% else %}pill-yellow{% endif %}">{{ d.get_status_display }}</span></td>
+        <td>
+          <strong>{{ vehicle.display_name }}</strong><br>
+          <small style="color:var(--txt3);font-family:monospace">{{ vehicle.plate_number }}</small>
+        </td>
+        <td>{{ vehicle.seller.get_full_name|default:vehicle.seller.email }}</td>
+        <td>{% if vehicle.expected_price %}<span style="color:var(--txt2)">&#8377;{{ vehicle.expected_price|floatformat:0 }}</span>{% else %}—{% endif %}</td>
+        <td>
+          {% with vehicle.bids.first as top_bid %}
+          {% if top_bid %}<strong style="color:var(--g1)">&#8377;{{ top_bid.amount|floatformat:0 }}</strong>
+          {% else %}<span style="color:var(--txt3)">No bids</span>{% endif %}
+          {% endwith %}
+        </td>
+        <td><span style="font-weight:600">{{ vehicle.bids.count }}</span></td>
+        <td><span class="badge-stage badge-{{ vehicle.status }}">{{ vehicle.get_status_display }}</span></td>
+        <td><a href="{% url 'deal_detail' vehicle.id %}" class="btn-cf btn-sm-cf">View Bids</a></td>
       </tr>
-      {% empty %}
-      <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-2)">No deals assigned</td></tr>
       {% endfor %}
     </tbody>
   </table>
+  {% else %}
+  <div style="text-align:center;padding:40px;color:var(--txt3)">No active deals yet. Cars appear here once they reach auction stage.</div>
+  {% endif %}
 </div>
 {% endblock %}
