@@ -1,8 +1,10 @@
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib import admin
 from django.urls import include, path
 
 urlpatterns = [
+    path("django-admin/", admin.site.urls),
     # allauth — Google OAuth + built-in account management
     path("accounts/", include("allauth.urls")),
     # CarFriend auth — login, register, dashboards
