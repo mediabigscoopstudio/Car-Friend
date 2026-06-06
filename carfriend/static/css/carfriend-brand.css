@@ -1,0 +1,93 @@
+/* ============================================================================
+   CAR FRIEND – BRAND TOKENS  (drop-in)
+   Single source of truth for color + type. Load this ONCE, globally, before any
+   page CSS. It deliberately reuses the variable NAMES from the prototypes
+   (--green, --charcoal, --font-d ...) so the existing component CSS keeps working.
+   Do not hard-code hex anywhere else; use these vars.
+   ============================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+:root{
+  /* ---- GREENS ---- */
+  --green:        #015310;
+  --green-2:      #0B7D24;
+  --green-bright: #0B7D24;
+  --green-deep:   #013D0C;
+  --green-soft:   #E7F3EA;
+  --green-glow:   rgba(1,83,16,.30);
+  --green-grad:   linear-gradient(135deg,#015310 0%,#0B7D24 100%);
+
+  /* ---- NEUTRALS ---- */
+  --ink:        #000000;
+  --charcoal:   #0E110E;
+  --charcoal-2: #161A16;
+  --charcoal-3: #20251F;
+  --line-dk:    #2A302A;
+
+  --paper:  #FFFFFF;
+  --mist:   #F8FAF8;
+  --mist-2: #EEF2EE;
+  --line:   #E5E7EB;
+  --line-2: #EFF2EF;
+
+  --txt:   #1A1A1A;
+  --txt-2: #6B7280;
+  --txt-3: #9AA0A8;
+
+  /* ---- FUNCTIONAL ---- */
+  --red:   #E5484D;  --red-soft:   #FBE4E4;
+  --amber: #F2A93B;  --amber-soft: #FCF1DC;
+  --blue:  #3B6FD4;  --blue-soft:  #EAF0FB;
+
+  /* ---- TYPE ---- */
+  --font-d: 'Poppins', system-ui, sans-serif;
+  --font-b: 'Inter', system-ui, sans-serif;
+  --font-m: 'Inter', system-ui, sans-serif;
+
+  /* ---- SHAPE ---- */
+  --radius:    16px;
+  --radius-sm: 12px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.05), 0 1px 3px rgba(0,0,0,.04);
+  --shadow:    0 8px 26px -10px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.05);
+  --shadow-lg: 0 24px 60px -20px rgba(0,0,0,.45);
+
+  /* ---- MOTION ---- */
+  --ease: cubic-bezier(.4,0,.2,1);
+  --dur-fast: 150ms; --dur-base: 250ms;
+}
+
+.mono{ font-family:var(--font-m); font-variant-numeric:tabular-nums; letter-spacing:.01em; }
+.muted{ color:var(--txt-2); }
+
+.h1{ font-family:var(--font-d); font-weight:700; letter-spacing:-.02em; }
+.h2{ font-family:var(--font-d); font-weight:600; letter-spacing:-.01em; }
+.h3{ font-family:var(--font-d); font-weight:600; }
+.eyebrow{ font-family:var(--font-d); font-weight:600; font-size:10.5px;
+          letter-spacing:1.2px; text-transform:uppercase; color:var(--txt-3); }
+
+body{ font-family:var(--font-b); background:var(--mist); color:var(--txt); }
+
+.btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px;
+      font-family:var(--font-d); font-weight:600; font-size:13.5px;
+      border:none; cursor:pointer; border-radius:11px; padding:10px 16px;
+      transition: transform var(--dur-fast) var(--ease), background var(--dur-base) var(--ease); }
+.btn:active{ transform:scale(.98); }
+.btn-primary{ background:var(--green); color:#fff; box-shadow:0 8px 20px -10px var(--green-glow); }
+.btn-primary:hover{ background:var(--green-deep); }
+.btn-dark{ background:var(--charcoal); color:#fff; }
+.btn-ghost{ background:var(--mist-2); color:var(--txt); }
+.btn-outline{ background:var(--paper); border:1.5px solid var(--line); color:var(--txt); }
+.btn-red{ background:var(--red); color:#fff; }
+.btn-amber{ background:var(--amber); color:#fff; }
+.btn-sm{ padding:7px 12px; font-size:12.5px; border-radius:9px; }
+
+.pill{ display:inline-flex; align-items:center; gap:6px; padding:4px 10px;
+       border-radius:999px; font-size:11px; font-weight:600; }
+.pill .dot{ width:6px; height:6px; border-radius:50%; }
+.pill.green{ background:var(--green-soft); color:var(--green-deep); } .pill.green .dot{ background:var(--green-2); }
+.pill.amber{ background:var(--amber-soft); color:#b3791b; }          .pill.amber .dot{ background:var(--amber); }
+.pill.red{ background:var(--red-soft); color:#c4373b; }              .pill.red .dot{ background:var(--red); }
+
+.card{ background:var(--paper); border:1px solid var(--line); border-radius:var(--radius);
+       box-shadow:var(--shadow-sm); }
