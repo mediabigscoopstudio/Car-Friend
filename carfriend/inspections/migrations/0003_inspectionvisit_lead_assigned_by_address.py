@@ -6,11 +6,10 @@ import django.db.models.deletion
 def backfill_visit_leads(apps, schema_editor):
     InspectionVisit = apps.get_model('inspections', 'InspectionVisit')
     Lead = apps.get_model('crm', 'Lead')
-    for visit in InspectionVisit.objects.all():
+    for visit in InspectionVisit.objects.values('id', 'vehicle_id'):
         try:
-            lead = Lead.objects.get(vehicle=visit.vehicle)
-            visit.lead = lead
-            visit.save(update_fields=['lead'])
+            lead = Lead.objects.get(vehicle_id=visit['vehicle_id'])
+            InspectionVisit.objects.filter(id=visit['id']).update(lead=lead)
         except Lead.DoesNotExist:
             pass
 
