@@ -61,7 +61,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         Lead Pipeline
       </a>
-      <a class="nav-item {% if active == 'sellers' %}on{% endif %}" href="/pipeline">
+      <a class="nav-item {% if active == 'sellers' %}on{% endif %}" href="/sellers">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         Sellers
       </a>
@@ -78,6 +78,16 @@
       <a class="nav-item {% if active == 'deals' %}on{% endif %}" href="/deals">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
         Deals
+      </a>
+    </div>
+    {% endif %}
+
+    {% if role == 'inspector' or role == 'admin' %}
+    <div class="nav-group">
+      <div class="gh">Inspections</div>
+      <a class="nav-item {% if active == 'inspector' %}on{% endif %}" href="/inspector">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        My Jobs
       </a>
     </div>
     {% endif %}

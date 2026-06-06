@@ -1,12 +1,13 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from accounts.decorators import admin_required, role_required
+from accounts.decorators import admin_required, role_required, inspector_required
 from accounts.models import User, DealerProfile
 from vehicles.models import Vehicle
 from crm.models import Lead, InspectionJob, Bid
 
-retail_or_admin = role_required('retail', 'admin')
-sales_or_admin  = role_required('sales', 'admin')
+retail_or_admin    = role_required('retail', 'admin')
+sales_or_admin     = role_required('sales', 'admin')
+inspector_or_admin = role_required('inspector', 'admin')
 
 
 @retail_or_admin
@@ -150,3 +151,72 @@ def master_deal_detail(request, vehicle_id):
         'bids':    bids,
         'winning': bids.first(),
     })
+
+
+# ── Inspector (master host) ───────────────────────────────────────────────────
+
+@inspector_or_admin
+def master_inspector_dashboard(request):
+    if request.user.role == 'admin' or request.user.is_superuser:
+        jobs = InspectionJob.objects.all().select_related('vehicle', 'lead', 'inspector')
+    else:
+        jobs = InspectionJob.objects.filter(
+            inspector=request.user
+        ).select_related('vehicle', 'lead')
+
+    pending = [j for j in jobs if j.status == InspectionJob.STATUS_SCHEDULED]
+    done    = [j for j in jobs if j.status in [InspectionJob.STATUS_SUBMITTED, InspectionJob.STATUS_APPROVED]]
+
+    return render(request, 'master/inspector_dashboard.html', {
+        'active':   'inspector',
+        'pending':  pending,
+        'done':     done,
+    })
+
+
+@inspector_or_admin
+def master_inspector_job(request, job_id):
+    job = get_object_or_404(InspectionJob, id=job_id)
+    if request.user.role == 'inspector' and job.inspector_id != request.user.id:
+        return redirect('master_inspector_dashboard')
+    return render(request, 'master/inspector_job.html', {
+        'active': 'inspector',
+        'job':    job,
+    })
+
+
+@inspector_or_admin
+def master_submit_report(request, job_id):
+    job = get_object_or_404(InspectionJob, id=job_id)
+    if request.user.role == 'inspector' and job.inspector_id != request.user.id:
+        return redirect('master_inspector_dashboard')
+
+    if request.method == 'POST':
+        job.exterior_score  = int(request.POST.get('exterior_score', 0))
+        job.interior_score  = int(request.POST.get('interior_score', 0))
+        job.engine_score    = int(request.POST.get('engine_score', 0))
+        job.tyres_score     = int(request.POST.get('tyres_score', 0))
+        job.overall_score   = int(request.POST.get('overall_score', 0))
+        job.condition_grade = job.compute_grade()
+        job.inspector_notes = request.POST.get('inspector_notes', '')
+        job.status          = InspectionJob.STATUS_SUBMITTED
+
+        if request.FILES.get('report_pdf'):
+            job.report_pdf = request.FILES['report_pdf']
+
+        job.save()
+
+        job.vehicle.status                  = Vehicle.STATUS_INSPECTED
+        job.vehicle.inspection_report_ready = True
+        job.vehicle.save()
+
+        try:
+            job.lead.stage = Lead.STAGE_INSP_DONE
+            job.lead.save()
+        except Exception:
+            pass
+
+        messages.success(request, 'Inspection report submitted successfully.')
+        return redirect('master_inspector_dashboard')
+
+    return redirect('master_inspector_job', job_id=job_id)

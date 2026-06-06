@@ -35,7 +35,7 @@ def login_view(request):
                 "admin":     "/",
                 "retail":    "/pipeline",
                 "sales":     "/dealers",
-                "inspector": "/visits",
+                "inspector": "/inspector",
             }.get(u.role, "/")
             return redirect(dest)
         return render(request, "base/signin.html", {"error": "Invalid credentials"})

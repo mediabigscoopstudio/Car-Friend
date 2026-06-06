@@ -45,6 +45,10 @@ urlpatterns = [
     path("dealers/<int:dealer_id>/",                    crm.master_dealer_detail,     name="master_dealer_detail"),
     path("deals",                                       crm.master_deals,             name="deals"),
     path("deals/<int:vehicle_id>/",                     crm.master_deal_detail,       name="master_deal_detail"),
+    # Inspector jobs
+    path("inspector",                                   crm.master_inspector_dashboard, name="master_inspector_dashboard"),
+    path("inspector/<int:job_id>/",                     crm.master_inspector_job,       name="master_inspector_job"),
+    path("inspector/<int:job_id>/submit/",              crm.master_submit_report,       name="master_submit_report"),
     # platform
     path("features", c.feature_toggles, name="features"),
     path("audit", c.audit_log_view, name="audit"),
