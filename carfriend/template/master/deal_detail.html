@@ -1,0 +1,57 @@
+{% extends "base/base_web.html" %}
+{% block title %}Deal · {{ vehicle.display_name }} · Master{% endblock %}
+{% block page_title %}Deal: {{ vehicle.display_name }}{% endblock %}
+
+{% block content %}
+<div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
+
+  <div style="flex:1;min-width:320px">
+    <div class="section-header" style="padding:0 0 10px"><h3 style="font-size:15px;margin:0">All Bids ({{ bids.count }})</h3></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Dealer</th><th>Bid Amount</th><th>Time</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for bid in bids %}
+          <tr {% if forloop.first %}style="background:#f0fdf4"{% endif %}>
+            <td><strong style="font-size:15px;color:{% if forloop.first %}var(--brand){% else %}var(--text-2){% endif %}">#{{ forloop.counter }}</strong></td>
+            <td>
+              <strong>{{ bid.dealer.get_full_name|default:bid.dealer.email }}</strong><br>
+              <small style="color:var(--text-2)">{{ bid.dealer.email }}</small>
+            </td>
+            <td><strong style="font-size:15px;color:{% if forloop.first %}var(--brand){% else %}inherit{% endif %}">&#8377;{{ bid.amount|floatformat:0 }}</strong></td>
+            <td style="font-size:12px;color:var(--text-2)">{{ bid.created_at|date:"d M Y, H:i" }}</td>
+            <td>{% if forloop.first %}<span class="pill pill-green">Winning</span>{% else %}<span class="pill pill-gray">Outbid</span>{% endif %}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-2)">No bids yet</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="width:220px;flex-shrink:0">
+    <div class="table-wrap" style="margin-bottom:12px">
+      <div class="section-header" style="padding:0 0 10px"><h3 style="font-size:15px;margin:0">Vehicle</h3></div>
+      <div style="font-size:13px;display:flex;flex-direction:column;gap:7px">
+        <div><span style="color:var(--text-2)">Car: </span><strong>{{ vehicle.display_name }}</strong></div>
+        <div><span style="color:var(--text-2)">Plate: </span><code>{{ vehicle.plate_number }}</code></div>
+        <div><span style="color:var(--text-2)">Year: </span>{{ vehicle.year }}</div>
+        <div><span style="color:var(--text-2)">Fuel: </span>{{ vehicle.get_fuel_type_display }}</div>
+        <div><span style="color:var(--text-2)">Status: </span><span class="pill pill-gray">{{ vehicle.get_status_display }}</span></div>
+        {% if vehicle.expected_price %}<div><span style="color:var(--text-2)">Expected: </span><strong>&#8377;{{ vehicle.expected_price|floatformat:0 }}</strong></div>{% endif %}
+      </div>
+    </div>
+    {% if winning %}
+    <div class="table-wrap" style="border-color:var(--brand,#015310)">
+      <p style="font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px;margin:0 0 6px">Winning Bid</p>
+      <p style="font-size:24px;font-weight:800;color:var(--brand);margin:0 0 4px">&#8377;{{ winning.amount|floatformat:0 }}</p>
+      <p style="font-size:13px;color:var(--text-2);margin:0">{{ winning.dealer.get_full_name|default:winning.dealer.email }}</p>
+      <p style="font-size:12px;color:var(--text-2);margin:4px 0 0">{{ winning.created_at|date:"d M Y, H:i" }}</p>
+    </div>
+    {% endif %}
+    <a href="/deals" class="btn btn-secondary btn-sm" style="display:block;text-align:center;margin-top:8px">&larr; Deals</a>
+  </div>
+
+</div>
+{% endblock %}

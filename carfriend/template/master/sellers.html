@@ -1,0 +1,37 @@
+{% extends "base/base_web.html" %}
+{% block title %}Sellers · Master{% endblock %}
+{% block page_title %}Sellers{% endblock %}
+
+{% block content %}
+<div class="section-header">
+  <h2>All Sellers <span style="font-size:13px;font-weight:400;color:var(--text-2)">· {{ sellers|length }}</span></h2>
+</div>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>Name</th><th>Email</th><th>Phone</th><th>Cars Listed</th><th>KYC</th><th>Joined</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for seller in sellers %}
+      <tr>
+        <td><strong>{{ seller.get_full_name|default:"—" }}</strong></td>
+        <td><a href="mailto:{{ seller.email }}" style="color:var(--brand)">{{ seller.email }}</a></td>
+        <td>{{ seller.phone|default:"—" }}</td>
+        <td>{{ seller.vehicles.count }}</td>
+        <td>{% if seller.is_kyc_done %}<span class="pill pill-green">Verified</span>{% else %}<span class="pill pill-red">Pending</span>{% endif %}</td>
+        <td style="color:var(--text-2);font-size:12px">{{ seller.created_at|date:"d M Y" }}</td>
+        <td>
+          {% for lead in seller.leads.all %}
+          <a href="/pipeline/{{ lead.id }}/" class="btn btn-primary btn-sm">View Lead</a>
+          {% empty %}
+          <span style="color:var(--text-2);font-size:12px">No leads</span>
+          {% endfor %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-2)">No sellers yet</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

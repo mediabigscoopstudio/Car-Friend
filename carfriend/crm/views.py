@@ -100,9 +100,16 @@ def assign_inspector(request, lead_id):
     lead = get_object_or_404(Lead, id=lead_id)
 
     if request.method == 'POST':
-        inspector_id = request.POST.get('inspector_id')
-        scheduled_at = request.POST.get('scheduled_at')
-        address = request.POST.get('inspection_address', lead.vehicle.inspection_address)
+        inspector_id = request.POST.get('inspector_id', '').strip()
+        scheduled_at = request.POST.get('scheduled_at', '').strip()
+        address = request.POST.get('inspection_address', lead.vehicle.inspection_address).strip()
+
+        if not inspector_id:
+            messages.error(request, 'Please select an inspector. If no inspectors appear, ask an admin to create an inspector account.')
+            return redirect('lead_detail', lead_id=lead_id)
+        if not scheduled_at:
+            messages.error(request, 'Please pick a date and time for the inspection.')
+            return redirect('lead_detail', lead_id=lead_id)
 
         inspector = get_object_or_404(User, id=inspector_id, role=User.ROLE_INSPECTOR)
 

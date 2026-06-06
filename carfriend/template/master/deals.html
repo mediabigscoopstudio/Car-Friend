@@ -1,0 +1,39 @@
+{% extends "base/base_web.html" %}
+{% block title %}Deals · Master{% endblock %}
+{% block page_title %}Deals{% endblock %}
+
+{% block content %}
+<div class="section-header">
+  <h2>Active Deals <span style="font-size:13px;font-weight:400;color:var(--text-2)">· {{ vehicles|length }}</span></h2>
+</div>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>Vehicle</th><th>Seller</th><th>Expected</th><th>Highest Bid</th><th>Total Bids</th><th>Status</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for vehicle in vehicles %}
+      <tr>
+        <td>
+          <strong>{{ vehicle.display_name }}</strong><br>
+          <small style="font-family:monospace;color:var(--text-2)">{{ vehicle.plate_number }}</small>
+        </td>
+        <td>{{ vehicle.seller.get_full_name|default:vehicle.seller.email }}</td>
+        <td>{% if vehicle.expected_price %}&#8377;{{ vehicle.expected_price|floatformat:0 }}{% else %}<span style="color:var(--text-2)">—</span>{% endif %}</td>
+        <td>
+          {% with vehicle.bids.first as top_bid %}
+          {% if top_bid %}<strong style="color:var(--brand)">&#8377;{{ top_bid.amount|floatformat:0 }}</strong>
+          {% else %}<span style="color:var(--text-2)">No bids</span>{% endif %}
+          {% endwith %}
+        </td>
+        <td><strong>{{ vehicle.bids.count }}</strong></td>
+        <td><span class="pill pill-gray">{{ vehicle.get_status_display }}</span></td>
+        <td><a href="/deals/{{ vehicle.id }}/" class="btn btn-primary btn-sm">Bids</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-2)">No active deals yet. Cars appear here once they reach auction stage.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

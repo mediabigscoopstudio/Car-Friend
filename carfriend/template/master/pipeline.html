@@ -1,0 +1,54 @@
+{% extends "base/base_web.html" %}
+{% block title %}Lead Pipeline · Master{% endblock %}
+{% block page_title %}Lead Pipeline{% endblock %}
+
+{% block extra_head %}
+<style>
+  .kanban-wrap { display:flex; gap:14px; overflow-x:auto; padding-bottom:16px; align-items:flex-start }
+  .k-col { min-width:220px; flex-shrink:0 }
+  .k-col-head { background:var(--ink,#111); color:#fff; border-radius:8px 8px 0 0; padding:8px 12px; display:flex; justify-content:space-between; align-items:center }
+  .k-col-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px }
+  .k-col-count { background:rgba(255,255,255,.15); font-size:11px; font-weight:700; padding:1px 7px; border-radius:100px }
+  .k-col-body { border:1px solid var(--border,#e5e7eb); border-top:none; border-radius:0 0 8px 8px; padding:8px; min-height:160px; background:#fff; display:flex; flex-direction:column; gap:7px }
+  .k-card { border:1px solid var(--border,#e5e7eb); border-radius:7px; padding:10px; text-decoration:none; display:block; background:#f9fafb; transition:border-color .15s }
+  .k-card:hover { border-color:var(--brand,#015310) }
+  .k-car { font-weight:700; font-size:13px; color:#111; margin-bottom:2px }
+  .k-plate { font-size:11px; font-family:monospace; color:#9aa0a8; margin-bottom:5px }
+  .k-seller { font-size:12px; color:#6b7280 }
+  .k-price { font-size:12px; font-weight:600; color:var(--brand,#015310); margin-top:3px }
+  .k-empty { font-size:12px; color:#9aa0a8; text-align:center; padding:16px 8px }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="section-header">
+  <h2>Lead Pipeline <span style="font-size:13px;font-weight:400;color:var(--text-2)">· {{ total }} total</span></h2>
+</div>
+
+<div class="kanban-wrap">
+  {% for stage_val, stage_data in stages.items %}
+  <div class="k-col">
+    <div class="k-col-head">
+      <span class="k-col-title">{{ stage_data.label }}</span>
+      <span class="k-col-count">{{ stage_data.count }}</span>
+    </div>
+    <div class="k-col-body">
+      {% if stage_data.leads %}
+        {% for lead in stage_data.leads %}
+        <a class="k-card" href="/pipeline/{{ lead.id }}/">
+          <div class="k-car">{{ lead.vehicle.display_name }}</div>
+          <div class="k-plate">{{ lead.vehicle.plate_number }}</div>
+          <div class="k-seller">{{ lead.seller.get_full_name|default:lead.seller.email }}</div>
+          {% if lead.vehicle.expected_price %}
+          <div class="k-price">&#8377;{{ lead.vehicle.expected_price|floatformat:0 }}</div>
+          {% endif %}
+        </a>
+        {% endfor %}
+      {% else %}
+        <div class="k-empty">No leads</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

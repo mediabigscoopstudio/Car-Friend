@@ -5,6 +5,7 @@ from django.urls import path
 from accounts import views as a
 from auctions import views as au
 from core import views as c
+from crm import views_master as crm
 from inspections import views as ins
 from kyc import views as k
 from payments import views as p
@@ -33,6 +34,17 @@ urlpatterns = [
     path("auction_reactivate/<int:id>", au.auction_reactivate, name="auction_reactivate"),
     path("auction_pause/<int:id>", au.auction_pause, name="auction_pause"),
     path("bid_void/<int:id>", au.bid_void, name="bid_void"),
+    # Retail CRM — lead pipeline + sellers
+    path("pipeline",                                    crm.master_pipeline,          name="master_pipeline"),
+    path("pipeline/<int:lead_id>/",                     crm.master_lead_detail,       name="master_lead_detail"),
+    path("pipeline/<int:lead_id>/move/",                crm.master_lead_move,         name="master_lead_move"),
+    path("pipeline/<int:lead_id>/assign-inspector/",    crm.master_assign_inspector,  name="master_assign_inspector"),
+    path("sellers",                                     crm.master_sellers,           name="sellers"),
+    # Sales CRM — dealer network + deals
+    path("dealers",                                     crm.master_dealers,           name="dealers"),
+    path("dealers/<int:dealer_id>/",                    crm.master_dealer_detail,     name="master_dealer_detail"),
+    path("deals",                                       crm.master_deals,             name="deals"),
+    path("deals/<int:vehicle_id>/",                     crm.master_deal_detail,       name="master_deal_detail"),
     # platform
     path("features", c.feature_toggles, name="features"),
     path("audit", c.audit_log_view, name="audit"),

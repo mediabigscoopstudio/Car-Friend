@@ -1,0 +1,125 @@
+{% extends "base/base_web.html" %}
+{% block title %}Lead · {{ vehicle.display_name }} · Master{% endblock %}
+{% block page_title %}Lead: {{ vehicle.display_name }}{% endblock %}
+
+{% block content %}
+<div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
+
+  <!-- Left column -->
+  <div style="flex:1;min-width:320px">
+
+    <!-- Vehicle card -->
+    <div class="table-wrap" style="margin-bottom:20px">
+      <div class="section-header" style="padding:0 0 10px"><h3 style="font-size:15px;margin:0">Vehicle Details</h3></div>
+      <table>
+        <tbody>
+          <tr><td style="color:var(--text-2);width:140px">Plate</td><td><code>{{ vehicle.plate_number }}</code></td></tr>
+          <tr><td style="color:var(--text-2)">Make / Model</td><td><strong>{{ vehicle.display_name }}</strong></td></tr>
+          <tr><td style="color:var(--text-2)">Year</td><td>{{ vehicle.year }}</td></tr>
+          <tr><td style="color:var(--text-2)">Fuel</td><td>{{ vehicle.get_fuel_type_display }}</td></tr>
+          <tr><td style="color:var(--text-2)">Odometer</td><td>{{ vehicle.odometer_km|default:"—" }} km</td></tr>
+          <tr><td style="color:var(--text-2)">City</td><td>{{ vehicle.city|default:"—" }}</td></tr>
+          <tr><td style="color:var(--text-2)">Expected Price</td><td><strong>{% if vehicle.expected_price %}&#8377;{{ vehicle.expected_price|floatformat:0 }}{% else %}—{% endif %}</strong></td></tr>
+          <tr><td style="color:var(--text-2)">Status</td><td><span class="pill pill-gray">{{ vehicle.get_status_display }}</span></td></tr>
+          {% if vehicle.inspection_address %}<tr><td style="color:var(--text-2)">Insp. Address</td><td>{{ vehicle.inspection_address }}</td></tr>{% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Move stage -->
+    <div class="table-wrap" style="margin-bottom:20px">
+      <div class="section-header" style="padding:0 0 10px"><h3 style="font-size:15px;margin:0">Move Stage</h3></div>
+      <p style="font-size:13px;margin:0 0 10px">Current: <span class="pill pill-gray">{{ lead.stage_label }}</span></p>
+      <form method="POST" action="/pipeline/{{ lead.id }}/move/" style="display:flex;gap:8px;flex-wrap:wrap">
+        {% csrf_token %}
+        <select name="stage" style="padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;flex:1;min-width:160px">
+          {% for val, label in stage_choices %}
+          <option value="{{ val }}" {% if val == lead.stage %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary btn-sm">Move</button>
+      </form>
+    </div>
+
+    <!-- Assign inspector -->
+    <div class="table-wrap" style="margin-bottom:20px">
+      <div class="section-header" style="padding:0 0 10px"><h3 style="font-size:15px;margin:0">Assign Inspector</h3></div>
+      {% if inspection_job %}
+      <p style="font-size:13px;color:var(--text-2);margin:0 0 12px">
+        Currently assigned: <strong>{{ inspection_job.inspector.get_full_name|default:inspection_job.inspector.email }}</strong>
+        &mdash; {{ inspection_job.scheduled_at|date:"d M Y, H:i" }}
+        &mdash; <span class="pill pill-gray">{{ inspection_job.get_status_display }}</span>
+      </p>
+      {% endif %}
+      {% if inspectors %}
+      <form method="POST" action="/pipeline/{{ lead.id }}/assign-inspector/">
+        {% csrf_token %}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div>
+            <label style="font-size:12px;color:var(--text-2);display:block;margin-bottom:4px">Inspector</label>
+            <select name="inspector_id" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px" required>
+              <option value="">— Select —</option>
+              {% for inspector in inspectors %}
+              <option value="{{ inspector.id }}">{{ inspector.get_full_name|default:inspector.email }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--text-2);display:block;margin-bottom:4px">Date &amp; Time</label>
+            <input type="datetime-local" name="scheduled_at" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px" required>
+          </div>
+        </div>
+        <div style="margin-bottom:10px">
+          <label style="font-size:12px;color:var(--text-2);display:block;margin-bottom:4px">Inspection Address</label>
+          <input type="text" name="inspection_address" value="{{ vehicle.inspection_address }}" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px" placeholder="Address for inspector visit">
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Assign &amp; Schedule Inspection</button>
+      </form>
+      {% else %}
+      <p style="font-size:13px;color:var(--text-2)">No inspectors in the system yet. <a href="/add_user" style="color:var(--brand)">Add an inspector user</a> first.</p>
+      {% endif %}
+    </div>
+
+    <!-- Bids -->
+    {% if bids %}
+    <div class="table-wrap">
+      <div class="section-header" style="padding:0 0 10px"><h3 style="font-size:15px;margin:0">Bids</h3></div>
+      <table>
+        <thead><tr><th>Dealer</th><th>Amount</th><th>Time</th></tr></thead>
+        <tbody>
+          {% for bid in bids %}
+          <tr>
+            <td>{{ bid.dealer.get_full_name|default:bid.dealer.email }}</td>
+            <td><strong>&#8377;{{ bid.amount|floatformat:0 }}</strong> {% if bid.is_winning %}<span class="pill pill-green">Winning</span>{% endif %}</td>
+            <td style="color:var(--text-2);font-size:12px">{{ bid.created_at|date:"d M Y, H:i" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- Right column -->
+  <div style="width:240px;flex-shrink:0">
+    <div class="table-wrap">
+      <div class="section-header" style="padding:0 0 10px"><h3 style="font-size:15px;margin:0">Seller</h3></div>
+      <div style="font-size:13px;display:flex;flex-direction:column;gap:8px">
+        <div><span style="color:var(--text-2)">Name: </span><strong>{{ seller.get_full_name|default:"—" }}</strong></div>
+        <div><span style="color:var(--text-2)">Email: </span><a href="mailto:{{ seller.email }}" style="color:var(--brand)">{{ seller.email }}</a></div>
+        <div><span style="color:var(--text-2)">Phone: </span>{{ seller.phone|default:"—" }}</div>
+        <div><span style="color:var(--text-2)">KYC: </span>{% if seller.is_kyc_done %}<span class="pill pill-green">Verified</span>{% else %}<span class="pill pill-red">Pending</span>{% endif %}</div>
+        <div><span style="color:var(--text-2)">Lead ID: </span><strong>#{{ lead.id }}</strong></div>
+        <div><span style="color:var(--text-2)">Stage: </span><span class="pill pill-gray">{{ lead.stage_label }}</span></div>
+        <div><span style="color:var(--text-2)">Created: </span>{{ lead.created_at|date:"d M Y" }}</div>
+      </div>
+      {% if seller.phone %}
+      <a href="https://wa.me/91{{ seller.phone }}" target="_blank" class="btn btn-primary btn-sm" style="margin-top:12px;display:block;text-align:center;background:#25D366;border-color:#25D366">WhatsApp</a>
+      {% endif %}
+    </div>
+    <a href="/pipeline" class="btn btn-secondary btn-sm" style="display:block;text-align:center;margin-top:8px">&larr; Pipeline</a>
+  </div>
+
+</div>
+{% endblock %}

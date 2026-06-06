@@ -1,0 +1,47 @@
+{% extends "base/base_web.html" %}
+{% block title %}{{ dealer.dealership_name|default:dealer.user.email }} · Dealer · Master{% endblock %}
+{% block page_title %}Dealer: {{ dealer.dealership_name|default:dealer.user.email }}{% endblock %}
+
+{% block content %}
+<div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
+
+  <div style="flex:1;min-width:320px">
+    <div class="section-header" style="padding:0 0 10px"><h3 style="font-size:15px;margin:0">Bid History ({{ bids.count }})</h3></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Vehicle</th><th>Bid Amount</th><th>Date</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for bid in bids %}
+          <tr>
+            <td><strong>{{ bid.vehicle.display_name }}</strong><br><small style="font-family:monospace;color:var(--text-2)">{{ bid.vehicle.plate_number }}</small></td>
+            <td><strong>&#8377;{{ bid.amount|floatformat:0 }}</strong></td>
+            <td style="font-size:12px;color:var(--text-2)">{{ bid.created_at|date:"d M Y, H:i" }}</td>
+            <td>{% if bid.is_winning %}<span class="pill pill-green">Winning</span>{% else %}<span class="pill pill-gray">Outbid</span>{% endif %}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-2)">No bids yet</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="width:220px;flex-shrink:0">
+    <div class="table-wrap">
+      <div class="section-header" style="padding:0 0 10px"><h3 style="font-size:15px;margin:0">Dealer Profile</h3></div>
+      <div style="font-size:13px;display:flex;flex-direction:column;gap:8px">
+        <div><span style="color:var(--text-2)">Dealership: </span><strong>{{ dealer.dealership_name|default:"—" }}</strong></div>
+        <div><span style="color:var(--text-2)">Email: </span><a href="mailto:{{ dealer.user.email }}" style="color:var(--brand)">{{ dealer.user.email }}</a></div>
+        <div><span style="color:var(--text-2)">City: </span>{{ dealer.city|default:"—" }}</div>
+        <div><span style="color:var(--text-2)">GST: </span><code>{{ dealer.gstin|default:"—" }}</code></div>
+        <div><span style="color:var(--text-2)">Budget: </span>&#8377;{{ dealer.budget_min|default:0 }} – &#8377;{{ dealer.budget_max|default:0 }}</div>
+        <div><span style="color:var(--text-2)">Brands: </span>{{ dealer.brand_interest|default:"—" }}</div>
+        <div><span style="color:var(--text-2)">Status: </span>{% if dealer.is_verified %}<span class="pill pill-green">Verified</span>{% else %}<span class="pill pill-red">Pending</span>{% endif %}</div>
+        <div><span style="color:var(--text-2)">Joined: </span>{{ dealer.created_at|date:"d M Y" }}</div>
+      </div>
+    </div>
+    <a href="/dealers" class="btn btn-secondary btn-sm" style="display:block;text-align:center;margin-top:8px">&larr; Dealer Network</a>
+  </div>
+
+</div>
+{% endblock %}
