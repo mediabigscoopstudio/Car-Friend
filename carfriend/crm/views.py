@@ -4,6 +4,7 @@ from django.contrib import messages
 from accounts.models import User, DealerProfile
 from vehicles.models import Vehicle
 from crm.models import Lead, InspectionJob, Bid
+from inspections.models import InspectionVisit
 
 
 def _internal_check(request):
@@ -112,6 +113,21 @@ def assign_inspector(request, lead_id):
             return redirect('lead_detail', lead_id=lead_id)
 
         inspector = get_object_or_404(User, id=inspector_id, role=User.ROLE_INSPECTOR)
+
+        # Create/update InspectionVisit so the inspector sees it in inspection.carfriend.in
+        visit, visit_created = InspectionVisit.objects.get_or_create(
+            vehicle=lead.vehicle,
+            defaults={
+                'inspector':    inspector,
+                'scheduled_at': scheduled_at,
+                'status':       InspectionVisit.Status.SCHEDULED,
+            }
+        )
+        if not visit_created:
+            visit.inspector    = inspector
+            visit.scheduled_at = scheduled_at
+            visit.status       = InspectionVisit.Status.SCHEDULED
+            visit.save()
 
         job, created = InspectionJob.objects.get_or_create(
             lead=lead,
