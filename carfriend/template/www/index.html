@@ -1,133 +1,131 @@
 {% extends "www/base.html" %}
+{% load static %}
 {% block nav_home %}active{% endblock %}
 
 {% block extra_css %}
-  /* ── Hero ── */
+  /* ── Instant-price hero ── */
   .hero {
+    position: relative;
     background: linear-gradient(135deg, var(--cf-azure) 0%, var(--cf-azure-700) 100%);
     color: #fff;
-    padding: 5rem 0 4rem;
-    position: relative;
+    padding: 4.5rem 0;
     overflow: hidden;
   }
-  .hero::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-    pointer-events: none;
+  /* trust photo sits behind a dark azure gradient; if the file is absent the
+     gradient + azure base still render, so this degrades gracefully. */
+  .hero__photo {
+    position: absolute; inset: 0; z-index: 0;
+    background-color: var(--cf-azure);
+    background-position: center; background-size: cover; background-repeat: no-repeat;
   }
-  .hero-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: .4rem;
-    background: rgba(255,255,255,.15);
-    backdrop-filter: blur(6px);
-    border: 1px solid rgba(255,255,255,.25);
-    border-radius: 50px;
-    padding: .35rem 1rem;
-    font-size: .8rem;
-    font-weight: 600;
-    margin-bottom: 1.5rem;
-    color: #fff;
+  .hero .container { position: relative; z-index: 1; }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: .45rem;
+    background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.25);
+    border-radius: 50px; padding: .35rem 1rem;
+    font-size: .8rem; font-weight: 600; margin-bottom: 1.25rem; color: #fff;
   }
   .hero h1 {
-    font-size: 3.2rem;
-    font-weight: 800;
-    line-height: 1.15;
-    margin-bottom: 1.25rem;
+    font-family: var(--cf-font-display);
+    font-size: clamp(2.1rem, 4.5vw, 3.2rem);
+    font-weight: 700; line-height: 1.12; color: #fff; margin-bottom: 1rem;
   }
   .hero h1 .highlight { color: var(--cf-sky); }
-  .hero p.lead {
-    font-size: 1.1rem;
-    opacity: .9;
-    max-width: 520px;
-    line-height: 1.7;
-    margin-bottom: 2rem;
+  .hero .lead {
+    font-size: 1.12rem; color: rgba(255,255,255,.85);
+    max-width: 30rem; margin-bottom: 1.75rem;
   }
-  .hero-cta .btn-white {
-    background: var(--cf-white);
-    color: var(--cf-blue);
-    font-family: var(--cf-font-display);
-    font-weight: 700;
-    border-radius: 10px;
-    padding: .75rem 1.8rem;
-    font-size: 1rem;
-    border: none;
-    transition: transform .15s, box-shadow .15s;
-    box-shadow: 0 4px 16px rgba(0,0,0,.2);
-  }
-  .hero-cta .btn-white:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.25); }
-  .hero-cta .btn-ghost {
-    background: transparent;
-    color: #fff;
-    font-family: var(--cf-font-display);
-    font-weight: 600;
-    border: 2px solid rgba(255,255,255,.5);
-    border-radius: 10px;
-    padding: .72rem 1.6rem;
-    font-size: .95rem;
-    transition: background .15s, border-color .15s;
-  }
-  .hero-cta .btn-ghost:hover { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.8); }
-  .hero-stats {
-    margin-top: 3rem;
-    display: flex;
-    gap: 2.5rem;
-    flex-wrap: wrap;
-  }
-  .hero-stat-val { font-family: var(--cf-font-display); font-size: 1.6rem; font-weight: 800; }
-  .hero-stat-lbl { font-size: .78rem; opacity: .75; }
-  .hero-img-wrap {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .hero-car-card {
-    background: rgba(255,255,255,.12);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,.2);
-    border-radius: 20px;
-    padding: 1.5rem;
-    max-width: 340px;
-    width: 100%;
-  }
-  .car-card-badge {
-    background: var(--cf-coral);
-    color: #fff;
-    font-family: var(--cf-font-display);
-    font-weight: 700;
-    font-size: .7rem;
-    letter-spacing: .5px;
-    padding: .25rem .7rem;
-    border-radius: 50px;
-    text-transform: uppercase;
-  }
-  .car-card-score {
-    display: inline-flex;
-    align-items: center;
-    gap: .3rem;
-    background: rgba(255,255,255,.15);
-    border-radius: 8px;
-    padding: .3rem .6rem;
-    font-size: .8rem;
-    font-weight: 600;
-  }
-  .score-circle {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: var(--cf-teal);
-    color: var(--cf-white);
-    font-family: var(--cf-font-display);
-    font-weight: 800;
-    font-size: .8rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+  .hero-trust { list-style: none; padding: 0; margin: 0; display: grid; gap: .6rem; }
+  .hero-trust li { display: flex; align-items: center; gap: .6rem; font-size: .95rem; color: rgba(255,255,255,.9); }
+  .hero-trust i { color: var(--cf-teal); font-size: 1.05rem; }
 
+  /* white price card */
+  .price-card {
+    background: #fff; border-radius: var(--cf-radius);
+    border: 1px solid var(--cf-mist);
+    box-shadow: 0 18px 50px rgba(18,46,90,.22);
+    padding: 1.75rem;
+  }
+  .price-card h2 {
+    font-family: var(--cf-font-display); font-size: 1.3rem; font-weight: 600;
+    color: var(--cf-azure); margin-bottom: .35rem;
+  }
+  .price-card .sub { color: var(--cf-slate); font-size: .9rem; margin-bottom: 1.1rem; }
+
+  /* IND number-plate field */
+  .plate-field {
+    display: flex; align-items: stretch;
+    border: 2px solid var(--cf-mist); border-radius: 10px; overflow: hidden;
+    transition: border-color .15s, box-shadow .15s; background: #fff;
+  }
+  .plate-field:focus-within { border-color: var(--cf-blue); box-shadow: 0 0 0 3px var(--cf-blue-100); }
+  .plate-field.is-invalid { border-color: var(--cf-danger); box-shadow: 0 0 0 3px var(--cf-danger-tint); }
+  .plate-ind {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: var(--cf-blue); color: #fff; padding: 0 .75rem; min-width: 58px;
+  }
+  .plate-ind .flag { width: 18px; height: 12px; border-radius: 2px; margin-bottom: 3px;
+    background: linear-gradient(#FF9933 33%, #fff 33% 66%, #138808 66%); }
+  .plate-ind span { font-family: var(--cf-font-display); font-weight: 700; font-size: .8rem; letter-spacing: .05em; }
+  .plate-field input {
+    flex: 1; border: 0; outline: 0; padding: .85rem 1rem; min-width: 0;
+    font-family: var(--cf-font-display); font-weight: 600; font-size: 1.25rem;
+    letter-spacing: .12em; text-transform: uppercase; color: var(--cf-ink); background: #fff;
+  }
+  .plate-field input::placeholder { color: var(--cf-slate); opacity: .55; letter-spacing: .08em; font-size: 1rem; }
+
+  .btn-estimate {
+    width: 100%; margin-top: 1rem;
+    background: var(--cf-blue); color: #fff; border: 0; border-radius: 10px;
+    font-family: var(--cf-font-sans); font-weight: 600; font-size: 1rem;
+    padding: .85rem 1rem; cursor: pointer; transition: background .15s;
+    display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  }
+  .btn-estimate:hover:not(:disabled) { background: var(--cf-blue-700); }
+  .btn-estimate:disabled { opacity: .65; cursor: not-allowed; }
+  .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.5);
+    border-top-color: #fff; border-radius: 50%; animation: cf-spin .7s linear infinite; }
+  @keyframes cf-spin { to { transform: rotate(360deg); } }
+
+  .field-msg { font-size: .82rem; margin-top: .6rem; }
+  .field-msg.err { color: var(--cf-danger); }
+
+  .hero-or { display: flex; align-items: center; gap: .75rem; margin: 1.25rem 0 .9rem;
+    color: var(--cf-slate); font-size: .8rem; font-weight: 600; }
+  .hero-or::before, .hero-or::after { content: ""; flex: 1; height: 1px; background: var(--cf-mist); }
+
+  .chip-row { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .brand-chip {
+    border: 1px solid var(--cf-mist); background: #fff; color: var(--cf-ink);
+    border-radius: 50px; padding: .4rem .9rem; font-size: .85rem; font-weight: 600;
+    cursor: pointer; transition: all .15s; font-family: var(--cf-font-sans);
+  }
+  .brand-chip:hover { border-color: var(--cf-sky); background: var(--cf-sky-tint); }
+  .brand-chip.selected { border-color: var(--cf-blue); background: var(--cf-sky-tint); color: var(--cf-blue); }
+  .brand-select { width: 100%; margin-top: .6rem; padding: .7rem .85rem; border: 1px solid var(--cf-mist);
+    border-radius: 10px; font-family: var(--cf-font-sans); font-size: .95rem; color: var(--cf-ink); background: #fff; }
+  .brand-select:focus { outline: 0; border-color: var(--cf-blue); box-shadow: 0 0 0 3px var(--cf-blue-100); }
+  .view-all { display: inline-block; margin-top: .7rem; color: var(--cf-blue); font-weight: 600;
+    font-size: .85rem; text-decoration: none; }
+  .view-all:hover { text-decoration: underline; }
+
+  /* result reveal */
+  .price-result { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--cf-mist); }
+  .result-car { font-family: var(--cf-font-display); font-weight: 600; color: var(--cf-azure); font-size: 1.05rem; }
+  .result-meta { color: var(--cf-slate); font-size: .85rem; margin-bottom: .75rem; }
+  .price-band { font-family: var(--cf-font-display); font-weight: 700; color: var(--cf-azure); font-size: 1.8rem; line-height: 1.1; }
+  .price-band small { display: block; font-family: var(--cf-font-sans); font-weight: 500;
+    font-size: .78rem; color: var(--cf-slate); margin-top: .15rem; }
+  .phone-row { display: flex; gap: .5rem; margin-top: 1rem; }
+  .phone-row input { flex: 1; min-width: 0; border: 1px solid var(--cf-mist); border-radius: 10px;
+    padding: .8rem 1rem; font-family: var(--cf-font-sans); font-size: 1rem; color: var(--cf-ink); }
+  .phone-row input:focus { outline: 0; border-color: var(--cf-blue); box-shadow: 0 0 0 3px var(--cf-blue-100); }
+  .btn-offer { background: var(--cf-blue); color: #fff; border: 0; border-radius: 10px; font-weight: 600;
+    padding: .8rem 1.1rem; white-space: nowrap; cursor: pointer; }
+  .btn-offer:hover { background: var(--cf-blue-700); }
+  .lead-done { color: var(--cf-teal-dark); font-weight: 600; margin-top: 1rem; display: flex; align-items: center; gap: .5rem; }
+  .hidden { display: none !important; }
+  @media (max-width: 991px) { .hero { padding: 3rem 0; } .price-card { margin-top: 2rem; } }
   /* ── Ticker ── */
   .ticker-strip {
     background: var(--cf-azure);
@@ -369,82 +367,68 @@
 
 <!-- ── HERO ── -->
 <section class="hero">
+  <div class="hero__photo" style="background-image: linear-gradient(135deg, rgba(18,46,90,.80), rgba(27,63,115,.82)), url('{% static 'images/hero-trust.webp' %}');"></div>
   <div class="container">
     <div class="row align-items-center g-5">
+      <!-- left: pitch over trust photo -->
       <div class="col-lg-6">
-        <div class="hero-badge">
-          <i class="bi bi-shield-check-fill"></i>
-          India's #1 Certified Car Marketplace
-        </div>
-        <h1>Buy &amp; Sell Cars<br>with <span class="highlight">Complete</span><br>Confidence</h1>
-        <p class="lead">Every car is professionally inspected and graded. Transparent auctions. Zero hidden costs. Maximum value for sellers.</p>
-        <div class="hero-cta d-flex flex-wrap gap-3">
-          <a href="/how-it-works/" class="btn btn-white">
-            <i class="bi bi-play-circle me-2"></i>How It Works
-          </a>
-          {% if request.user.is_authenticated %}
-            <a href="/auth/seller/dashboard/" class="btn btn-ghost">
-              <i class="bi bi-speedometer2 me-2"></i>My Dashboard
-            </a>
-          {% else %}
-            <a href="/auth/register/" class="btn btn-ghost">
-              <i class="bi bi-car-front me-2"></i>Sell My Car
-            </a>
-          {% endif %}
-        </div>
-        <div class="hero-stats">
-          <div>
-            <div class="hero-stat-val">500+</div>
-            <div class="hero-stat-lbl">Cars Inspected</div>
-          </div>
-          <div>
-            <div class="hero-stat-val">₹0</div>
-            <div class="hero-stat-lbl">Hidden Fees</div>
-          </div>
-          <div>
-            <div class="hero-stat-val">48hrs</div>
-            <div class="hero-stat-lbl">Avg. Sale Time</div>
-          </div>
-        </div>
+        <div class="hero-eyebrow"><i class="bi bi-lightning-charge-fill"></i> Instant car price</div>
+        <h1>Sell your car<br>in <span class="highlight">minutes</span></h1>
+        <p class="lead">Get doorstep pickup and instant payment. Enter your number plate for a free, instant estimate.</p>
+        <ul class="hero-trust">
+          <li><i class="bi bi-check-circle-fill"></i> Free doorstep inspection &amp; pickup</li>
+          <li><i class="bi bi-check-circle-fill"></i> Instant payment, zero hidden charges</li>
+          <li><i class="bi bi-check-circle-fill"></i> RC transfer handled for you</li>
+        </ul>
       </div>
+
+      <!-- right: instant-price card -->
       <div class="col-lg-6">
-        <div class="hero-img-wrap">
-          <div class="hero-car-card">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-              <div>
-                <div class="car-card-badge">Live Auction</div>
-                <div style="color:#fff;font-family:var(--cf-font-display);font-weight:700;font-size:1rem;margin-top:.5rem;">
-                  Maruti Swift ZXi 2022
-                </div>
-                <div style="color:rgba(255,255,255,.7);font-size:.78rem;">22,000 km · Petrol · Delhi</div>
+        <div class="price-card">
+          <h2>Get your car's price now</h2>
+          <p class="sub">Enter your registration number to begin.</p>
+
+          <!-- step 1: plate / brand entry -->
+          <div id="plateStep">
+            <label class="plate-field" id="plateField" for="plateInput">
+              <span class="plate-ind"><span class="flag"></span><span>IND</span></span>
+              <input id="plateInput" type="text" autocomplete="off" maxlength="13"
+                     placeholder="GJ 05 MK 2024" aria-label="Vehicle number plate">
+            </label>
+            <div class="field-msg err hidden" id="plateMsg"></div>
+            <button class="btn-estimate" id="estimateBtn" type="button">
+              <span class="label">Get instant car price</span>
+            </button>
+
+            <div class="hero-or">OR Select your brand</div>
+            <div class="chip-row" id="brandChips"></div>
+            <select class="brand-select hidden" id="modelSelect" aria-label="Select model"></select>
+            <select class="brand-select hidden" id="yearSelect" aria-label="Select year"></select>
+            <a href="/vehicles/list-car/" class="view-all">View all brands &rarr;</a>
+          </div>
+
+          <!-- step 2: result + lead capture -->
+          <div class="price-result hidden" id="resultStep">
+            <div class="result-car" id="resultCar"></div>
+            <div class="result-meta" id="resultMeta"></div>
+            <div class="price-band" id="priceBand"></div>
+            <div id="leadForm">
+              <div class="phone-row">
+                <input id="phoneInput" type="tel" inputmode="numeric" maxlength="10"
+                       placeholder="10-digit mobile number" aria-label="Mobile number">
+                <button class="btn-offer" id="offerBtn" type="button">See my offer</button>
               </div>
-              <div class="car-card-score">
-                <div class="score-circle">A</div>
-                <div>
-                  <div style="font-size:.75rem;color:#fff;">Score</div>
-                  <div style="color:#fff;font-weight:700;">88/100</div>
-                </div>
-              </div>
+              <div class="field-msg err hidden" id="phoneMsg"></div>
             </div>
-            <div class="d-flex justify-content-between align-items-center mt-3">
-              <div>
-                <div style="color:rgba(255,255,255,.7);font-size:.72rem;">Current Bid</div>
-                <div style="color:#fff;font-family:var(--cf-font-display);font-weight:800;font-size:1.3rem;">₹5,40,000</div>
-              </div>
-              <div style="text-align:right;">
-                <div style="color:rgba(255,255,255,.7);font-size:.72rem;">Ends in</div>
-                <div style="color:var(--cf-coral);font-family:var(--cf-font-display);font-weight:700;font-size:.9rem;">14:32</div>
-              </div>
-            </div>
-            <div style="background:rgba(255,255,255,.1);border-radius:6px;height:4px;margin-top:.75rem;">
-              <div style="background:var(--cf-coral);width:68%;height:100%;border-radius:6px;"></div>
-            </div>
+            <div class="lead-done hidden" id="leadDone"><i class="bi bi-check-circle-fill"></i> <span></span></div>
+            <a href="#" class="view-all" id="resetLink">&#8635; Check another car</a>
           </div>
         </div>
       </div>
     </div>
   </div>
 </section>
+
 
 <!-- ── TICKER ── -->
 <div class="ticker-strip">
@@ -853,4 +837,173 @@
   </div>
 </section>
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var CSRF = "{{ csrf_token }}";
+  var ESTIMATE_URL = "{% url 'estimate_price' %}";
+  var CAPTURE_URL = "{% url 'capture_lead' %}";
+
+  // Popular Indian brands as text chips (no third-party logos / trademarks).
+  var BRANDS = {
+    "Maruti Suzuki": ["Swift", "Baleno", "Dzire", "WagonR", "Brezza", "Ertiga"],
+    "Hyundai": ["i20", "Creta", "Venue", "Verna", "Grand i10"],
+    "Tata": ["Nexon", "Punch", "Tiago", "Harrier", "Altroz"],
+    "Mahindra": ["Scorpio", "XUV700", "Thar", "Bolero", "XUV300"],
+    "Honda": ["City", "Amaze", "Jazz", "WR-V"],
+    "Toyota": ["Innova", "Fortuner", "Glanza", "Urban Cruiser"],
+    "Kia": ["Seltos", "Sonet", "Carens"],
+    "Renault": ["Kwid", "Triber", "Kiger"]
+  };
+
+  var PLATE_RE = /^[A-Z]{2}[0-9]{1,2}[A-Z]{0,3}[0-9]{1,4}$/;
+  var BH_RE = /^[0-9]{2}BH[0-9]{4}[A-Z]{1,2}$/;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var state = { vehicle: null, price: null, plate: "", source: "plate" };
+
+  var plateInput = $("plateInput"), plateField = $("plateField"), plateMsg = $("plateMsg");
+  var estimateBtn = $("estimateBtn"), brandChips = $("brandChips");
+  var modelSelect = $("modelSelect"), yearSelect = $("yearSelect");
+  var plateStep = $("plateStep"), resultStep = $("resultStep");
+  if (!plateInput) { return; }
+
+  function norm(p) { return (p || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
+  function validPlate(p) { return PLATE_RE.test(p) || BH_RE.test(p); }
+  function rupee(n) { return "₹" + Number(n).toLocaleString("en-IN"); }
+
+  function showMsg(el, text) { el.textContent = text; el.classList.remove("hidden"); }
+  function hide(el) { el.classList.add("hidden"); }
+
+  plateInput.addEventListener("input", function () {
+    plateField.classList.remove("is-invalid");
+    hide(plateMsg);
+  });
+
+  function setLoading(btn, on, label) {
+    btn.disabled = on;
+    btn.innerHTML = on
+      ? '<span class="spinner"></span> Checking…'
+      : '<span class="label">' + label + '</span>';
+  }
+
+  function postJSON(url, payload) {
+    return fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF },
+      body: JSON.stringify(payload)
+    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); });
+  }
+
+  function showResult(d) {
+    state.vehicle = d.vehicle; state.price = d.price;
+    state.plate = d.plate_number || state.plate; state.source = d.source || "plate";
+    var v = d.vehicle || {};
+    $("resultCar").textContent = [v.year, v.make, v.model].filter(Boolean).join(" ") || "Your car";
+    $("resultMeta").textContent = [v.fuel, state.plate].filter(Boolean).join(" · ");
+    $("priceBand").innerHTML = rupee(d.price.low) + " – " + rupee(d.price.high) +
+      "<small>Estimated price band · final offer after free inspection</small>";
+    hide(plateStep); resultStep.classList.remove("hidden");
+    $("leadDone").classList.add("hidden");
+    $("leadForm").classList.remove("hidden");
+  }
+
+  var busy = false;
+  function runEstimate(payload, btn, label) {
+    if (busy) { return; }
+    busy = true; setLoading(btn, true, label);
+    postJSON(ESTIMATE_URL, payload).then(function (res) {
+      busy = false; setLoading(btn, false, label);
+      if (res.ok && res.data.ok) { showResult(res.data); }
+      else {
+        var msg = (res.data && res.data.error) || "Something went wrong. Please try again.";
+        plateField.classList.add("is-invalid");
+        showMsg(plateMsg, msg);
+        if (res.data && res.data.fallback) { brandChips.scrollIntoView({ behavior: "smooth", block: "nearest" }); }
+      }
+    }).catch(function () {
+      busy = false; setLoading(btn, false, label);
+      plateField.classList.add("is-invalid");
+      showMsg(plateMsg, "Network error. Please check your connection and try again.");
+    });
+  }
+
+  estimateBtn.addEventListener("click", function () {
+    var p = norm(plateInput.value);
+    if (!validPlate(p)) {
+      plateField.classList.add("is-invalid");
+      showMsg(plateMsg, "Please enter a valid Indian number plate (e.g. GJ05MK2024).");
+      return;
+    }
+    runEstimate({ plate_number: p }, estimateBtn, "Get instant car price");
+  });
+
+  // ── Brand fallback ──
+  Object.keys(BRANDS).forEach(function (brand) {
+    var chip = document.createElement("button");
+    chip.type = "button"; chip.className = "brand-chip"; chip.textContent = brand;
+    chip.addEventListener("click", function () {
+      Array.prototype.forEach.call(brandChips.children, function (c) { c.classList.remove("selected"); });
+      chip.classList.add("selected");
+      modelSelect.innerHTML = '<option value="">Select model</option>' +
+        BRANDS[brand].map(function (m) { return '<option>' + m + '</option>'; }).join("");
+      modelSelect.classList.remove("hidden"); yearSelect.classList.add("hidden");
+      modelSelect.dataset.brand = brand;
+    });
+    brandChips.appendChild(chip);
+  });
+
+  modelSelect.addEventListener("change", function () {
+    if (!modelSelect.value) { yearSelect.classList.add("hidden"); return; }
+    var now = new Date().getFullYear(), opts = ['<option value="">Select year</option>'];
+    for (var y = now; y >= now - 20; y--) { opts.push('<option>' + y + '</option>'); }
+    yearSelect.innerHTML = opts.join("");
+    yearSelect.classList.remove("hidden");
+  });
+
+  yearSelect.addEventListener("change", function () {
+    if (!yearSelect.value) { return; }
+    runEstimate({
+      make: modelSelect.dataset.brand, model: modelSelect.value, year: yearSelect.value
+    }, estimateBtn, "Get instant car price");
+  });
+
+  // ── Lead capture ──
+  $("offerBtn").addEventListener("click", function () {
+    var phone = ($("phoneInput").value || "").replace(/[^0-9]/g, "");
+    var phoneMsg = $("phoneMsg");
+    if (!/^[6-9][0-9]{9}$/.test(phone)) {
+      showMsg(phoneMsg, "Please enter a valid 10-digit mobile number.");
+      return;
+    }
+    hide(phoneMsg);
+    var btn = $("offerBtn"); btn.disabled = true; btn.textContent = "Sending…";
+    var v = state.vehicle || {};
+    postJSON(CAPTURE_URL, {
+      plate_number: state.plate, make: v.make, model: v.model, year: v.year, fuel: v.fuel,
+      phone: phone, price: state.price, source: state.source
+    }).then(function (res) {
+      btn.disabled = false; btn.textContent = "See my offer";
+      if (res.ok && res.data.ok) {
+        $("leadForm").classList.add("hidden");
+        var done = $("leadDone"); done.querySelector("span").textContent = res.data.message;
+        done.classList.remove("hidden");
+      } else {
+        showMsg(phoneMsg, (res.data && res.data.error) || "Could not save. Please try again.");
+      }
+    }).catch(function () {
+      btn.disabled = false; btn.textContent = "See my offer";
+      showMsg(phoneMsg, "Network error. Please try again.");
+    });
+  });
+
+  $("resetLink").addEventListener("click", function (e) {
+    e.preventDefault();
+    resultStep.classList.add("hidden"); plateStep.classList.remove("hidden");
+    plateInput.value = ""; $("phoneInput").value = "";
+  });
+})();
+</script>
 {% endblock %}

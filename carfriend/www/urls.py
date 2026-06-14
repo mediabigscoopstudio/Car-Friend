@@ -3,6 +3,9 @@ from . import views
 
 urlpatterns = [
     path("", views.index, name="home"),
+    # Instant car price hero (AJAX, same-origin)
+    path("api/estimate/", views.estimate_price, name="estimate_price"),
+    path("api/capture-lead/", views.capture_lead, name="capture_lead"),
     path("how-it-works/", views.how_it_works, name="how_it_works"),
     path("about/", views.about, name="about"),
     path("contact/", views.contact, name="contact"),
