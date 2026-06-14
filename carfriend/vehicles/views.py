@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.views.decorators.http import require_POST
 from vehicles.models import Vehicle
 
-from www import otp, pricing
+from www import otp, pricing, services
 from accounts.guest import (
     get_or_create_guest_user,
     merge_guest_cars_into,
@@ -30,38 +30,16 @@ def mask_owner_name(name):
     return " ".join(masked) or "—"
 
 
-# ── Mock Vahaan data ──────────────────────────────────────────────────────────
-
-MOCK_VAHAAN_DB = {
-    'GJ05MK2024': {
-        'found':               True,
-        'plate_number':        'GJ05MK2024',
-        'make':                'Mahindra',
-        'model':               'Scorpio N',
-        'variant':             'Z8',
-        'year':                2024,
-        'fuel_type':           'diesel',
-        'transmission':        'automatic',
-        'colour':              'Deep Forest Green',
-        'registration_date':   '2024-03-15',
-        'registration_state':  'Gujarat',
-        'rto':                 'Ahmedabad (GJ-05)',
-        'owner_name':          'Minaketan Mishra',
-        'owner_number':        1,
-        'chassis_number':      'MA1RB3HJXP1234567',
-        'engine_number':       'mHAWK140P1234567',
-        'insurance_valid_till': '2027-03-14',
-        'is_hypothecated':     False,
-        'accident_history':    False,
-    }
-}
-
-
 def normalise_plate(plate):
-    return plate.upper().replace(' ', '').replace('-', '')
+    return (plate or '').upper().replace(' ', '').replace('-', '')
 
 
 def vahaan_lookup(request):
+    """Look the plate up via the real Surepass RC API (www/services.py).
+
+    The full record (with the real owner name) is kept server-side in the
+    session; the client receives a copy with the owner name MASKED.
+    """
     if request.method != 'POST':
         return JsonResponse({'found': False, 'error': 'POST required'}, status=405)
 
@@ -71,27 +49,33 @@ def vahaan_lookup(request):
     except (json.JSONDecodeError, AttributeError):
         plate = normalise_plate(request.POST.get('plate_number', ''))
 
-    data = MOCK_VAHAAN_DB.get(plate)
+    if not plate:
+        return JsonResponse({'found': False, 'error': 'Please enter a number plate.'})
 
-    if data:
-        if Vehicle.objects.filter(plate_number=plate).exists():
-            return JsonResponse({
-                'found': False,
-                'error': 'This vehicle is already listed on CarFriend.'
-            })
-        # Keep the FULL record (incl. the real owner name) server-side only.
-        request.session[SESS_CAR] = data
-        request.session.modified = True
-        # Send a copy to the client with the owner name MASKED.
-        public = dict(data)
-        public['owner_name'] = mask_owner_name(data.get('owner_name', ''))
-        public['owner_name_masked'] = True
-        return JsonResponse(public)
+    if Vehicle.objects.filter(plate_number=plate).exists():
+        return JsonResponse({'found': False, 'error': 'This vehicle is already listed on CarFriend.'})
 
-    return JsonResponse({
-        'found': False,
-        'error': 'Vehicle not found. Please check the number plate and try again.'
-    })
+    try:
+        data = services.lookup_rc_full(plate)
+    except services.SurepassNotFound:
+        return JsonResponse({'found': False, 'error': 'Vehicle not found. Please check the number plate and try again.'})
+    except services.SurepassTimeout:
+        return JsonResponse({'found': False, 'error': 'The lookup service is slow right now. Please try again.'})
+    except services.SurepassConfigError:
+        return JsonResponse({'found': False, 'error': 'Lookup is temporarily unavailable. Please try again later.'})
+    except services.SurepassError:
+        return JsonResponse({'found': False, 'error': 'Something went wrong fetching your car. Please try again.'})
+
+    data['found'] = True
+    data['plate_number'] = plate
+    # Keep the FULL record (incl. the real owner name) server-side only.
+    request.session[SESS_CAR] = data
+    request.session.modified = True
+    # Send a copy to the client with the owner name MASKED.
+    public = dict(data)
+    public['owner_name'] = mask_owner_name(data.get('owner_name', ''))
+    public['owner_name_masked'] = True
+    return JsonResponse(public)
 
 
 def list_car(request):

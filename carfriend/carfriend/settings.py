@@ -13,8 +13,17 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 from decouple import config
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load the project's .env into os.environ for EVERY code path (gunicorn,
+# manage.py, shell, signals) so SUREPASS_TOKEN / FAST2SMS_API_KEY etc. resolve
+# regardless of which module is imported first. override=False keeps any real
+# environment variables authoritative. The .env lives one level above the Django
+# project root (e.g. /var/www/carfriend/.env); also try the project root.
+load_dotenv(BASE_DIR.parent / ".env")
+load_dotenv(BASE_DIR / ".env")
 
 
 # Quick-start development settings - unsuitable for production
