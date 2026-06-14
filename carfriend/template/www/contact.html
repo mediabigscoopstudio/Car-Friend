@@ -8,16 +8,16 @@
     padding: 4rem 0 3rem;
     color: #fff;
   }
-  .contact-hero h1 { font-family:'Poppins',sans-serif; font-weight:800; font-size:2.2rem; }
+  .contact-hero h1 { font-family:var(--cf-font-display),sans-serif; font-weight:800; font-size:2.2rem; }
   .contact-card {
     background: #fff;
     border-radius: 16px;
-    border: 1.5px solid #e9ecef;
+    border: 1.5px solid var(--cf-mist);
     padding: 2rem;
     height: 100%;
     transition: box-shadow .2s, transform .2s;
   }
-  .contact-card:hover { box-shadow: 0 6px 24px rgba(1,83,16,.1); transform: translateY(-2px); }
+  .contact-card:hover { box-shadow: 0 6px 24px rgba(45,108,223,.1); transform: translateY(-2px); }
   .contact-icon {
     width: 56px; height: 56px;
     border-radius: 14px;
@@ -25,24 +25,24 @@
     font-size: 1.4rem;
     margin-bottom: 1rem;
   }
-  .contact-card h5 { font-family:'Poppins',sans-serif; font-weight:700; font-size:.95rem; margin-bottom:.35rem; }
+  .contact-card h5 { font-family:var(--cf-font-display),sans-serif; font-weight:700; font-size:.95rem; margin-bottom:.35rem; }
   .contact-card .val { font-weight:600; color: var(--cf-dark); font-size:.95rem; }
   .contact-card p { font-size:.83rem; color: var(--cf-gray); margin-top:.25rem; margin-bottom:0; }
   .form-card {
     background: #fff;
     border-radius: 16px;
-    border: 1.5px solid #e9ecef;
+    border: 1.5px solid var(--cf-mist);
     padding: 2.5rem;
   }
   .form-card .form-control, .form-card .form-select {
     border-radius: 10px;
-    border: 1.5px solid #e9ecef;
+    border: 1.5px solid var(--cf-mist);
     padding: .65rem 1rem;
     font-size: .9rem;
   }
   .form-card .form-control:focus, .form-card .form-select:focus {
     border-color: var(--cf-green);
-    box-shadow: 0 0 0 3px rgba(1,83,16,.1);
+    box-shadow: 0 0 0 3px rgba(45,108,223,.1);
   }
   .form-card label { font-weight: 600; font-size: .85rem; margin-bottom: .4rem; }
 {% endblock %}
@@ -57,7 +57,7 @@
   </div>
 </section>
 
-<section style="padding:4rem 0;background:#f8f9fa;">
+<section style="padding:4rem 0;background:var(--cf-sky-tint);">
   <div class="container">
     <div class="row g-4">
 
@@ -65,7 +65,7 @@
       <div class="col-lg-4">
         <div class="d-flex flex-column gap-3">
           <div class="contact-card">
-            <div class="contact-icon" style="background:#dcfce7;color:#16a34a;">
+            <div class="contact-icon" style="background:var(--cf-teal-tint);color:var(--cf-teal-dark);">
               <i class="bi bi-whatsapp"></i>
             </div>
             <h5>WhatsApp</h5>
@@ -84,7 +84,7 @@
             <p>For detailed queries, documents, or formal communication</p>
           </div>
           <div class="contact-card">
-            <div class="contact-icon" style="background:#fef3c7;color:#d97706;">
+            <div class="contact-icon" style="background:var(--cf-sky-tint);color:var(--cf-sky);">
               <i class="bi bi-telephone-fill"></i>
             </div>
             <h5>Phone</h5>
@@ -97,7 +97,7 @@
       <!-- Contact Form -->
       <div class="col-lg-8">
         <div class="form-card">
-          <h4 style="font-family:'Poppins',sans-serif;font-weight:700;margin-bottom:.25rem;">Send Us a Message</h4>
+          <h4 style="font-family:var(--cf-font-display),sans-serif;font-weight:700;margin-bottom:.25rem;">Send Us a Message</h4>
           <p style="color:var(--cf-gray);font-size:.875rem;margin-bottom:1.75rem;">Fill in your details and we'll get back to you within a few hours.</p>
           <form>
             {% csrf_token %}
@@ -147,11 +147,11 @@
 </section>
 
 <!-- Bottom note -->
-<section style="padding:2.5rem 0;border-top:1px solid #e9ecef;background:#fff;">
+<section style="padding:2.5rem 0;border-top:1px solid var(--cf-mist);background:#fff;">
   <div class="container">
     <div class="row align-items-center g-3">
       <div class="col-md-8">
-        <h5 style="font-family:'Poppins',sans-serif;font-weight:700;margin-bottom:.3rem;">Looking to sell your car quickly?</h5>
+        <h5 style="font-family:var(--cf-font-display),sans-serif;font-weight:700;margin-bottom:.3rem;">Looking to sell your car quickly?</h5>
         <p style="font-size:.875rem;color:var(--cf-gray);margin:0;">Book a free inspection in under a minute — our team will reach out to schedule within 2 hours.</p>
       </div>
       <div class="col-md-4 text-md-end">

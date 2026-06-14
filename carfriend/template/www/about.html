@@ -8,15 +8,15 @@
     padding: 4.5rem 0 3.5rem;
     color: #fff;
   }
-  .about-hero h1 { font-family:'Poppins',sans-serif; font-weight:800; font-size:2.4rem; }
+  .about-hero h1 { font-family:var(--cf-font-display),sans-serif; font-weight:800; font-size:2.4rem; }
   .value-card {
     padding:1.75rem;
     border-radius:16px;
-    border:1.5px solid #e9ecef;
+    border:1.5px solid var(--cf-mist);
     height:100%;
     transition: box-shadow .2s, transform .2s;
   }
-  .value-card:hover { box-shadow:0 6px 24px rgba(1,83,16,.1); transform:translateY(-3px); }
+  .value-card:hover { box-shadow:0 6px 24px rgba(45,108,223,.1); transform:translateY(-3px); }
   .value-icon {
     width:52px; height:52px;
     border-radius:12px;
@@ -26,10 +26,10 @@
     font-size:1.3rem;
     margin-bottom:1rem;
   }
-  .value-card h5 { font-family:'Poppins',sans-serif; font-weight:700; font-size:.95rem; margin-bottom:.4rem; }
-  .value-card p { font-size:.85rem; color:#374151; margin:0; line-height:1.65; }
+  .value-card h5 { font-family:var(--cf-font-display),sans-serif; font-weight:700; font-size:.95rem; margin-bottom:.4rem; }
+  .value-card p { font-size:.85rem; color:var(--cf-slate); margin:0; line-height:1.65; }
   .stat-block { text-align:center; padding:1.5rem; }
-  .stat-block .num { font-family:'Poppins',sans-serif; font-weight:800; font-size:2.2rem; color:var(--cf-green); }
+  .stat-block .num { font-family:var(--cf-font-display),sans-serif; font-weight:800; font-size:2.2rem; color:var(--cf-green); }
   .stat-block .lbl { font-size:.82rem; color:var(--cf-gray); margin-top:.2rem; }
 {% endblock %}
 
@@ -49,25 +49,25 @@
         <div class="row g-3">
           <div class="col-6">
             <div style="background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);border-radius:16px;padding:1.25rem;text-align:center;">
-              <div style="font-family:'Poppins',sans-serif;font-weight:800;font-size:2rem;color:#fff;">500+</div>
+              <div style="font-family:var(--cf-font-display),sans-serif;font-weight:800;font-size:2rem;color:#fff;">500+</div>
               <div style="font-size:.78rem;opacity:.8;">Cars Inspected</div>
             </div>
           </div>
           <div class="col-6">
             <div style="background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);border-radius:16px;padding:1.25rem;text-align:center;">
-              <div style="font-family:'Poppins',sans-serif;font-weight:800;font-size:2rem;color:#fff;">48hrs</div>
+              <div style="font-family:var(--cf-font-display),sans-serif;font-weight:800;font-size:2rem;color:#fff;">48hrs</div>
               <div style="font-size:.78rem;opacity:.8;">Avg. Sale Time</div>
             </div>
           </div>
           <div class="col-6">
             <div style="background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);border-radius:16px;padding:1.25rem;text-align:center;">
-              <div style="font-family:'Poppins',sans-serif;font-weight:800;font-size:2rem;color:#fff;">₹0</div>
+              <div style="font-family:var(--cf-font-display),sans-serif;font-weight:800;font-size:2rem;color:#fff;">₹0</div>
               <div style="font-size:.78rem;opacity:.8;">Seller Inspection Fee</div>
             </div>
           </div>
           <div class="col-6">
             <div style="background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);border-radius:16px;padding:1.25rem;text-align:center;">
-              <div style="font-family:'Poppins',sans-serif;font-weight:800;font-size:2rem;color:#fff;">200</div>
+              <div style="font-family:var(--cf-font-display),sans-serif;font-weight:800;font-size:2rem;color:#fff;">200</div>
               <div style="font-size:.78rem;opacity:.8;">Inspection Points</div>
             </div>
           </div>
@@ -84,13 +84,13 @@
       <div class="col-lg-6">
         <span class="section-badge">Our Mission</span>
         <h2 class="section-title mt-1">Transparency at Every Step</h2>
-        <p style="color:#374151;font-size:.95rem;line-height:1.8;margin-top:.75rem;">
+        <p style="color:var(--cf-slate);font-size:.95rem;line-height:1.8;margin-top:.75rem;">
           India's used car market is plagued by information asymmetry — buyers don't know what they're getting, and sellers don't know if they're getting a fair price.
         </p>
-        <p style="color:#374151;font-size:.95rem;line-height:1.8;">
+        <p style="color:var(--cf-slate);font-size:.95rem;line-height:1.8;">
           CarFriend changes this by putting a certified inspection report at the center of every transaction. When both parties have access to the same objective data, trust happens naturally — and deals close faster at better prices.
         </p>
-        <p style="color:#374151;font-size:.95rem;line-height:1.8;">
+        <p style="color:var(--cf-slate);font-size:.95rem;line-height:1.8;">
           Our platform combines rigorous inspections, real-time competitive auctions, and dedicated relationship managers to deliver an experience that's genuinely better for everyone involved.
         </p>
       </div>
@@ -124,7 +124,7 @@
 </section>
 
 <!-- Values -->
-<section style="background:#f8f9fa;padding:4.5rem 0;">
+<section style="background:var(--cf-sky-tint);padding:4.5rem 0;">
   <div class="container">
     <div class="text-center mb-5">
       <span class="section-badge">What We Stand For</span>

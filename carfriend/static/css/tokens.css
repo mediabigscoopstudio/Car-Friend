@@ -1,0 +1,64 @@
+/* Car Friend — design tokens
+   Linked once from the public-site base template (www/base.html). All component
+   CSS references these variables. Fonts: Sora (display + numbers),
+   Hanken Grotesk (body + UI), Fredoka (brand wordmark). */
+
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&family=Fredoka:wght@500;600;700&display=swap');
+
+:root {
+  /* Core blues */
+  --cf-azure:       #122E5A;
+  --cf-azure-700:   #1B3F73;
+  --cf-blue:        #2D6CDF;
+  --cf-blue-700:    #2057C0;
+  --cf-blue-100:    #D9E6FA;
+  --cf-sky:         #5AA9E6;
+  --cf-sky-tint:    #EAF1FB;
+
+  /* Neutrals */
+  --cf-ink:         #0E1B2E;
+  --cf-slate:       #51637B;
+  --cf-mist:        #DCE6F2;
+  --cf-paper:       #F6F9FE;
+  --cf-white:       #FFFFFF;
+
+  /* Accents */
+  --cf-coral:       #FF6A5A;
+  --cf-coral-dark:  #C23A2C;
+  --cf-coral-tint:  #FFE9E6;
+  --cf-teal:        #0FB5C9;
+  --cf-teal-dark:   #0A7E8C;
+  --cf-teal-tint:   #E1F6F8;
+
+  /* Functional */
+  --cf-danger:      #E24B4A;
+  --cf-danger-tint: #FCEBEB;
+
+  /* Type */
+  --cf-font-display: 'Sora', system-ui, sans-serif;
+  --cf-font-sans:    'Hanken Grotesk', system-ui, sans-serif;
+  --cf-font-brand:   'Fredoka', system-ui, sans-serif;
+
+  /* Radius */
+  --cf-radius-sm: 10px;   /* buttons, inputs */
+  --cf-radius-md: 14px;   /* cards */
+  --cf-radius-pill: 999px;
+
+  /* Spacing (base 4px) */
+  --cf-space-1: 4px;  --cf-space-2: 8px;  --cf-space-3: 12px;
+  --cf-space-4: 16px; --cf-space-5: 24px; --cf-space-6: 32px;
+  --cf-space-7: 48px; --cf-space-8: 64px;
+
+  /* Motion */
+  --cf-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Base */
+body {
+  background: var(--cf-paper);
+  color: var(--cf-ink);
+  font-family: var(--cf-font-sans);
+  font-size: 16px;
+  line-height: 1.7;
+}
+h1, h2, h3, h4 { font-family: var(--cf-font-display); color: var(--cf-azure); font-weight: 600; }

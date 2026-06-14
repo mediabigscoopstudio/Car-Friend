@@ -2,48 +2,48 @@
 {% block title %}Seller Dashboard — CarFriend{% endblock %}
 
 {% block extra_css %}
-.dash-hero { background: #0E110E; padding: 36px 0 32px; border-bottom: 1px solid rgba(255,255,255,.06); }
-.dash-hero h1 { font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+.dash-hero { background: var(--cf-azure); padding: 36px 0 32px; border-bottom: 1px solid rgba(255,255,255,.06); }
+.dash-hero h1 { font-family: var(--cf-font-display); font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 4px; }
 .dash-hero p { font-size: 14px; color: rgba(255,255,255,.55); margin: 0; }
-.dash-body { background: #F8FAF8; padding: 40px 0 80px; }
-.stat-card { background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 20px; height: 100%; }
-.stat-card .lbl { font-size: 12px; font-weight: 600; color: #6B7280; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
-.stat-card .val { font-family: 'Poppins', sans-serif; font-size: 26px; font-weight: 800; color: #1A1A1A; }
-.stat-card .sub { font-size: 12px; color: #9AA0A8; margin-top: 4px; }
-.section-card { background: #fff; border: 1px solid #E5E7EB; border-radius: 14px; padding: 24px; margin-bottom: 20px; }
-.section-card h5 { font-size: 15px; font-weight: 700; color: #1A1A1A; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #E5E7EB; }
-.empty-state { text-align: center; padding: 40px 20px; color: #9AA0A8; font-size: 14px; }
+.dash-body { background: var(--cf-paper); padding: 40px 0 80px; }
+.stat-card { background: #fff; border: 1px solid var(--cf-mist); border-radius: 12px; padding: 20px; height: 100%; }
+.stat-card .lbl { font-size: 12px; font-weight: 600; color: var(--cf-slate); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+.stat-card .val { font-family: var(--cf-font-display); font-size: 26px; font-weight: 800; color: var(--cf-ink); }
+.stat-card .sub { font-size: 12px; color: var(--cf-slate); margin-top: 4px; }
+.section-card { background: #fff; border: 1px solid var(--cf-mist); border-radius: 14px; padding: 24px; margin-bottom: 20px; }
+.section-card h5 { font-family: var(--cf-font-display); font-size: 15px; font-weight: 700; color: var(--cf-azure); margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--cf-mist); }
+.empty-state { text-align: center; padding: 40px 20px; color: var(--cf-slate); font-size: 14px; }
 .empty-state .icon { font-size: 36px; margin-bottom: 12px; }
-.btn-dash { background: #015310; color: #fff; border: none; border-radius: 8px; font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 600; padding: 10px 22px; cursor: pointer; text-decoration: none; display: inline-block; transition: background .2s; }
-.btn-dash:hover { background: #013D0C; color: #fff; }
-.badge-status { font-size: 11px; font-weight: 600; font-family: 'Poppins', sans-serif; padding: 4px 10px; border-radius: 100px; }
-.badge-pending { background: #FCF1DC; color: #92400E; }
-.badge-active  { background: #E7F3EA; color: #015310; }
-.kyc-banner { background: #FFF7ED; border: 1px solid #FCD34D; border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; gap: 12px; margin-bottom: 24px; font-size: 13px; color: #92400E; }
+.btn-dash { background: var(--cf-blue); color: #fff; border: none; border-radius: 8px; font-family: var(--cf-font-sans); font-size: 13px; font-weight: 600; padding: 10px 22px; cursor: pointer; text-decoration: none; display: inline-block; transition: background .2s; }
+.btn-dash:hover { background: var(--cf-blue-700); color: #fff; }
+.badge-status { font-size: 11px; font-weight: 600; font-family: var(--cf-font-sans); padding: 4px 10px; border-radius: 100px; }
+.badge-pending { background: var(--cf-coral-tint); color: var(--cf-coral-dark); }
+.badge-active  { background: var(--cf-teal-tint); color: var(--cf-teal-dark); }
+.kyc-banner { background: var(--cf-coral-tint); border: 1px solid var(--cf-coral); border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; gap: 12px; margin-bottom: 24px; font-size: 13px; color: var(--cf-coral-dark); }
 .kyc-banner i { font-size: 18px; flex-shrink: 0; }
-.kyc-banner a { color: #92400E; font-weight: 700; }
-.step-num { width: 24px; height: 24px; background: #E7F3EA; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #015310; flex-shrink: 0; }
+.kyc-banner a { color: var(--cf-coral-dark); font-weight: 700; }
+.step-num { width: 24px; height: 24px; background: var(--cf-sky-tint); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--cf-blue); flex-shrink: 0; }
 
 /* ── Listing cards ── */
-:root { --cf-line: #E5E7EB; --cf-txt: #1A1A1A; --cf-txt2: #6B7280; --cf-txt3: #9AA0A8; --cf-mist: #F8FAF8; --cf-green-deep: #013D0C; }
+:root { --cf-line: #DCE6F2; --cf-txt: #0E1B2E; --cf-txt2: #51637B; --cf-txt3: #51637B; --cf-mist: #F6F9FE; --cf-green-deep: #122E5A; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .listing-card { border: 1px solid var(--cf-line); border-radius: 12px; padding: 16px; margin-bottom: 12px; background: #fff; transition: box-shadow .2s; }
-.listing-card:hover { box-shadow: 0 2px 12px rgba(1,83,16,.08); }
+.listing-card:hover { box-shadow: 0 2px 12px rgba(45,108,223,.08); }
 .listing-card:last-child { margin-bottom: 0; }
 .lc-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
-.lc-name { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 15px; color: var(--cf-txt); margin-bottom: 3px; }
+.lc-name { font-family: var(--cf-font-display); font-weight: 700; font-size: 15px; color: var(--cf-txt); margin-bottom: 3px; }
 .lc-meta { font-size: 12px; color: var(--cf-txt2); }
-.lc-price { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 14px; color: #015310; }
-.lc-status { font-size: 11px; font-weight: 700; font-family: 'Poppins', sans-serif; padding: 4px 10px; border-radius: 100px; white-space: nowrap; flex-shrink: 0; }
-.status-submitted   { background: #EFF6FF; color: #1E40AF; }
-.status-inspection  { background: #FCF1DC; color: #92400E; }
-.status-approved    { background: #E7F3EA; color: #015310; }
-.status-in_auction  { background: #FEF2F2; color: #991B1B; }
-.status-sold        { background: #E7F3EA; color: #013D0C; }
-.status-draft       { background: #F3F4F6; color: #6B7280; }
+.lc-price { font-family: var(--cf-font-display); font-weight: 700; font-size: 14px; color: var(--cf-blue); }
+.lc-status { font-size: 11px; font-weight: 700; font-family: var(--cf-font-sans); padding: 4px 10px; border-radius: 100px; white-space: nowrap; flex-shrink: 0; }
+.status-submitted   { background: var(--cf-sky-tint); color: var(--cf-azure); }
+.status-inspection  { background: var(--cf-sky-tint); color: var(--cf-azure); }
+.status-approved    { background: var(--cf-teal-tint); color: var(--cf-teal-dark); }
+.status-in_auction  { background: var(--cf-coral-tint); color: var(--cf-coral-dark); }
+.status-sold        { background: var(--cf-teal-tint); color: var(--cf-teal-dark); }
+.status-draft       { background: var(--cf-sky-tint); color: var(--cf-slate); }
 .lc-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--cf-line); }
-.btn-lc-action { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 7px; font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; border: none; text-decoration: none; transition: all .2s; }
-.btn-lc-active { background: #015310; color: #fff; }
+.btn-lc-action { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 7px; font-family: var(--cf-font-sans); font-size: 12px; font-weight: 600; cursor: pointer; border: none; text-decoration: none; transition: all .2s; }
+.btn-lc-active { background: var(--cf-blue); color: #fff; }
 .btn-lc-active:hover { background: var(--cf-green-deep); color: #fff; }
 .btn-lc-inactive { background: var(--cf-mist); color: var(--cf-txt3); cursor: not-allowed; border: 1px solid var(--cf-line); }
 {% endblock %}
@@ -122,7 +122,7 @@
           </div>
 
           <div id="carsLoading" style="text-align:center;padding:32px;color:var(--cf-txt2);font-size:14px;">
-            <div style="width:20px;height:20px;border:2px solid #E5E7EB;border-top-color:#015310;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px;"></div>
+            <div style="width:20px;height:20px;border:2px solid var(--cf-mist);border-top-color:var(--cf-blue);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px;"></div>
             Loading your listings...
           </div>
 
@@ -148,7 +148,7 @@
           <h5><i class="bi bi-person-check me-2"></i>Account Status</h5>
           <div class="d-flex flex-column gap-2">
             <div class="d-flex align-items-center justify-content-between">
-              <span style="font-size:13px;color:#6B7280;">KYC Verification</span>
+              <span style="font-size:13px;color:var(--cf-slate);">KYC Verification</span>
               {% if request.user.is_kyc_done %}
               <span class="badge-status badge-active">✓ Verified</span>
               {% else %}
@@ -156,19 +156,19 @@
               {% endif %}
             </div>
             <div class="d-flex align-items-center justify-content-between">
-              <span style="font-size:13px;color:#6B7280;">Account Type</span>
+              <span style="font-size:13px;color:var(--cf-slate);">Account Type</span>
               <span class="badge-status badge-active">Seller</span>
             </div>
             <div class="d-flex align-items-center justify-content-between">
-              <span style="font-size:13px;color:#6B7280;">Email</span>
-              <span style="font-size:12px;color:#1A1A1A;">{{ request.user.email }}</span>
+              <span style="font-size:13px;color:var(--cf-slate);">Email</span>
+              <span style="font-size:12px;color:var(--cf-ink);">{{ request.user.email }}</span>
             </div>
           </div>
         </div>
 
         <div class="section-card">
           <h5><i class="bi bi-buildings me-2"></i>Also Buy as Dealer?</h5>
-          <p style="font-size:13px;color:#6B7280;line-height:1.7;margin-bottom:14px;">
+          <p style="font-size:13px;color:var(--cf-slate);line-height:1.7;margin-bottom:14px;">
             Register as a dealer to bid on certified cars in live auctions.
           </p>
           {% if request.user.dealer_profile %}
@@ -188,11 +188,11 @@
 
         <div class="section-card">
           <h5><i class="bi bi-question-circle me-2"></i>Need Help?</h5>
-          <p style="font-size:13px;color:#6B7280;line-height:1.7;margin-bottom:14px;">Our team is here to help you list your car or resolve any issue.</p>
-          <a href="https://wa.me/919537186783" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#015310;text-decoration:none;">
+          <p style="font-size:13px;color:var(--cf-slate);line-height:1.7;margin-bottom:14px;">Our team is here to help you list your car or resolve any issue.</p>
+          <a href="https://wa.me/919537186783" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--cf-blue);text-decoration:none;">
             <i class="bi bi-whatsapp" style="color:#25D366;"></i>+91 9537186783
           </a>
-          <a href="mailto:support@carfriend.in" style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#015310;text-decoration:none;margin-top:8px;">
+          <a href="mailto:support@carfriend.in" style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--cf-blue);text-decoration:none;margin-top:8px;">
             <i class="bi bi-envelope"></i>support@carfriend.in
           </a>
         </div>
@@ -202,19 +202,19 @@
           <div class="d-flex flex-column gap-3">
             <div class="d-flex gap-2 align-items-start">
               <div class="step-num">1</div>
-              <div style="font-size:13px;color:#6B7280;line-height:1.5;">Complete KYC (Aadhaar + PAN)</div>
+              <div style="font-size:13px;color:var(--cf-slate);line-height:1.5;">Complete KYC (Aadhaar + PAN)</div>
             </div>
             <div class="d-flex gap-2 align-items-start">
               <div class="step-num">2</div>
-              <div style="font-size:13px;color:#6B7280;line-height:1.5;">List your car with details &amp; photos</div>
+              <div style="font-size:13px;color:var(--cf-slate);line-height:1.5;">List your car with details &amp; photos</div>
             </div>
             <div class="d-flex gap-2 align-items-start">
               <div class="step-num">3</div>
-              <div style="font-size:13px;color:#6B7280;line-height:1.5;">Schedule your free home inspection</div>
+              <div style="font-size:13px;color:var(--cf-slate);line-height:1.5;">Schedule your free home inspection</div>
             </div>
             <div class="d-flex gap-2 align-items-start">
               <div class="step-num">4</div>
-              <div style="font-size:13px;color:#6B7280;line-height:1.5;">Watch the live auction &amp; accept the best bid</div>
+              <div style="font-size:13px;color:var(--cf-slate);line-height:1.5;">Watch the live auction &amp; accept the best bid</div>
             </div>
           </div>
         </div>
@@ -257,7 +257,7 @@ function loadListings() {
           ? '<a href="#" class="btn-lc-action btn-lc-active"><i class="bi bi-file-earmark-check"></i> Inspection Report</a>'
           : '<button class="btn-lc-action btn-lc-inactive" disabled><i class="bi bi-file-earmark-check"></i> Inspection Report</button>';
         var auctionBtn = v.auction_active
-          ? '<a href="#" class="btn-lc-action btn-lc-active" style="background:#ef4444;"><i class="bi bi-broadcast"></i> Go to Auction</a>'
+          ? '<a href="#" class="btn-lc-action btn-lc-active" style="background:var(--cf-coral);"><i class="bi bi-broadcast"></i> Go to Auction</a>'
           : '<button class="btn-lc-action btn-lc-inactive" disabled><i class="bi bi-broadcast"></i> Go to Auction</button>';
         var meta = [v.year, v.fuel_type, v.odometer_km ? v.odometer_km.toLocaleString('en-IN')+' km' : '', v.city].filter(Boolean).join(' &middot; ');
         return '<div class="listing-card">'

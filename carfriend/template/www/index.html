@@ -4,7 +4,7 @@
 {% block extra_css %}
   /* ── Hero ── */
   .hero {
-    background: linear-gradient(135deg, var(--cf-green) 0%, var(--cf-green2) 100%);
+    background: linear-gradient(135deg, var(--cf-azure) 0%, var(--cf-azure-700) 100%);
     color: #fff;
     padding: 5rem 0 4rem;
     position: relative;
@@ -37,7 +37,7 @@
     line-height: 1.15;
     margin-bottom: 1.25rem;
   }
-  .hero h1 .highlight { color: var(--cf-gold); }
+  .hero h1 .highlight { color: var(--cf-sky); }
   .hero p.lead {
     font-size: 1.1rem;
     opacity: .9;
@@ -46,9 +46,9 @@
     margin-bottom: 2rem;
   }
   .hero-cta .btn-white {
-    background: #fff;
-    color: var(--cf-green);
-    font-family: 'Poppins', sans-serif;
+    background: var(--cf-white);
+    color: var(--cf-blue);
+    font-family: var(--cf-font-display);
     font-weight: 700;
     border-radius: 10px;
     padding: .75rem 1.8rem;
@@ -61,7 +61,7 @@
   .hero-cta .btn-ghost {
     background: transparent;
     color: #fff;
-    font-family: 'Poppins', sans-serif;
+    font-family: var(--cf-font-display);
     font-weight: 600;
     border: 2px solid rgba(255,255,255,.5);
     border-radius: 10px;
@@ -76,7 +76,7 @@
     gap: 2.5rem;
     flex-wrap: wrap;
   }
-  .hero-stat-val { font-family: 'Poppins', sans-serif; font-size: 1.6rem; font-weight: 800; }
+  .hero-stat-val { font-family: var(--cf-font-display); font-size: 1.6rem; font-weight: 800; }
   .hero-stat-lbl { font-size: .78rem; opacity: .75; }
   .hero-img-wrap {
     position: relative;
@@ -94,9 +94,9 @@
     width: 100%;
   }
   .car-card-badge {
-    background: var(--cf-gold);
+    background: var(--cf-coral);
     color: #fff;
-    font-family: 'Poppins', sans-serif;
+    font-family: var(--cf-font-display);
     font-weight: 700;
     font-size: .7rem;
     letter-spacing: .5px;
@@ -118,9 +118,9 @@
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: var(--cf-gold);
-    color: var(--cf-dark);
-    font-family: 'Poppins', sans-serif;
+    background: var(--cf-teal);
+    color: var(--cf-white);
+    font-family: var(--cf-font-display);
     font-weight: 800;
     font-size: .8rem;
     display: flex;
@@ -130,7 +130,7 @@
 
   /* ── Ticker ── */
   .ticker-strip {
-    background: var(--cf-green);
+    background: var(--cf-azure);
     color: rgba(255,255,255,.9);
     padding: .55rem 0;
     overflow: hidden;
@@ -149,7 +149,7 @@
     gap: .4rem;
     padding: 0 2rem;
   }
-  .ticker-dot { color: var(--cf-gold); font-size: .6rem; }
+  .ticker-dot { color: var(--cf-sky); font-size: .6rem; }
   @keyframes ticker {
     0%   { transform: translateX(0); }
     100% { transform: translateX(-50%); }
@@ -157,49 +157,50 @@
 
   /* ── Search ── */
   .search-section {
-    background: #f8f9fa;
+    background: var(--cf-sky-tint);
     padding: 3rem 0;
-    border-bottom: 1px solid #e9ecef;
+    border-bottom: 1px solid var(--cf-mist);
   }
   .search-box {
-    background: #fff;
+    background: var(--cf-white);
     border-radius: 16px;
-    box-shadow: 0 4px 32px rgba(0,0,0,.08);
+    box-shadow: 0 4px 32px rgba(18,46,90,.08);
     padding: 1.5rem;
   }
   .search-box .form-control, .search-box .form-select {
     border-radius: 10px;
-    border: 1.5px solid #e9ecef;
+    border: 1.5px solid var(--cf-mist);
     padding: .65rem 1rem;
     font-size: .9rem;
   }
   .search-box .form-control:focus, .search-box .form-select:focus {
-    border-color: var(--cf-green);
-    box-shadow: 0 0 0 3px rgba(1,83,16,.1);
+    border-color: var(--cf-blue);
+    box-shadow: 0 0 0 3px var(--cf-blue-100);
   }
 
   /* ── How It Works ── */
-  .hiw-section { padding: 5rem 0; background: #fff; }
+  .hiw-section { padding: 5rem 0; background: var(--cf-paper); }
   .step-card {
     text-align: center;
     padding: 2rem 1.5rem;
     border-radius: 16px;
-    border: 1.5px solid #e9ecef;
+    border: 1.5px solid var(--cf-mist);
     transition: border-color .2s, box-shadow .2s, transform .2s;
     height: 100%;
+    background: var(--cf-white);
   }
   .step-card:hover {
-    border-color: var(--cf-green2);
-    box-shadow: 0 8px 32px rgba(1,83,16,.1);
+    border-color: var(--cf-blue);
+    box-shadow: 0 8px 32px rgba(45,108,223,.1);
     transform: translateY(-4px);
   }
   .step-num {
     width: 56px;
     height: 56px;
     border-radius: 50%;
-    background: var(--cf-green-light);
-    color: var(--cf-green);
-    font-family: 'Poppins', sans-serif;
+    background: var(--cf-sky-tint);
+    color: var(--cf-blue);
+    font-family: var(--cf-font-display);
     font-weight: 800;
     font-size: 1.2rem;
     display: flex;
@@ -210,36 +211,36 @@
   .step-icon {
     font-size: 2rem;
     margin-bottom: .75rem;
-    color: var(--cf-green2);
+    color: var(--cf-sky);
   }
-  .step-card h5 { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1rem; margin-bottom: .5rem; }
-  .step-card p { font-size: .875rem; color: var(--cf-gray); margin: 0; line-height: 1.6; }
+  .step-card h5 { font-family: var(--cf-font-display); font-weight: 700; font-size: 1rem; margin-bottom: .5rem; color: var(--cf-azure); }
+  .step-card p { font-family: var(--cf-font-sans); font-size: .875rem; color: var(--cf-slate); margin: 0; line-height: 1.6; }
 
   /* ── Live Auctions ── */
-  .auctions-section { padding: 5rem 0; background: #f8f9fa; }
+  .auctions-section { padding: 5rem 0; background: var(--cf-sky-tint); }
   .auction-card {
-    background: #fff;
+    background: var(--cf-white);
     border-radius: 16px;
-    border: 1.5px solid #e9ecef;
+    border: 1.5px solid var(--cf-mist);
     overflow: hidden;
     transition: box-shadow .2s, transform .2s;
     height: 100%;
   }
-  .auction-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,.1); transform: translateY(-3px); }
+  .auction-card:hover { box-shadow: 0 8px 32px rgba(18,46,90,.1); transform: translateY(-3px); }
   .auction-card .img-wrap {
     height: 180px;
-    background: linear-gradient(135deg, #e8f5ec, #d1fae5);
+    background: linear-gradient(135deg, var(--cf-sky-tint), var(--cf-blue-100));
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
   }
-  .auction-card .img-wrap i { font-size: 4rem; color: var(--cf-green); opacity: .25; }
+  .auction-card .img-wrap i { font-size: 4rem; color: var(--cf-blue); opacity: .25; }
   .live-badge {
     position: absolute;
     top: .75rem;
     left: .75rem;
-    background: #ef4444;
+    background: var(--cf-coral);
     color: #fff;
     font-size: .7rem;
     font-weight: 700;
@@ -257,9 +258,9 @@
     right: .75rem;
     width: 32px; height: 32px;
     border-radius: 50%;
-    background: var(--cf-gold);
+    background: var(--cf-teal);
     color: #fff;
-    font-family: 'Poppins', sans-serif;
+    font-family: var(--cf-font-display);
     font-weight: 800;
     font-size: .85rem;
     display: flex;
@@ -267,36 +268,36 @@
     justify-content: center;
   }
   .auction-card .card-body { padding: 1rem 1.25rem 1.25rem; }
-  .auction-title { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: .95rem; margin-bottom: .3rem; }
-  .auction-meta { font-size: .78rem; color: var(--cf-gray); margin-bottom: .75rem; }
-  .auction-price { font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 1.25rem; color: var(--cf-green); }
-  .auction-timer { font-size: .78rem; color: #ef4444; font-weight: 600; }
+  .auction-title { font-family: var(--cf-font-display); font-weight: 700; font-size: .95rem; margin-bottom: .3rem; color: var(--cf-azure); }
+  .auction-meta { font-size: .78rem; color: var(--cf-slate); margin-bottom: .75rem; }
+  .auction-price { font-family: var(--cf-font-display); font-weight: 800; font-size: 1.25rem; color: var(--cf-azure); }
+  .auction-timer { font-size: .78rem; color: var(--cf-coral-dark); font-weight: 600; }
   .coming-soon-overlay {
     height: 280px;
     border-radius: 16px;
-    background: linear-gradient(135deg, var(--cf-green-light), #d1fae5);
+    background: linear-gradient(135deg, var(--cf-sky-tint), var(--cf-blue-100));
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    border: 2px dashed var(--cf-green2);
-    color: var(--cf-green);
+    border: 2px dashed var(--cf-sky);
+    color: var(--cf-blue);
     gap: .75rem;
   }
 
   /* ── Trust ── */
-  .trust-section { padding: 5rem 0; background: #fff; }
+  .trust-section { padding: 5rem 0; background: var(--cf-paper); }
   .trust-card {
     text-align: center;
     padding: 2rem 1rem;
     border-radius: 16px;
-    background: var(--cf-green-light);
+    background: var(--cf-sky-tint);
     height: 100%;
   }
   .trust-icon {
     width: 60px; height: 60px;
     border-radius: 50%;
-    background: var(--cf-green);
+    background: var(--cf-blue);
     color: #fff;
     font-size: 1.4rem;
     display: flex;
@@ -304,12 +305,12 @@
     justify-content: center;
     margin: 0 auto 1rem;
   }
-  .trust-card h5 { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: .95rem; margin-bottom: .4rem; }
-  .trust-card p { font-size: .82rem; color: #374151; margin: 0; line-height: 1.6; }
+  .trust-card h5 { font-family: var(--cf-font-display); font-weight: 700; font-size: .95rem; margin-bottom: .4rem; color: var(--cf-azure); }
+  .trust-card p { font-family: var(--cf-font-sans); font-size: .82rem; color: var(--cf-slate); margin: 0; line-height: 1.6; }
 
   /* ── Sell CTA ── */
   .sell-section {
-    background: linear-gradient(135deg, var(--cf-green) 0%, var(--cf-green2) 100%);
+    background: linear-gradient(135deg, var(--cf-azure) 0%, var(--cf-azure-700) 100%);
     padding: 5rem 0;
     color: #fff;
     position: relative;
@@ -334,34 +335,34 @@
     font-weight: 500;
     opacity: .9;
   }
-  .sell-step i { font-size: 1.1rem; color: var(--cf-gold); }
+  .sell-step i { font-size: 1.1rem; color: var(--cf-sky); }
 
   /* ── Testimonials ── */
-  .testimonials-section { padding: 5rem 0; background: #f8f9fa; }
+  .testimonials-section { padding: 5rem 0; background: var(--cf-sky-tint); }
   .testi-card {
-    background: #fff;
+    background: var(--cf-white);
     border-radius: 16px;
     padding: 1.75rem;
-    border: 1.5px solid #e9ecef;
+    border: 1.5px solid var(--cf-mist);
     height: 100%;
     transition: box-shadow .2s;
   }
-  .testi-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,.08); }
-  .testi-stars { color: var(--cf-gold); font-size: .9rem; margin-bottom: .75rem; }
-  .testi-text { font-size: .88rem; color: #374151; line-height: 1.75; margin-bottom: 1rem; font-style: italic; }
+  .testi-card:hover { box-shadow: 0 6px 24px rgba(18,46,90,.08); }
+  .testi-stars { color: var(--cf-sky); font-size: .9rem; margin-bottom: .75rem; }
+  .testi-text { font-family: var(--cf-font-sans); font-size: .88rem; color: var(--cf-slate); line-height: 1.75; margin-bottom: 1rem; font-style: italic; }
   .testi-author { display: flex; align-items: center; gap: .75rem; }
   .testi-avatar {
     width: 40px; height: 40px; border-radius: 50%;
-    background: var(--cf-green-light);
-    color: var(--cf-green);
+    background: var(--cf-sky-tint);
+    color: var(--cf-blue);
     display: flex; align-items: center; justify-content: center;
-    font-family: 'Poppins', sans-serif;
+    font-family: var(--cf-font-display);
     font-weight: 700;
     font-size: .9rem;
     flex-shrink: 0;
   }
-  .testi-name { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: .88rem; }
-  .testi-loc { font-size: .78rem; color: var(--cf-gray); }
+  .testi-name { font-family: var(--cf-font-display); font-weight: 700; font-size: .88rem; color: var(--cf-azure); }
+  .testi-loc { font-size: .78rem; color: var(--cf-slate); }
 {% endblock %}
 
 {% block content %}
@@ -412,7 +413,7 @@
             <div class="d-flex justify-content-between align-items-start mb-2">
               <div>
                 <div class="car-card-badge">Live Auction</div>
-                <div style="color:#fff;font-family:'Poppins',sans-serif;font-weight:700;font-size:1rem;margin-top:.5rem;">
+                <div style="color:#fff;font-family:var(--cf-font-display);font-weight:700;font-size:1rem;margin-top:.5rem;">
                   Maruti Swift ZXi 2022
                 </div>
                 <div style="color:rgba(255,255,255,.7);font-size:.78rem;">22,000 km · Petrol · Delhi</div>
@@ -428,15 +429,15 @@
             <div class="d-flex justify-content-between align-items-center mt-3">
               <div>
                 <div style="color:rgba(255,255,255,.7);font-size:.72rem;">Current Bid</div>
-                <div style="color:#fff;font-family:'Poppins',sans-serif;font-weight:800;font-size:1.3rem;">₹5,40,000</div>
+                <div style="color:#fff;font-family:var(--cf-font-display);font-weight:800;font-size:1.3rem;">₹5,40,000</div>
               </div>
               <div style="text-align:right;">
                 <div style="color:rgba(255,255,255,.7);font-size:.72rem;">Ends in</div>
-                <div style="color:var(--cf-gold);font-family:'Poppins',sans-serif;font-weight:700;font-size:.9rem;">14:32</div>
+                <div style="color:var(--cf-coral);font-family:var(--cf-font-display);font-weight:700;font-size:.9rem;">14:32</div>
               </div>
             </div>
             <div style="background:rgba(255,255,255,.1);border-radius:6px;height:4px;margin-top:.75rem;">
-              <div style="background:var(--cf-gold);width:68%;height:100%;border-radius:6px;"></div>
+              <div style="background:var(--cf-coral);width:68%;height:100%;border-radius:6px;"></div>
             </div>
           </div>
         </div>
@@ -544,7 +545,7 @@
     </div>
     <div class="row g-3 mb-5">
       <div class="col-12 mb-2">
-        <h5 class="fw-bold text-center" style="font-family:'Poppins',sans-serif;color:var(--cf-green);">
+        <h5 class="fw-bold text-center" style="font-family:var(--cf-font-display);color:var(--cf-azure);">
           <i class="bi bi-car-front me-2"></i>For Sellers
         </h5>
       </div>
@@ -634,7 +635,7 @@
           <div class="img-wrap">
             <i class="bi bi-car-front-fill"></i>
             <div class="live-badge"><div class="live-dot"></div> LIVE</div>
-            <div class="grade-pill" style="background:#0B7D24;">B</div>
+            <div class="grade-pill" style="background:var(--cf-teal-dark);">B</div>
           </div>
           <div class="card-body">
             <div class="auction-title">Hyundai i20 Sportz 2020</div>
@@ -652,7 +653,7 @@
       <div class="col-12 col-md-6 col-lg-4 d-none d-lg-block">
         <div class="coming-soon-overlay">
           <i class="bi bi-plus-circle" style="font-size:2.5rem;"></i>
-          <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:1rem;">More cars coming soon</div>
+          <div style="font-family:var(--cf-font-display);font-weight:700;font-size:1rem;">More cars coming soon</div>
           <div style="font-size:.82rem;text-align:center;max-width:200px;">Register as a dealer to access full live inventory</div>
           {% if request.user.is_authenticated %}
             <a href="/auth/dealer/dashboard/" class="cf-btn-primary btn btn-sm mt-1">My Dashboard</a>
@@ -737,39 +738,39 @@
         </div>
         <div class="mt-4 d-flex flex-wrap gap-3">
           {% if request.user.is_authenticated %}
-            <a href="/auth/seller/dashboard/" class="btn" style="background:#fff;color:var(--cf-green);font-family:'Poppins',sans-serif;font-weight:700;border-radius:10px;padding:.75rem 1.8rem;">
+            <a href="/auth/seller/dashboard/" class="btn" style="background:#fff;color:var(--cf-blue);font-family:var(--cf-font-display);font-weight:700;border-radius:10px;padding:.75rem 1.8rem;">
               <i class="bi bi-speedometer2 me-2"></i>My Dashboard
             </a>
           {% else %}
-            <a href="/auth/register/" class="btn" style="background:#fff;color:var(--cf-green);font-family:'Poppins',sans-serif;font-weight:700;border-radius:10px;padding:.75rem 1.8rem;">
+            <a href="/auth/register/" class="btn" style="background:#fff;color:var(--cf-blue);font-family:var(--cf-font-display);font-weight:700;border-radius:10px;padding:.75rem 1.8rem;">
               <i class="bi bi-car-front me-2"></i>Sell My Car Now
             </a>
           {% endif %}
-          <a href="https://wa.me/919537186783" class="btn btn-ghost" target="_blank" rel="noopener" style="border-color:rgba(255,255,255,.5);color:#fff;border-radius:10px;padding:.72rem 1.6rem;font-family:'Poppins',sans-serif;font-weight:600;border-width:2px;">
+          <a href="https://wa.me/919537186783" class="btn btn-ghost" target="_blank" rel="noopener" style="border-color:rgba(255,255,255,.5);color:#fff;border-radius:10px;padding:.72rem 1.6rem;font-family:var(--cf-font-display);font-weight:600;border-width:2px;">
             <i class="bi bi-whatsapp me-2"></i>WhatsApp Us
           </a>
         </div>
       </div>
       <div class="col-lg-5 d-none d-lg-block">
         <div style="background:rgba(255,255,255,.1);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:2rem;">
-          <h5 style="font-family:'Poppins',sans-serif;font-weight:700;color:#fff;margin-bottom:1.25rem;font-size:1rem;">
+          <h5 style="font-family:var(--cf-font-display);font-weight:700;color:#fff;margin-bottom:1.25rem;font-size:1rem;">
             What sellers love about us
           </h5>
           <div class="d-flex flex-column gap-3">
             <div class="d-flex align-items-center gap-2" style="color:rgba(255,255,255,.9);font-size:.88rem;">
-              <i class="bi bi-check-circle-fill" style="color:var(--cf-gold);flex-shrink:0;"></i>
+              <i class="bi bi-check-circle-fill" style="color:var(--cf-teal);flex-shrink:0;"></i>
               Average sale in under 48 hours
             </div>
             <div class="d-flex align-items-center gap-2" style="color:rgba(255,255,255,.9);font-size:.88rem;">
-              <i class="bi bi-check-circle-fill" style="color:var(--cf-gold);flex-shrink:0;"></i>
+              <i class="bi bi-check-circle-fill" style="color:var(--cf-teal);flex-shrink:0;"></i>
               Up to 15% more than dealer quotes
             </div>
             <div class="d-flex align-items-center gap-2" style="color:rgba(255,255,255,.9);font-size:.88rem;">
-              <i class="bi bi-check-circle-fill" style="color:var(--cf-gold);flex-shrink:0;"></i>
+              <i class="bi bi-check-circle-fill" style="color:var(--cf-teal);flex-shrink:0;"></i>
               Zero paperwork stress — we handle RC
             </div>
             <div class="d-flex align-items-center gap-2" style="color:rgba(255,255,255,.9);font-size:.88rem;">
-              <i class="bi bi-check-circle-fill" style="color:var(--cf-gold);flex-shrink:0;"></i>
+              <i class="bi bi-check-circle-fill" style="color:var(--cf-teal);flex-shrink:0;"></i>
               Transparent auction — you see every bid
             </div>
           </div>
@@ -837,9 +838,9 @@
 </section>
 
 <!-- ── BOTTOM CTA ── -->
-<section style="background:#fff;padding:3.5rem 0;border-top:1px solid #e9ecef;">
+<section style="background:var(--cf-paper);padding:3.5rem 0;border-top:1px solid var(--cf-mist);">
   <div class="container text-center">
-    <h3 style="font-family:'Poppins',sans-serif;font-weight:700;margin-bottom:.75rem;">Ready to get started?</h3>
+    <h3 style="font-family:var(--cf-font-display);font-weight:700;color:var(--cf-azure);margin-bottom:.75rem;">Ready to get started?</h3>
     <p style="color:var(--cf-gray);margin-bottom:1.5rem;">Contact us on WhatsApp or email — we'll take it from there.</p>
     <div class="d-flex justify-content-center flex-wrap gap-3">
       <a href="https://wa.me/919537186783" class="cf-btn-primary btn px-4" target="_blank" rel="noopener">
