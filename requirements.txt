@@ -11,3 +11,4 @@ reportlab
 opencv-python-headless
 requests
 weasyprint
+python-dotenv

@@ -16,8 +16,16 @@ import logging
 import socket
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 from decouple import config
+from dotenv import load_dotenv
+
+# Load the project's .env (one level above the Django project root, i.e.
+# /var/www/carfriend/.env) so SUREPASS_TOKEN resolves. override=False (the
+# default) means real environment variables are not clobbered. decouple.config()
+# reads os.environ first, so the token loaded here is picked up at line ~70.
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 logger = logging.getLogger(__name__)
 
