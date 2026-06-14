@@ -1,8 +1,9 @@
 """Vehicle RC lookup via the Surepass RC API.
 
 Security notes:
-- The bearer token is read ONLY from the SUREPASS_TOKEN environment variable.
-  It is never written to a template, JS, log line, or committed file.
+- The bearer token is read ONLY from SUREPASS_TOKEN, via python-decouple
+  (the project's config mechanism: a real env var, or a key in the gitignored
+  .env file). It is never written to a template, JS, log line, or committed file.
 - This module is the only place that talks to Surepass; the browser never does.
 - We deliberately return ONLY make / model / year / fuel to the caller. The RC
   response also contains the registered owner's name, father's name, address,
@@ -12,16 +13,17 @@ Security notes:
 import datetime
 import json
 import logging
-import os
 import socket
 import urllib.error
 import urllib.request
+
+from decouple import config
 
 logger = logging.getLogger(__name__)
 
 # Sandbox base per spec. RC endpoint path — adjust if your Surepass plan exposes
 # a different route (e.g. rc-lite). Marked as the documented RC verification path.
-SUREPASS_BASE = os.environ.get("SUREPASS_BASE_URL", "https://sandbox.surepass.app")
+SUREPASS_BASE = config("SUREPASS_BASE_URL", default="https://sandbox.surepass.app")
 RC_ENDPOINT = "/api/v1/rc/rc-full"
 TIMEOUT_SECONDS = 8
 
@@ -65,7 +67,7 @@ def lookup_rc(plate_number):
         {"make": str, "model": str, "year": int|None, "fuel": str}
     Raises a SurepassError subclass on any failure.
     """
-    token = os.environ.get("SUREPASS_TOKEN")
+    token = config("SUREPASS_TOKEN", default="")
     if not token:
         # No PII here; safe to log.
         logger.error("SUREPASS_TOKEN is not set; RC lookup unavailable.")
