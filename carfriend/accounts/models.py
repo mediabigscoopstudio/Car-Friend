@@ -22,6 +22,9 @@ class User(AbstractUser):
 
     role         = models.CharField(max_length=20, choices=Role.choices, default=Role.SELLER)
     phone        = models.CharField(max_length=15, blank=True)
+    # Phone-keyed guest accounts created from the public sell flow after OTP.
+    phone_verified = models.BooleanField(default=False)
+    is_guest       = models.BooleanField(default=False)
     city         = models.CharField(max_length=120, blank=True)
     is_internal  = models.BooleanField(default=False)
     is_suspended = models.BooleanField(default=False)

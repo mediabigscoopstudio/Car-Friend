@@ -2,9 +2,32 @@ import json
 from datetime import date
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import login as auth_login
 from django.http import JsonResponse
 from django.contrib import messages
+from django.views.decorators.http import require_POST
 from vehicles.models import Vehicle
+
+from www import otp, pricing
+from accounts.guest import (
+    get_or_create_guest_user,
+    merge_guest_cars_into,
+    normalise_phone,
+)
+
+# Session keys for the guest sell flow
+SESS_CAR = "sell_car"          # full (server-only) lookup result incl. real owner name
+SESS_VERIFIED = "sell_phone"   # verified phone for the in-progress sale
+
+
+def mask_owner_name(name):
+    """Mask a registered owner's name for display — never send the full name to
+    the client. e.g. "Minaketan Mishra" -> "M•••••••• M•••••"."""
+    parts = (name or "").split()
+    masked = []
+    for p in parts:
+        masked.append(p[0] + "•" * (len(p) - 1) if len(p) > 1 else p)
+    return " ".join(masked) or "—"
 
 
 # ── Mock Vahaan data ──────────────────────────────────────────────────────────
@@ -56,7 +79,14 @@ def vahaan_lookup(request):
                 'found': False,
                 'error': 'This vehicle is already listed on CarFriend.'
             })
-        return JsonResponse(data)
+        # Keep the FULL record (incl. the real owner name) server-side only.
+        request.session[SESS_CAR] = data
+        request.session.modified = True
+        # Send a copy to the client with the owner name MASKED.
+        public = dict(data)
+        public['owner_name'] = mask_owner_name(data.get('owner_name', ''))
+        public['owner_name_masked'] = True
+        return JsonResponse(public)
 
     return JsonResponse({
         'found': False,
@@ -64,12 +94,10 @@ def vahaan_lookup(request):
     })
 
 
-@login_required(login_url='/auth/login/')
 def list_car(request):
-    if not request.user.is_seller:
-        return redirect('/auth/seller/dashboard/')
-
-    if request.method == 'POST':
+    # Public sell flow — guests allowed (a phone-keyed account is created after
+    # OTP). The legacy full-form POST path stays for authenticated sellers.
+    if request.method == 'POST' and request.user.is_authenticated and getattr(request.user, 'is_seller', False):
         plate = normalise_plate(request.POST.get('plate_number', ''))
 
         if Vehicle.objects.filter(plate_number=plate).exists():
@@ -127,11 +155,13 @@ def list_car(request):
         )
         return redirect('seller_dashboard')
 
-    return render(request, 'www/vehicles/list_car.html')
+    return render(request, 'www/vehicles/list_car.html', {'km_bands': pricing.KM_BANDS})
 
 
 @login_required(login_url='/auth/login/')
 def my_cars(request):
+    # Pull in any guest cars that match this account's verified phone.
+    merge_guest_cars_into(request.user)
     vehicles = Vehicle.objects.filter(seller=request.user)
     data = [{
         'id':                      v.id,
@@ -149,3 +179,115 @@ def my_cars(request):
         'created_at':              v.created_at.strftime('%d %b %Y'),
     } for v in vehicles]
     return JsonResponse({'vehicles': data})
+
+
+# ── Guest sell flow: OTP → estimate → phone-keyed account ─────────────────────
+
+def _json_body(request):
+    try:
+        return json.loads(request.body or b"{}")
+    except (json.JSONDecodeError, TypeError):
+        return {}
+
+
+def _parse_date(val):
+    try:
+        return date.fromisoformat(val) if val else None
+    except (ValueError, TypeError):
+        return None
+
+
+@require_POST
+def sell_send_otp(request):
+    """Send an OTP to the seller's phone (stub or real per FAST2SMS_API_KEY)."""
+    phone = normalise_phone(_json_body(request).get('phone'))
+    if len(phone) != 10 or phone[0] not in '6789':
+        return JsonResponse({'ok': False, 'error': 'Enter a valid 10-digit mobile number.'}, status=400)
+    try:
+        result = otp.send_otp(phone)
+    except otp.OTPRateLimited as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=429)
+    except otp.OTPError as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=502)
+    # Never leak the code; only the mode (so the UI can hint "use 000000" in stub).
+    return JsonResponse({'ok': True, 'stub': result['mode'] == 'stub'})
+
+
+@require_POST
+def sell_verify_otp(request):
+    """Verify the OTP, then create/find the phone-keyed account and sign in."""
+    body = _json_body(request)
+    phone = normalise_phone(body.get('phone'))
+    code = (body.get('code') or '').strip()
+    if not otp.verify_otp(phone, code):
+        return JsonResponse({'ok': False, 'error': 'Incorrect or expired OTP. Please try again.'}, status=400)
+
+    user = get_or_create_guest_user(phone)
+    # Explicit backend required because the project configures multiple
+    # AUTHENTICATION_BACKENDS (ModelBackend + allauth).
+    auth_login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+    request.session[SESS_VERIFIED] = phone
+    request.session.modified = True
+    return JsonResponse({'ok': True})
+
+
+@require_POST
+def sell_estimate(request):
+    """Compute the price estimate and persist the car + lead under the
+    phone-keyed account. Requires a verified phone (OTP) in the session."""
+    phone = request.session.get(SESS_VERIFIED)
+    car = request.session.get(SESS_CAR)
+    if not phone or not car:
+        return JsonResponse({'ok': False, 'error': 'Please verify your phone first.'}, status=403)
+
+    band_key = (_json_body(request).get('km_band') or '').strip()
+    if not pricing.band_midpoint(band_key):
+        return JsonResponse({'ok': False, 'error': 'Please select how many kilometres the car has run.'}, status=400)
+
+    estimate = pricing.compute_estimate(
+        car.get('make'), car.get('model'), car.get('variant'), car.get('year'), band_key)
+
+    user = request.user if request.user.is_authenticated else get_or_create_guest_user(phone)
+    plate = normalise_plate(car.get('plate_number', ''))
+
+    # Persist the car (real owner name from the server-side session, never the
+    # masked client copy) under the account. Idempotent on plate.
+    vehicle, created = Vehicle.objects.get_or_create(
+        plate_number=plate,
+        defaults=dict(
+            seller=user,
+            make=car.get('make', ''),
+            model=car.get('model', ''),
+            variant=car.get('variant', ''),
+            year=int(car.get('year') or pricing.CURRENT_YEAR),
+            fuel_type=(car.get('fuel_type') or Vehicle.FUEL_PETROL),
+            transmission=(car.get('transmission') or Vehicle.TRANSMISSION_MANUAL),
+            colour=car.get('colour', ''),
+            registration_date=_parse_date(car.get('registration_date')),
+            registration_state=car.get('registration_state', ''),
+            rto=car.get('rto', ''),
+            owner_name=car.get('owner_name', ''),         # real name, server-side only
+            owner_number=int(car.get('owner_number') or 1),
+            chassis_number=car.get('chassis_number', ''),
+            engine_number=car.get('engine_number', ''),
+            insurance_valid_till=_parse_date(car.get('insurance_valid_till')),
+            is_hypothecated=bool(car.get('is_hypothecated')),
+            accident_history=bool(car.get('accident_history')),
+            odometer_km=estimate['actual_km'],
+            expected_price=estimate['value'],
+            status=Vehicle.STATUS_SUBMITTED,             # triggers crm.Lead via signal
+        ),
+    )
+
+    band_label = next((b['label'] for b in pricing.KM_BANDS if b['key'] == band_key), '')
+    return JsonResponse({
+        'ok': True,
+        'estimate': {'low': estimate['low'], 'high': estimate['high']},
+        'car': {
+            'make': vehicle.make, 'model': vehicle.model, 'variant': vehicle.variant,
+            'year': vehicle.year, 'fuel_type': vehicle.get_fuel_type_display(),
+            'owner_name': mask_owner_name(vehicle.owner_name),  # masked for display
+            'km_band': band_label,
+        },
+        'already_listed': not created,
+    })
