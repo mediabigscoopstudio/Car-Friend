@@ -79,6 +79,10 @@
   .estimate-car .ec-meta { font-size: 12px; color: var(--txt2); margin-top: 2px; }
   .estimate-note { font-size: 12px; color: var(--txt2); text-align: center; line-height: 1.6; }
 
+  .cf-label { font-size: 12px; font-weight: 600; color: var(--txt2); margin: 2px 0 6px; display: block; text-align: left; }
+  .cf-field { width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; font-family: var(--cf-font-sans); font-size: 14px; color: var(--txt); outline: none; background: var(--cf-white); transition: border-color .2s, box-shadow .2s; margin-bottom: 12px; }
+  .cf-field:focus { border-color: var(--g1); box-shadow: 0 0 0 3px var(--cf-blue-100); }
+
   .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 {% endblock %}
@@ -137,6 +141,16 @@
         <p class="sub">These details came from your RC. Personal info is masked for your privacy.</p>
         <div style="text-align:center"><span class="masked-pill"><i class="bi bi-lock-fill"></i> Owner name masked</span></div>
         <div class="detail-grid" id="detailGrid"></div>
+        <label class="cf-label">Variant</label>
+        <input type="text" class="cf-field" id="editVariant" placeholder="e.g. N8" autocomplete="off">
+        <label class="cf-label">Fuel type</label>
+        <select class="cf-field" id="editFuel">
+          <option value="petrol">Petrol</option>
+          <option value="diesel">Diesel</option>
+          <option value="cng">CNG</option>
+          <option value="electric">Electric</option>
+          <option value="hybrid">Hybrid</option>
+        </select>
         <button class="btn-primary-flow" onclick="confirmDetails()"><i class="bi bi-check2-circle"></i> Confirm details</button>
         <button class="btn-ghost-flow" onclick="goStep(1)">← This isn't my car</button>
       </div>
@@ -211,8 +225,10 @@
 <script>
 (function () {
   var carData = null;       // masked details from server
+  var carEdits = { variant: '', fuel: 'petrol' };   // editable on the Details screen
   var selectedBand = null;
   var phone = '';
+  var FUELS = ['petrol', 'diesel', 'cng', 'electric', 'hybrid'];
 
   function $(id) { return document.getElementById(id); }
   function getCsrf() {
@@ -271,24 +287,30 @@
   };
 
   function renderDetails(d) {
+    // Read-only facts (variant + fuel are editable below). Owner name is masked.
     var rows = [
       ['Number plate', d.plate_number],
-      ['Make & model', d.make + ' ' + d.model + (d.variant ? ' ' + d.variant : '')],
+      ['Brand', d.make],
+      ['Model', d.model],
       ['Year', d.year],
-      ['Fuel', cap(d.fuel_type)],
-      ['Transmission', cap(d.transmission)],
-      ['Colour', d.colour],
+      ['RTO code', d.rto || '—'],
       ['Registered owner', d.owner_name],   // already masked by the server
-      ['Owner number', d.owner_number + ordinal(d.owner_number) + ' owner'],
-      ['Registration', (d.registration_state || '') + (d.rto ? ' — ' + d.rto : '')],
-      ['Insurance valid', d.insurance_valid_till || 'N/A']
+      ['Owner number', d.owner_number ? d.owner_number + ordinal(d.owner_number) + ' owner' : '—']
     ];
     $('detailGrid').innerHTML = rows.map(function (r) {
       return '<div class="detail-item"><div class="lbl">' + r[0] + '</div><div class="val">' + (r[1] || '—') + '</div></div>';
     }).join('');
+    // Prefill the editable fields.
+    $('editVariant').value = d.variant || '';
+    var fuel = (d.fuel_type || 'petrol').toLowerCase();
+    $('editFuel').value = FUELS.indexOf(fuel) >= 0 ? fuel : 'petrol';
   }
 
-  window.confirmDetails = function () { goStep(3); };
+  window.confirmDetails = function () {
+    carEdits.variant = $('editVariant').value.trim();
+    carEdits.fuel = $('editFuel').value;
+    goStep(3);
+  };
 
   // ── Screen 3: kilometres ──
   window.selectBand = function (el) {
@@ -339,7 +361,7 @@
 
   // ── Screen 5: estimate (also persists the car + lead) ──
   function fetchEstimate(btn) {
-    api('/vehicles/sell/estimate/', { km_band: selectedBand }).then(function (res) {
+    api('/vehicles/sell/estimate/', { km_band: selectedBand, variant: carEdits.variant, fuel: carEdits.fuel }).then(function (res) {
       if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-check2-circle"></i> Verify & see price'; }
       if (!res.data.ok) { showOtpError(res.data.error || 'Could not compute your price.'); return; }
       var e = res.data.estimate, c = res.data.car;
@@ -359,6 +381,14 @@
   $('plateInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); doLookup(); } });
   $('phoneInput').addEventListener('input', function () { this.value = this.value.replace(/[^0-9]/g, ''); });
   $('otpInput').addEventListener('input', function () { this.value = this.value.replace(/[^0-9]/g, ''); });
+
+  // Arrived from the homepage hero? The car is already in the session — resume
+  // at the Car Details step (Step 2) instead of asking for the plate again.
+  {% if prefill_car %}
+  carData = {{ prefill_car|safe }};
+  renderDetails(carData);
+  goStep(2);
+  {% endif %}
 })();
 </script>
 {% endblock %}

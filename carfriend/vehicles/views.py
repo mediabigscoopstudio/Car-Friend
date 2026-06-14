@@ -155,7 +155,28 @@ def list_car(request):
         )
         return redirect('seller_dashboard')
 
-    return render(request, 'www/vehicles/list_car.html', {'km_bands': pricing.KM_BANDS})
+    ctx = {'km_bands': pricing.KM_BANDS}
+    # If the visitor came from the homepage hero, a lookup already populated the
+    # session — hand the (masked) car to the template so the flow resumes at the
+    # Car Details step instead of asking for the plate again.
+    car = request.session.get(SESS_CAR)
+    if car:
+        ctx['prefill_car'] = json.dumps({
+            'plate_number':         car.get('plate_number', ''),
+            'make':                 car.get('make', ''),
+            'model':                car.get('model', ''),
+            'variant':              car.get('variant', ''),
+            'year':                 car.get('year', ''),
+            'fuel_type':            car.get('fuel_type', ''),
+            'transmission':         car.get('transmission', ''),
+            'colour':               car.get('colour', ''),
+            'rto':                  car.get('rto', ''),
+            'registration_state':   car.get('registration_state', ''),
+            'owner_name':           mask_owner_name(car.get('owner_name', '')),
+            'owner_number':         car.get('owner_number', 1),
+            'insurance_valid_till': car.get('insurance_valid_till', ''),
+        })
+    return render(request, 'www/vehicles/list_car.html', ctx)
 
 
 @login_required(login_url='/auth/login/')
@@ -240,12 +261,22 @@ def sell_estimate(request):
     if not phone or not car:
         return JsonResponse({'ok': False, 'error': 'Please verify your phone first.'}, status=403)
 
-    band_key = (_json_body(request).get('km_band') or '').strip()
+    body = _json_body(request)
+    band_key = (body.get('km_band') or '').strip()
     if not pricing.band_midpoint(band_key):
         return JsonResponse({'ok': False, 'error': 'Please select how many kilometres the car has run.'}, status=400)
 
+    # Variant + fuel are editable on the Car Details screen; honour edits for
+    # both the estimate and the saved record.
+    variant = body.get('variant')
+    variant = variant.strip() if isinstance(variant, str) else car.get('variant', '')
+    valid_fuels = {c[0] for c in Vehicle.FUEL_CHOICES}
+    fuel = (body.get('fuel') or car.get('fuel_type') or Vehicle.FUEL_PETROL).lower()
+    if fuel not in valid_fuels:
+        fuel = Vehicle.FUEL_PETROL
+
     estimate = pricing.compute_estimate(
-        car.get('make'), car.get('model'), car.get('variant'), car.get('year'), band_key)
+        car.get('make'), car.get('model'), variant, car.get('year'), band_key)
 
     user = request.user if request.user.is_authenticated else get_or_create_guest_user(phone)
     plate = normalise_plate(car.get('plate_number', ''))
@@ -258,9 +289,9 @@ def sell_estimate(request):
             seller=user,
             make=car.get('make', ''),
             model=car.get('model', ''),
-            variant=car.get('variant', ''),
+            variant=variant,
             year=int(car.get('year') or pricing.CURRENT_YEAR),
-            fuel_type=(car.get('fuel_type') or Vehicle.FUEL_PETROL),
+            fuel_type=fuel,
             transmission=(car.get('transmission') or Vehicle.TRANSMISSION_MANUAL),
             colour=car.get('colour', ''),
             registration_date=_parse_date(car.get('registration_date')),

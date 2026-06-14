@@ -385,43 +385,33 @@
       <!-- right: instant-price card -->
       <div class="col-lg-6">
         <div class="price-card">
-          <h2>Get your car's price now</h2>
-          <p class="sub">Enter your registration number to begin.</p>
+          <h2>What's my car worth?</h2>
+          <p class="sub">Enter your registration number — we'll fetch your car's details.</p>
 
-          <!-- step 1: plate / brand entry -->
-          <div id="plateStep">
+          <!-- HERO = registration-number lookup ONLY. No price, no mobile here. -->
+          <div id="heroPlateStep">
             <label class="plate-field" id="plateField" for="plateInput">
               <span class="plate-ind"><span class="flag"></span><span>IND</span></span>
               <input id="plateInput" type="text" autocomplete="off" maxlength="13"
                      placeholder="GJ 05 MK 2024" aria-label="Vehicle number plate">
             </label>
             <div class="field-msg err hidden" id="plateMsg"></div>
-            <button class="btn-estimate" id="estimateBtn" type="button">
-              <span class="label">Get instant car price</span>
+            <button class="btn-estimate" id="lookupBtn" type="button">
+              <span class="label">Get car details</span>
             </button>
-
-            <div class="hero-or">OR Select your brand</div>
-            <div class="chip-row" id="brandChips"></div>
-            <select class="brand-select hidden" id="modelSelect" aria-label="Select model"></select>
-            <select class="brand-select hidden" id="yearSelect" aria-label="Select year"></select>
-            <a href="/vehicles/list-car/" class="view-all">View all brands &rarr;</a>
+            <p class="sub" style="margin:.75rem 0 0;text-align:center;">Free &amp; instant · takes about 2 minutes</p>
           </div>
 
-          <!-- step 2: result + lead capture -->
-          <div class="price-result hidden" id="resultStep">
-            <div class="result-car" id="resultCar"></div>
-            <div class="result-meta" id="resultMeta"></div>
-            <div class="price-band" id="priceBand"></div>
-            <div id="leadForm">
-              <div class="phone-row">
-                <input id="phoneInput" type="tel" inputmode="numeric" maxlength="10"
-                       placeholder="10-digit mobile number" aria-label="Mobile number">
-                <button class="btn-offer" id="offerBtn" type="button">See my offer</button>
-              </div>
-              <div class="field-msg err hidden" id="phoneMsg"></div>
+          <!-- one-line car summary + Continue (still NO price, NO mobile) -->
+          <div id="heroSummary" class="hidden">
+            <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;">
+              <i class="bi bi-check-circle-fill" style="color:var(--cf-teal);font-size:1.2rem;"></i>
+              <span class="result-car" id="heroCarLine"></span>
             </div>
-            <div class="lead-done hidden" id="leadDone"><i class="bi bi-check-circle-fill"></i> <span></span></div>
-            <a href="#" class="view-all" id="resetLink">&#8635; Check another car</a>
+            <button class="btn-estimate" id="continueBtn" type="button">
+              <span class="label">Continue</span>
+            </button>
+            <a href="#" class="view-all" id="heroReset">&#8635; Check another car</a>
           </div>
         </div>
       </div>
@@ -843,166 +833,60 @@
 <script>
 (function () {
   var CSRF = "{{ csrf_token }}";
-  var ESTIMATE_URL = "{% url 'estimate_price' %}";
-  var CAPTURE_URL = "{% url 'capture_lead' %}";
-
-  // Popular Indian brands as text chips (no third-party logos / trademarks).
-  var BRANDS = {
-    "Maruti Suzuki": ["Swift", "Baleno", "Dzire", "WagonR", "Brezza", "Ertiga"],
-    "Hyundai": ["i20", "Creta", "Venue", "Verna", "Grand i10"],
-    "Tata": ["Nexon", "Punch", "Tiago", "Harrier", "Altroz"],
-    "Mahindra": ["Scorpio", "XUV700", "Thar", "Bolero", "XUV300"],
-    "Honda": ["City", "Amaze", "Jazz", "WR-V"],
-    "Toyota": ["Innova", "Fortuner", "Glanza", "Urban Cruiser"],
-    "Kia": ["Seltos", "Sonet", "Carens"],
-    "Renault": ["Kwid", "Triber", "Kiger"]
-  };
-
+  var LOOKUP_URL = "/vehicles/vahaan-lookup/";
   var PLATE_RE = /^[A-Z]{2}[0-9]{1,2}[A-Z]{0,3}[0-9]{1,4}$/;
   var BH_RE = /^[0-9]{2}BH[0-9]{4}[A-Z]{1,2}$/;
 
-  var $ = function (id) { return document.getElementById(id); };
-  var state = { vehicle: null, price: null, plate: "", source: "plate" };
-
-  var plateInput = $("plateInput"), plateField = $("plateField"), plateMsg = $("plateMsg");
-  var estimateBtn = $("estimateBtn"), brandChips = $("brandChips");
-  var modelSelect = $("modelSelect"), yearSelect = $("yearSelect");
-  var plateStep = $("plateStep"), resultStep = $("resultStep");
+  function $(id) { return document.getElementById(id); }
+  var plateInput = $("plateInput");
   if (!plateInput) { return; }
+  var plateField = $("plateField"), plateMsg = $("plateMsg"), lookupBtn = $("lookupBtn");
 
   function norm(p) { return (p || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
-  function validPlate(p) { return PLATE_RE.test(p) || BH_RE.test(p); }
-  function rupee(n) { return "₹" + Number(n).toLocaleString("en-IN"); }
+  function valid(p) { return PLATE_RE.test(p) || BH_RE.test(p); }
+  function showMsg(t) { plateMsg.textContent = t; plateMsg.classList.remove("hidden"); plateField.classList.add("is-invalid"); }
+  function clearMsg() { plateMsg.classList.add("hidden"); plateField.classList.remove("is-invalid"); }
 
-  function showMsg(el, text) { el.textContent = text; el.classList.remove("hidden"); }
-  function hide(el) { el.classList.add("hidden"); }
+  plateInput.addEventListener("input", function () { this.value = this.value.toUpperCase(); clearMsg(); });
+  plateInput.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); lookupBtn.click(); } });
 
-  plateInput.addEventListener("input", function () {
-    plateField.classList.remove("is-invalid");
-    hide(plateMsg);
-  });
-
-  function setLoading(btn, on, label) {
-    btn.disabled = on;
-    btn.innerHTML = on
-      ? '<span class="spinner"></span> Checking…'
-      : '<span class="label">' + label + '</span>';
+  function setLoading(on) {
+    lookupBtn.disabled = on;
+    lookupBtn.innerHTML = on ? '<span class="spinner"></span> Fetching…' : '<span class="label">Get car details</span>';
   }
 
-  function postJSON(url, payload) {
-    return fetch(url, {
+  lookupBtn.addEventListener("click", function () {
+    var p = norm(plateInput.value);
+    clearMsg();
+    if (!valid(p)) { showMsg("Please enter a valid Indian number plate (e.g. GJ05MK2024)."); return; }
+    setLoading(true);
+    fetch(LOOKUP_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF },
-      body: JSON.stringify(payload)
-    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); });
-  }
-
-  function showResult(d) {
-    state.vehicle = d.vehicle; state.price = d.price;
-    state.plate = d.plate_number || state.plate; state.source = d.source || "plate";
-    var v = d.vehicle || {};
-    $("resultCar").textContent = [v.year, v.make, v.model].filter(Boolean).join(" ") || "Your car";
-    $("resultMeta").textContent = [v.fuel, state.plate].filter(Boolean).join(" · ");
-    $("priceBand").innerHTML = rupee(d.price.low) + " – " + rupee(d.price.high) +
-      "<small>Estimated price band · final offer after free inspection</small>";
-    hide(plateStep); resultStep.classList.remove("hidden");
-    $("leadDone").classList.add("hidden");
-    $("leadForm").classList.remove("hidden");
-  }
-
-  var busy = false;
-  function runEstimate(payload, btn, label) {
-    if (busy) { return; }
-    busy = true; setLoading(btn, true, label);
-    postJSON(ESTIMATE_URL, payload).then(function (res) {
-      busy = false; setLoading(btn, false, label);
-      if (res.ok && res.data.ok) { showResult(res.data); }
-      else {
-        var msg = (res.data && res.data.error) || "Something went wrong. Please try again.";
-        plateField.classList.add("is-invalid");
-        showMsg(plateMsg, msg);
-        if (res.data && res.data.fallback) { brandChips.scrollIntoView({ behavior: "smooth", block: "nearest" }); }
-      }
+      body: JSON.stringify({ plate_number: p })
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      setLoading(false);
+      if (!d.found) { showMsg(d.error || "We couldn't find that car. Please check the number plate."); return; }
+      // HERO shows NO price and NO mobile field — just a one-line summary.
+      $("heroCarLine").textContent = [d.year, d.make, d.model, d.variant].filter(Boolean).join(" ");
+      $("heroPlateStep").classList.add("hidden");
+      $("heroSummary").classList.remove("hidden");
     }).catch(function () {
-      busy = false; setLoading(btn, false, label);
-      plateField.classList.add("is-invalid");
-      showMsg(plateMsg, "Network error. Please check your connection and try again.");
-    });
-  }
-
-  estimateBtn.addEventListener("click", function () {
-    var p = norm(plateInput.value);
-    if (!validPlate(p)) {
-      plateField.classList.add("is-invalid");
-      showMsg(plateMsg, "Please enter a valid Indian number plate (e.g. GJ05MK2024).");
-      return;
-    }
-    runEstimate({ plate_number: p }, estimateBtn, "Get instant car price");
-  });
-
-  // ── Brand fallback ──
-  Object.keys(BRANDS).forEach(function (brand) {
-    var chip = document.createElement("button");
-    chip.type = "button"; chip.className = "brand-chip"; chip.textContent = brand;
-    chip.addEventListener("click", function () {
-      Array.prototype.forEach.call(brandChips.children, function (c) { c.classList.remove("selected"); });
-      chip.classList.add("selected");
-      modelSelect.innerHTML = '<option value="">Select model</option>' +
-        BRANDS[brand].map(function (m) { return '<option>' + m + '</option>'; }).join("");
-      modelSelect.classList.remove("hidden"); yearSelect.classList.add("hidden");
-      modelSelect.dataset.brand = brand;
-    });
-    brandChips.appendChild(chip);
-  });
-
-  modelSelect.addEventListener("change", function () {
-    if (!modelSelect.value) { yearSelect.classList.add("hidden"); return; }
-    var now = new Date().getFullYear(), opts = ['<option value="">Select year</option>'];
-    for (var y = now; y >= now - 20; y--) { opts.push('<option>' + y + '</option>'); }
-    yearSelect.innerHTML = opts.join("");
-    yearSelect.classList.remove("hidden");
-  });
-
-  yearSelect.addEventListener("change", function () {
-    if (!yearSelect.value) { return; }
-    runEstimate({
-      make: modelSelect.dataset.brand, model: modelSelect.value, year: yearSelect.value
-    }, estimateBtn, "Get instant car price");
-  });
-
-  // ── Lead capture ──
-  $("offerBtn").addEventListener("click", function () {
-    var phone = ($("phoneInput").value || "").replace(/[^0-9]/g, "");
-    var phoneMsg = $("phoneMsg");
-    if (!/^[6-9][0-9]{9}$/.test(phone)) {
-      showMsg(phoneMsg, "Please enter a valid 10-digit mobile number.");
-      return;
-    }
-    hide(phoneMsg);
-    var btn = $("offerBtn"); btn.disabled = true; btn.textContent = "Sending…";
-    var v = state.vehicle || {};
-    postJSON(CAPTURE_URL, {
-      plate_number: state.plate, make: v.make, model: v.model, year: v.year, fuel: v.fuel,
-      phone: phone, price: state.price, source: state.source
-    }).then(function (res) {
-      btn.disabled = false; btn.textContent = "See my offer";
-      if (res.ok && res.data.ok) {
-        $("leadForm").classList.add("hidden");
-        var done = $("leadDone"); done.querySelector("span").textContent = res.data.message;
-        done.classList.remove("hidden");
-      } else {
-        showMsg(phoneMsg, (res.data && res.data.error) || "Could not save. Please try again.");
-      }
-    }).catch(function () {
-      btn.disabled = false; btn.textContent = "See my offer";
-      showMsg(phoneMsg, "Network error. Please try again.");
+      setLoading(false);
+      showMsg("Network error. Please try again.");
     });
   });
 
-  $("resetLink").addEventListener("click", function (e) {
+  // Continue → hand off to the full sell flow (Car Details → Kilometres → OTP →
+  // Estimate). The car was stored server-side in the session by the lookup, so
+  // the flow resumes at the Car Details step. Price appears only at the end.
+  $("continueBtn").addEventListener("click", function () { window.location.href = "/vehicles/list-car/"; });
+
+  $("heroReset").addEventListener("click", function (e) {
     e.preventDefault();
-    resultStep.classList.add("hidden"); plateStep.classList.remove("hidden");
-    plateInput.value = ""; $("phoneInput").value = "";
+    $("heroSummary").classList.add("hidden");
+    $("heroPlateStep").classList.remove("hidden");
+    plateInput.value = ""; clearMsg();
   });
 })();
 </script>
