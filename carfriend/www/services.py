@@ -248,3 +248,129 @@ def estimate_price_band(make, model, year, fuel):
     low = max(low, 25000)
     high = max(high, low + 25000)
     return low, high
+
+
+# ── Seller KYC: PAN + Aadhaar (Surepass) ─────────────────────────────────────
+# Reuses the same plumbing as the RC lookup: SUREPASS_TOKEN from env, sandbox
+# base URL. [TEMP kyc] logging mirrors [TEMP surepass] so the sandbox response
+# shapes can be confirmed and the parsing adjusted, then the logging removed.
+
+PAN_ENDPOINT = "/api/v1/pan/pan-comprehensive"
+DIGILOCKER_INIT_ENDPOINT = "/api/v1/digilocker/initialize"
+DIGILOCKER_AADHAAR_ENDPOINT = "/api/v1/digilocker/download-aadhaar"
+
+
+def _call_surepass(path, payload=None, tag="kyc", method="POST"):
+    """Generic Surepass call. Returns (status_code, parsed_json_dict).
+
+    Raises a SurepassError subclass on any failure. TEMP-logs status + body.
+    """
+    token = config("SUREPASS_TOKEN", default="")
+    if not token:
+        logger.error("SUREPASS_TOKEN is not set; %s unavailable.", tag)
+        raise SurepassConfigError("Verification is not configured.")
+
+    url = SUREPASS_BASE + path
+    data = json.dumps(payload).encode("utf-8") if payload is not None else None
+    req = urllib.request.Request(
+        url, data=data, method=method,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as resp:
+            status = getattr(resp, "status", None) or resp.getcode()
+            raw = resp.read().decode("utf-8", errors="replace")
+    except urllib.error.HTTPError as exc:
+        try:
+            raw = exc.read().decode("utf-8", errors="replace")
+        except Exception:
+            raw = ""
+        # TEMP debug logging — remove once verified (body may contain PII).
+        logger.warning("[TEMP %s] status=%s body=%s", tag, exc.code, raw[:2000])
+        if exc.code in (401, 403):
+            raise SurepassConfigError("Verification auth failed.") from None
+        if exc.code in (404, 422):
+            raise SurepassNotFound("No matching record found.") from None
+        raise SurepassError("Verification failed. Please try again.") from None
+    except (socket.timeout, TimeoutError):
+        logger.warning("[TEMP %s] status=timeout after %ss", tag, TIMEOUT_SECONDS)
+        raise SurepassTimeout("Verification timed out.") from None
+    except urllib.error.URLError as exc:
+        logger.warning("[TEMP %s] status=urlerror body=%s", tag, exc.reason)
+        raise SurepassTimeout("Could not reach the verification service.") from None
+
+    # TEMP debug logging — remove once verified (body may contain PII).
+    logger.warning("[TEMP %s] status=%s body=%s", tag, status, raw[:2000])
+
+    try:
+        return status, json.loads(raw)
+    except ValueError:
+        raise SurepassError("Verification returned an unexpected response.") from None
+
+
+def mask_pan(pan):
+    p = (pan or "").upper().strip()
+    return p[:2] + "X" * (len(p) - 4) + p[-2:] if len(p) >= 4 else "XXXX"
+
+
+def mask_aadhaar(aadhaar):
+    digits = "".join(c for c in (aadhaar or "") if c.isdigit())
+    return "XXXX XXXX " + digits[-4:] if len(digits) >= 4 else "XXXX XXXX XXXX"
+
+
+def names_match(a, b):
+    """Loose name match: at least one shared token and >=50% token overlap of
+    the shorter name. Good enough to flag a clearly-different PAN holder."""
+    def toks(s):
+        cleaned = "".join(c.lower() if (c.isalnum() or c.isspace()) else " " for c in (s or ""))
+        return {t for t in cleaned.split() if len(t) > 1}
+    ta, tb = toks(a), toks(b)
+    if not ta or not tb:
+        return False
+    shared = len(ta & tb)
+    return shared >= 1 and shared >= min(len(ta), len(tb)) * 0.5
+
+
+def pan_comprehensive(pan):
+    """Look up a PAN. Returns {"name": str, "ref": str, "pan_masked": str}."""
+    _status, body = _call_surepass(PAN_ENDPOINT, {"id_number": pan}, tag="kyc pan")
+    data = (body or {}).get("data") or {}
+    name = data.get("full_name") or data.get("name") or data.get("registered_name") or ""
+    ref = data.get("client_id") or (body or {}).get("client_id") or ""
+    return {"name": str(name).strip(), "ref": str(ref), "pan_masked": mask_pan(pan)}
+
+
+def digilocker_initialize(redirect_url):
+    """Start a Digilocker via-link session. Returns {"url": str, "client_id": str}.
+
+    The seller is redirected to `url`; Surepass returns them to `redirect_url`.
+    """
+    payload = {"data": {
+        "signup_flow": False,
+        "redirect_url": redirect_url,
+        "state": "carfriend_kyc",
+        "skip_main_screen": False,
+    }}
+    _status, body = _call_surepass(DIGILOCKER_INIT_ENDPOINT, payload, tag="kyc digilocker init")
+    data = (body or {}).get("data") or {}
+    return {
+        "url": data.get("url") or data.get("redirect_url") or "",
+        "client_id": str(data.get("client_id") or ""),
+    }
+
+
+def digilocker_fetch_aadhaar(client_id):
+    """Fetch the Aadhaar result after the Digilocker return.
+
+    Returns {"name": str, "aadhaar_masked": str, "ref": str}. The raw Aadhaar
+    number is NEVER stored — only the masked value is returned.
+    """
+    _status, body = _call_surepass(DIGILOCKER_AADHAAR_ENDPOINT, {"client_id": client_id}, tag="kyc digilocker aadhaar")
+    data = (body or {}).get("data") or {}
+    name = data.get("full_name") or data.get("name") or ""
+    aadhaar = data.get("aadhaar_number") or data.get("aadhaar") or data.get("masked_aadhaar") or ""
+    return {"name": str(name).strip(), "aadhaar_masked": mask_aadhaar(aadhaar), "ref": str(client_id)}

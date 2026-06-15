@@ -1,11 +1,21 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.http import FileResponse, Http404
 from django.shortcuts import render, redirect, get_object_or_404
+from django.utils import timezone
 
 from accounts.decorators import admin_required
+from accounts.dealer_docs import DEALER_REQUIRED_DOCS
+from accounts.forms import DealerVerificationForm, validate_document
 from core.models import log
-from .models import User, Role, DealerProfile
+from kyc.models import KYCVerification
+from notifications.services import notify
+from .models import (
+    User, Role, DealerProfile,
+    DealerVerification, DealerDocument,
+    dealer_can_bid, latest_dealer_verification,
+)
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -175,49 +185,85 @@ def set_role(request):
 
 # ── Dashboards ────────────────────────────────────────────────────────────────
 
+def _safe_int(v):
+    try:
+        return int(str(v).strip())
+    except (TypeError, ValueError):
+        return 0
+
+
 @login_required(login_url="/auth/login/")
 def dealer_onboard(request):
-    """Show dealer details form; on submit create DealerProfile + switch role."""
-    if not request.user.is_authenticated:
-        return redirect("/auth/login/")
-    # If already a dealer with a profile, go straight to dashboard
-    if request.user.is_dealer and hasattr(request.user, "dealer_profile"):
+    """Dealer verification: business details + required document uploads.
+
+    Creates a DealerVerification (pending) that a super admin approves. The
+    dealer cannot bid until approved. Re-submittable after a rejection.
+    """
+    latest = latest_dealer_verification(request.user)
+    # A pending or approved submission already exists — go to the dashboard.
+    if latest and latest.status in (DealerVerification.Status.PENDING, DealerVerification.Status.APPROVED):
         return redirect("/auth/dealer/dashboard/")
+
     error = None
     if request.method == "POST":
-        dealership_name = request.POST.get("dealership_name", "").strip()
-        gstin           = request.POST.get("gstin", "").strip().upper()
-        city            = request.POST.get("city", "").strip()
-        phone           = request.POST.get("phone", "").strip()
-        budget_min      = request.POST.get("budget_min", "0").strip() or "0"
-        budget_max      = request.POST.get("budget_max", "0").strip() or "0"
-        brand_interest  = request.POST.get("brand_interest", "").strip()
+        form  = DealerVerificationForm(request.POST)
+        city  = request.POST.get("city", "").strip()
+        phone = request.POST.get("phone", "").strip()
+        brand_interest = request.POST.get("brand_interest", "").strip()
 
-        if not dealership_name:
-            error = "Dealership / business name is required."
+        # Validate the required documents.
+        doc_files, doc_error = {}, None
+        for key, label in DEALER_REQUIRED_DOCS:
+            f = request.FILES.get(f"doc_{key}")
+            err = validate_document(f)
+            if err:
+                doc_error = f"{label}: {err}"
+                break
+            doc_files[key] = f
+
+        if not form.is_valid():
+            error = next(iter(form.errors.values()))[0]
         elif not city:
             error = "City is required."
+        elif doc_error:
+            error = doc_error
         else:
-            # Update user role + phone + city
-            request.user.role  = Role.DEALER
-            request.user.city  = city
+            request.user.role = Role.DEALER
+            request.user.city = city
             if phone:
                 request.user.phone = phone
             request.user.save(update_fields=["role", "city", "phone"])
-            # Create or update DealerProfile
             DealerProfile.objects.update_or_create(
                 user=request.user,
                 defaults={
-                    "dealership_name": dealership_name,
-                    "gstin":           gstin,
+                    "dealership_name": form.cleaned_data["business_name"],
+                    "gstin":           form.cleaned_data["gstin"],
                     "city":            city,
-                    "budget_min":      int(budget_min),
-                    "budget_max":      int(budget_max),
+                    "budget_min":      _safe_int(request.POST.get("budget_min")),
+                    "budget_max":      _safe_int(request.POST.get("budget_max")),
                     "brand_interest":  brand_interest,
                 },
             )
+            verification = DealerVerification.objects.create(
+                dealer=request.user,
+                business_name=form.cleaned_data["business_name"],
+                gstin=form.cleaned_data["gstin"],
+                status=DealerVerification.Status.PENDING,
+            )
+            for key, f in doc_files.items():
+                DealerDocument.objects.create(verification=verification, doc_type=key, file=f)
+            log(request.user, "dealer.verification.submit", verification, request)
+            notify(request.user, "dealer_verification",
+                   title="Verification submitted",
+                   body="Your documents are under review. We'll notify you once approved.")
             return redirect("/auth/dealer/dashboard/")
-    return render(request, "www/dashboard/dealer_onboard.html", {"error": error})
+
+    return render(request, "www/dashboard/dealer_onboard.html", {
+        "error": error,
+        "required_docs": DEALER_REQUIRED_DOCS,
+        "rejected": bool(latest and latest.status == DealerVerification.Status.REJECTED),
+        "reject_reason": latest.reject_reason if latest else "",
+    })
 
 
 @login_required(login_url="/auth/login/")
@@ -240,15 +286,106 @@ def switch_role(request):
     return redirect(get_dashboard_url(request.user))
 
 
+def _seller_kyc_state(user):
+    def st(kind):
+        rec = KYCVerification.objects.filter(subject=user, kind=kind).order_by("-created_at").first()
+        return rec.status if rec else None
+    pan, aad = st("pan"), st("aadhaar")
+    if user.is_kyc_done:
+        return "verified"
+    if pan == "rejected" or aad == "rejected":
+        return "failed"
+    return "pending"
+
+
 @login_required(login_url="/auth/login/")
 def seller_dashboard(request):
     if not request.user.is_seller:
         return redirect(get_dashboard_url(request.user))
-    return render(request, "www/dashboard/seller.html")
+    return render(request, "www/dashboard/seller.html", {
+        "kyc_status": _seller_kyc_state(request.user),
+    })
 
 
 @login_required(login_url="/auth/login/")
 def dealer_dashboard(request):
     if not request.user.is_dealer:
         return redirect(get_dashboard_url(request.user))
-    return render(request, "www/dashboard/dealer.html")
+    latest = latest_dealer_verification(request.user)
+    return render(request, "www/dashboard/dealer.html", {
+        "verification_status": latest.status if latest else None,  # None/pending/approved/rejected
+        "reject_reason": latest.reject_reason if latest else "",
+        "can_bid": dealer_can_bid(request.user),
+    })
+
+
+# ── Admin: dealer verification approval queue (super-admin) ──────────────────
+
+@admin_required
+def dealer_verifications(request):
+    """Pending dealer verification submissions for admin review."""
+    pending = (DealerVerification.objects
+               .filter(status=DealerVerification.Status.PENDING)
+               .select_related("dealer").prefetch_related("documents"))
+    return render(request, "master/dealer_verifications.html", {
+        "active": "dealer_verifications",
+        "records": pending,
+    })
+
+
+@admin_required
+def dealer_verification_detail(request, id):
+    rec = get_object_or_404(
+        DealerVerification.objects.select_related("dealer").prefetch_related("documents"), id=id)
+    return render(request, "master/dealer_verification_detail.html", {
+        "active": "dealer_verifications",
+        "rec": rec,
+    })
+
+
+@admin_required
+def dealer_verification_decide(request, id):
+    if request.method != "POST":
+        return redirect("/dealer_verifications")
+    rec = get_object_or_404(DealerVerification, id=id)
+    decision = request.POST.get("decision")
+
+    if decision == "approve":
+        rec.status = DealerVerification.Status.APPROVED
+        rec.reject_reason = ""
+        rec.reviewed_by = request.user
+        rec.reviewed_at = timezone.now()
+        rec.save()
+        # Ensure the dealer profile is enabled for bidding.
+        DealerProfile.objects.filter(user=rec.dealer).update(status="Enabled", is_banned=False)
+        log(request.user, "dealer.verification.approve", rec, request)
+        notify(rec.dealer, "dealer_verification",
+               title="Verification approved",
+               body="Your dealer account is verified. You can now bid in auctions.")
+    elif decision == "reject":
+        reason = (request.POST.get("reason") or "").strip()
+        if not reason:
+            messages.error(request, "A reason is required to reject.")
+            return redirect(f"/dealer_verifications/{rec.id}/")
+        rec.status = DealerVerification.Status.REJECTED
+        rec.reject_reason = reason
+        rec.reviewed_by = request.user
+        rec.reviewed_at = timezone.now()
+        rec.save()
+        log(request.user, "dealer.verification.reject", rec, request, reason=reason)
+        notify(rec.dealer, "dealer_verification",
+               title="Verification needs changes",
+               body=reason)
+    return redirect("/dealer_verifications")
+
+
+@admin_required
+def dealer_document_download(request, doc_id):
+    """Stream a private dealer document — admin only, never publicly served."""
+    doc = get_object_or_404(DealerDocument, id=doc_id)
+    try:
+        fh = doc.file.open("rb")
+    except (FileNotFoundError, ValueError):
+        raise Http404("Document not available.")
+    log(request.user, "dealer.document.view", doc, request)
+    return FileResponse(fh, as_attachment=False, filename=f"{doc.doc_type}_{doc.id}")

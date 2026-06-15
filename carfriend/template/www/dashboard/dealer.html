@@ -45,13 +45,31 @@
 <div class="dash-body">
   <div class="container">
 
-    {% if not request.user.is_kyc_done %}
+    {% if verification_status == 'approved' or can_bid %}
+    <div class="kyc-banner" style="background:var(--cf-teal-tint);border-color:var(--cf-teal);color:var(--cf-teal-dark)">
+      <i class="bi bi-patch-check-fill"></i>
+      <div><strong>Dealer verified.</strong> Bidding is enabled — browse live auctions and place your bids.</div>
+    </div>
+    {% elif verification_status == 'pending' %}
+    <div class="kyc-banner" style="background:var(--cf-sky-tint);border-color:var(--cf-sky);color:var(--cf-azure)">
+      <i class="bi bi-hourglass-split"></i>
+      <div><strong>Documents submitted — pending admin approval.</strong>
+        We're reviewing your business documents. You'll be able to bid once approved.</div>
+    </div>
+    {% elif verification_status == 'rejected' %}
+    <div class="kyc-banner">
+      <i class="bi bi-x-octagon"></i>
+      <div><strong>Verification needs changes.</strong>
+        {{ reject_reason }}
+        <a href="/auth/dealer/onboard/">Resubmit documents →</a></div>
+    </div>
+    {% else %}
     <div class="kyc-banner">
       <i class="bi bi-shield-exclamation"></i>
       <div>
         <strong>Complete dealer verification to place bids.</strong>
-        GST + PAN + business document verification required.
-        <a href="/auth/dealer/onboard/">Complete Verification →</a>
+        Business details + GST, PAN, TAN and AOA documents required.
+        <a href="/auth/dealer/onboard/">Complete verification →</a>
       </div>
     </div>
     {% endif %}

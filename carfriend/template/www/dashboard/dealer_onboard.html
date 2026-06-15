@@ -94,13 +94,22 @@
         <div>Your details are reviewed by our team. Full bidding access is unlocked once verification is complete. You can start browsing auctions immediately.</div>
       </div>
 
-      <form method="POST" action="/auth/dealer/onboard/">
+      {% if rejected %}
+      <div style="background:var(--cf-coral-tint);border:1px solid var(--cf-coral);color:var(--cf-coral-dark);padding:12px 14px;border-radius:10px;margin-bottom:14px;font-size:13px">
+        <strong>Your previous submission was rejected:</strong> {{ reject_reason }} Please correct and resubmit.
+      </div>
+      {% endif %}
+      {% if error %}
+      <div style="background:var(--cf-danger-tint);border:1px solid var(--cf-danger);color:var(--cf-danger);padding:12px 14px;border-radius:10px;margin-bottom:14px;font-size:13px">{{ error }}</div>
+      {% endif %}
+
+      <form method="POST" action="/auth/dealer/onboard/" enctype="multipart/form-data">
         {% csrf_token %}
 
         <div class="section-label"><i class="bi bi-building me-1"></i>Business Details</div>
 
-        <label class="cf-label">Dealership / Business Name <span style="color:var(--cf-danger);">*</span></label>
-        <input type="text" name="dealership_name" class="cf-field" placeholder="e.g. Sharma Auto Sales" required>
+        <label class="cf-label">Legal Business Name <span style="color:var(--cf-danger);">*</span></label>
+        <input type="text" name="business_name" class="cf-field" placeholder="e.g. Sharma Auto Sales Pvt Ltd" required>
 
         <div class="two-col">
           <div>
@@ -113,8 +122,15 @@
           </div>
         </div>
 
-        <label class="cf-label">GSTIN (GST Number)</label>
-        <input type="text" name="gstin" class="cf-field" placeholder="22AAAAA0000A1Z5" maxlength="15" style="text-transform:uppercase;">
+        <label class="cf-label">GSTIN (GST Number) <span style="color:var(--cf-danger);">*</span></label>
+        <input type="text" name="gstin" class="cf-field" placeholder="22AAAAA0000A1Z5" maxlength="15" style="text-transform:uppercase;" required>
+
+        <div class="section-label"><i class="bi bi-file-earmark-text me-1"></i>Verification Documents</div>
+        <p style="font-size:12px;color:var(--cf-slate);margin:-6px 0 12px;">PDF, JPG or PNG · max 5 MB each. Reviewed privately by our admin team — never shared publicly.</p>
+        {% for key, label in required_docs %}
+        <label class="cf-label">{{ label }} <span style="color:var(--cf-danger);">*</span></label>
+        <input type="file" name="doc_{{ key }}" class="cf-field" accept=".pdf,.jpg,.jpeg,.png" required>
+        {% endfor %}
 
         <div class="section-label"><i class="bi bi-hammer me-1"></i>Auction Preferences (Optional)</div>
 
@@ -133,7 +149,7 @@
         <input type="text" name="brand_interest" class="cf-field" placeholder="e.g. Maruti, Hyundai, Tata">
 
         <button type="submit" class="btn-submit">
-          <i class="bi bi-arrow-right-circle me-2"></i>Activate Dealer Account →
+          <i class="bi bi-arrow-right-circle me-2"></i>Submit for verification →
         </button>
       </form>
 

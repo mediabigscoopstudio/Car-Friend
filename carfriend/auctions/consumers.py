@@ -50,9 +50,16 @@ class AuctionConsumer(AsyncWebsocketConsumer):
         from django.utils import timezone
         from .models import Auction, Bid
 
+        from accounts.models import DealerVerification
+
         a = Auction.objects.select_for_update().get(pk=self.auction_id)
         if not a.is_live:
             return False, "Auction is not live."
+        # A dealer can bid only with an APPROVED verification.
+        if not DealerVerification.objects.filter(
+            dealer_id=dealer_id, status=DealerVerification.Status.APPROVED
+        ).exists():
+            return False, "Your dealer account is not verified yet. Complete verification to bid."
         hb = a.highest_bid
         floor = (hb.amount if hb else a.reserve_price) + a.min_increment
         if amount < floor:

@@ -67,13 +67,27 @@
 <div class="dash-body">
   <div class="container">
 
-    {% if not request.user.is_kyc_done %}
+    {% if kyc_status == 'verified' %}
+    <div class="kyc-banner" style="background:var(--cf-teal-tint);border-color:var(--cf-teal);color:var(--cf-teal-dark)">
+      <i class="bi bi-patch-check-fill"></i>
+      <div><strong>Identity verified.</strong> Your Aadhaar &amp; PAN are confirmed — you're all set.</div>
+    </div>
+    {% elif kyc_status == 'failed' %}
+    <div class="kyc-banner">
+      <i class="bi bi-exclamation-triangle"></i>
+      <div>
+        <strong>Verification couldn't be completed.</strong>
+        Please retry your Aadhaar &amp; PAN verification.
+        <a href="/kyc/">Retry verification →</a>
+      </div>
+    </div>
+    {% else %}
     <div class="kyc-banner">
       <i class="bi bi-shield-exclamation"></i>
       <div>
-        <strong>KYC pending.</strong>
-        Aadhaar + PAN verification is required before your inspection is scheduled — you can still list your car now.
-        <a href="/vehicles/list-car/">List My Car →</a>
+        <strong>Verify your identity.</strong>
+        A quick one-time Aadhaar &amp; PAN check is needed before your inspection is scheduled.
+        <a href="/kyc/">Verify Aadhaar &amp; PAN →</a>
       </div>
     </div>
     {% endif %}

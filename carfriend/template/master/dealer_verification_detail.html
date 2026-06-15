@@ -1,0 +1,60 @@
+{% extends "base/base_web.html" %}
+{% block title %}Dealer Verification · Master{% endblock %}
+{% block page_title %}Dealer Verification{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for m in messages %}<div class="card" style="padding:10px 14px;margin-bottom:12px;color:var(--cf-danger,#E24B4A)">{{ m }}</div>{% endfor %}
+{% endif %}
+
+<div class="section-header" style="display:flex;align-items:center;gap:12px">
+  <h2 style="margin:0">{{ rec.business_name }}</h2>
+  <span class="pill {% if rec.status == 'approved' %}pill-green{% elif rec.status == 'rejected' %}pill-red{% else %}pill-yellow{% endif %}">{{ rec.get_status_display }}</span>
+</div>
+
+<div class="card" style="padding:16px;margin-bottom:18px">
+  <p><strong>Dealer:</strong> {{ rec.dealer }} &nbsp;·&nbsp; {{ rec.dealer.email }}</p>
+  <p><strong>GSTIN:</strong> <span style="font-family:monospace">{{ rec.gstin }}</span></p>
+  <p><strong>Submitted:</strong> {{ rec.submitted_at|date:"d M Y, H:i" }}</p>
+  {% if rec.reviewed_by %}<p><strong>Reviewed by:</strong> {{ rec.reviewed_by }} on {{ rec.reviewed_at|date:"d M Y" }}</p>{% endif %}
+</div>
+
+<div class="section-header"><h2>Documents</h2></div>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Document</th><th>Uploaded</th><th></th></tr></thead>
+    <tbody>
+      {% for d in rec.documents.all %}
+      <tr>
+        <td>{{ d.label }}</td>
+        <td>{{ d.uploaded_at|date:"d M Y" }}</td>
+        <td><a href="/dealer_document/{{ d.id }}/" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">View document</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3" style="color:var(--text-2)">No documents uploaded</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if rec.status == 'pending' %}
+<div class="section-header"><h2>Decision</h2></div>
+<div class="card" style="padding:16px;display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start">
+  <form method="post" action="/dealer_verifications/{{ rec.id }}/decide">
+    {% csrf_token %}
+    <input type="hidden" name="decision" value="approve">
+    <button type="submit" class="btn btn-primary">Approve — enable bidding</button>
+  </form>
+  <form method="post" action="/dealer_verifications/{{ rec.id }}/decide" style="display:flex;gap:8px;align-items:flex-start">
+    {% csrf_token %}
+    <input type="hidden" name="decision" value="reject">
+    <textarea name="reason" placeholder="Reason for rejection (required — shown to the dealer)" rows="2" style="width:280px;padding:8px"></textarea>
+    <button type="submit" class="btn btn-danger">Reject</button>
+  </form>
+</div>
+{% elif rec.status == 'rejected' %}
+<div class="card" style="padding:16px;margin-top:12px"><strong>Rejection reason:</strong> {{ rec.reject_reason }}</div>
+{% endif %}
+
+<p style="margin-top:18px"><a href="/dealer_verifications">← Back to queue</a></p>
+{% endblock %}

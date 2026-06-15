@@ -1,5 +1,19 @@
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser
+from django.core.files.storage import FileSystemStorage
 from django.db import models
+
+from accounts.dealer_docs import DEALER_DOC_LABELS, DEALER_REQUIRED_DOCS
+
+# Sensitive dealer documents live OUTSIDE MEDIA_ROOT (base_url=None) so they are
+# never served by the public /media/ static handler. They are streamed only by
+# the admin-only download view. A callable keeps migrations portable (serialized
+# as a dotted path, not a baked-in absolute location).
+def protected_storage():
+    return FileSystemStorage(
+        location=str(settings.BASE_DIR / "protected_media"),
+        base_url=None,
+    )
 
 
 class Role(models.TextChoices):
@@ -84,3 +98,71 @@ class DealerProfile(models.Model):
         return not self.is_banned and self.status == 'Enabled'
 
     def __str__(self): return self.dealership_name
+
+
+class DealerVerification(models.Model):
+    """A manual dealer verification submission, reviewed by a super admin.
+
+    A dealer can bid only once they have an APPROVED verification.
+    """
+
+    class Status(models.TextChoices):
+        PENDING  = "pending",  "Pending approval"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+
+    dealer        = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                                      related_name="dealer_verifications")
+    business_name = models.CharField(max_length=200)
+    gstin         = models.CharField(max_length=20)
+    status        = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
+    reject_reason = models.TextField(blank=True)
+    submitted_at  = models.DateTimeField(auto_now_add=True)
+    reviewed_at   = models.DateTimeField(null=True, blank=True)
+    reviewed_by   = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                      on_delete=models.SET_NULL, related_name="dealer_reviews")
+
+    class Meta:
+        ordering = ["-submitted_at"]
+
+    def __str__(self):
+        return f"{self.business_name} · {self.get_status_display()}"
+
+    @property
+    def is_approved(self):
+        return self.status == self.Status.APPROVED
+
+
+class DealerDocument(models.Model):
+    """A single uploaded document for a dealer verification (kept private)."""
+
+    DOC_CHOICES = DEALER_REQUIRED_DOCS
+
+    verification = models.ForeignKey(DealerVerification, on_delete=models.CASCADE,
+                                     related_name="documents")
+    doc_type     = models.CharField(max_length=40, choices=DOC_CHOICES)
+    file         = models.FileField(storage=protected_storage, upload_to="dealer_docs/")
+    uploaded_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["doc_type"]
+
+    @property
+    def label(self):
+        return DEALER_DOC_LABELS.get(self.doc_type, self.doc_type)
+
+    def __str__(self):
+        return f"{self.label} · {self.verification.business_name}"
+
+
+def dealer_can_bid(user):
+    """True only if the dealer has an APPROVED verification."""
+    if not user or not user.is_authenticated:
+        return False
+    return DealerVerification.objects.filter(
+        dealer=user, status=DealerVerification.Status.APPROVED
+    ).exists()
+
+
+def latest_dealer_verification(user):
+    return DealerVerification.objects.filter(dealer=user).order_by("-submitted_at").first()

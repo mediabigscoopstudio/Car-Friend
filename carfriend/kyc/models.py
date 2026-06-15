@@ -19,6 +19,7 @@ class KYCVerification(models.Model):
     status       = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
     provider_ref = models.CharField(max_length=120, blank=True)
     masked_value = models.CharField(max_length=40, blank=True)
+    result_name  = models.CharField(max_length=200, blank=True)  # provider-returned name (PAN/Aadhaar)
     document     = models.FileField(upload_to="kyc/", blank=True, null=True)
     reviewed_by  = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
                                      on_delete=models.SET_NULL, related_name="kyc_reviews")
