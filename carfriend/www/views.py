@@ -5,6 +5,7 @@ import time
 from django.core.cache import cache
 from django.http import JsonResponse
 from django.shortcuts import render
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_POST
 
 from . import services
@@ -189,7 +190,9 @@ def capture_lead(request):
     return JsonResponse({"ok": True, "message": "Thanks! Our team will call you with your best offer."})
 
 
+@ensure_csrf_cookie
 def index(request):
+    # Set the csrftoken cookie so the hero's JS can read it for AJAX POSTs.
     return render(request, "www/index.html")
 
 

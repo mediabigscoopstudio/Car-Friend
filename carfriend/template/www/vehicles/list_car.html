@@ -231,12 +231,24 @@
   var FUELS = ['petrol', 'diesel', 'cng', 'electric', 'hybrid'];
 
   function $(id) { return document.getElementById(id); }
-  function getCsrf() {
-    var el = document.querySelector('[name=csrfmiddlewaretoken]');
-    if (el) return el.value;
-    var m = document.cookie.match(/csrftoken=([^;]+)/);
-    return m ? m[1] : '';
+  // Django CSRF: read the LIVE csrftoken cookie at request time. The cookie can
+  // rotate (e.g. when verify-otp logs the user in), so never read a token that
+  // was rendered into the page earlier.
+  function getCookie(name) {
+    var value = null;
+    if (document.cookie && document.cookie !== '') {
+      var cookies = document.cookie.split(';');
+      for (var i = 0; i < cookies.length; i++) {
+        var c = cookies[i].trim();
+        if (c.substring(0, name.length + 1) === (name + '=')) {
+          value = decodeURIComponent(c.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return value;
   }
+  function getCsrf() { return getCookie('csrftoken'); }
   function api(url, payload) {
     return fetch(url, {
       method: 'POST',

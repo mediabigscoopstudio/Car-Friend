@@ -6,6 +6,7 @@ from django.contrib.auth import login as auth_login
 from django.http import JsonResponse
 from django.contrib import messages
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import ensure_csrf_cookie
 from vehicles.models import Vehicle
 
 from www import otp, pricing, services
@@ -78,9 +79,11 @@ def vahaan_lookup(request):
     return JsonResponse(public)
 
 
+@ensure_csrf_cookie
 def list_car(request):
     # Public sell flow — guests allowed (a phone-keyed account is created after
     # OTP). The legacy full-form POST path stays for authenticated sellers.
+    # @ensure_csrf_cookie guarantees the csrftoken cookie is set for the AJAX JS.
     if request.method == 'POST' and request.user.is_authenticated and getattr(request.user, 'is_seller', False):
         plate = normalise_plate(request.POST.get('plate_number', ''))
 
