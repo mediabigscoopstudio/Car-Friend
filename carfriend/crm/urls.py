@@ -28,9 +28,17 @@ urlpatterns = [
     path('lead-manager/<int:lead_id>/qualify/',      lm.lm_qualify,           name='lm_qualify'),
     path('lead-manager/<int:lead_id>/assign/',       lm.lm_assign_inspection, name='lm_assign_inspection'),
 
-    # Retail Associate (role-scoped: pipeline + OCB)
-    path('retail/',                                  retail.retail_pipeline,  name='retail_pipeline'),
-    path('retail/lead/<int:lead_id>/',               retail.retail_lead_detail, name='retail_lead_detail'),
+    # Retail Associate (role-scoped: pipeline + OCB + tasks)
+    path('crm/retail/pipeline/',                       retail.retail_pipeline,         name='retail_pipeline'),
+    path('crm/retail/lead/<int:lead_id>/',             retail.retail_lead_detail,      name='retail_lead_detail'),
+    path('crm/retail/ocb/',                            retail.retail_ocb_list,         name='retail_ocb_list'),
+    path('crm/retail/ocb/create/',                     retail.retail_ocb_create,       name='retail_ocb_create'),
+    path('crm/retail/ocb/<int:ocb_id>/',               retail.retail_ocb_detail,       name='retail_ocb_detail'),
+    path('crm/retail/ocb/<int:ocb_id>/select-winner/', retail.retail_ocb_select_winner, name='retail_ocb_select_winner'),
+    path('crm/retail/tasks/',                          retail.retail_task_list,        name='retail_task_list'),
+    path('crm/retail/tasks/create/',                   retail.retail_task_create,      name='retail_task_create'),
+    path('crm/retail/tasks/<int:task_id>/',            retail.retail_task_detail,      name='retail_task_detail'),
+    path('crm/retail/tasks/<int:task_id>/status/',     retail.retail_task_status_update, name='retail_task_status_update'),
 
     # Procurement Associate (role-scoped)
     path('procurement/',                             proc.proc_dashboard,     name='proc_dashboard'),

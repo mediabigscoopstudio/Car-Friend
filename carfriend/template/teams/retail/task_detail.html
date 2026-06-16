@@ -1,0 +1,40 @@
+{% extends "teams/dash_base.html" %}
+{% block title %}Task Detail{% endblock %}
+{% block page_title %}Retail Associate · Task{% endblock %}
+{% block nav %}{% include "teams/retail/_nav.html" with active="tasks" %}{% endblock %}
+{% block head_extra %}
+<style>
+  .lbl{font-size:11px;font-weight:600;color:var(--cf-slate);text-transform:uppercase;letter-spacing:.4px;display:block;margin:10px 0 6px}
+  .fld{border:1px solid var(--cf-mist);border-radius:10px;padding:9px 12px;font-family:var(--cf-sans);font-size:14px;color:var(--cf-ink)}
+  .btn{border:none;border-radius:10px;padding:10px 16px;background:var(--cf-blue);color:#fff;font-weight:600;font-size:13px;cursor:pointer}
+  .kv{font-size:14px;padding:7px 0;border-bottom:1px solid var(--cf-mist)}
+  .kv .k{color:var(--cf-slate);font-weight:600;width:130px;display:inline-block}
+</style>
+{% endblock %}
+{% block content %}
+  {% if messages %}{% for m in messages %}<div class="msg {{ m.tags }}">{{ m }}</div>{% endfor %}{% endif %}
+  <a href="/crm/retail/tasks/" style="color:var(--cf-blue);text-decoration:none;font-weight:600;font-size:13px;display:inline-block;margin-bottom:14px">&larr; Back to tasks</a>
+  <div class="panel" style="max-width:560px">
+    <h2>{{ task.title }}</h2>
+    {% if task.description %}<p style="color:var(--cf-slate);font-size:14px">{{ task.description }}</p>{% endif %}
+    <div class="kv"><span class="k">Assigned to</span>{{ task.assigned_to.get_full_name|default:task.assigned_to.username }}</div>
+    <div class="kv"><span class="k">Created by</span>{{ task.created_by.get_full_name|default:task.created_by.username }}</div>
+    <div class="kv"><span class="k">Priority</span>{{ task.get_priority_display }}</div>
+    <div class="kv"><span class="k">Due date</span>{% if task.due_date %}{{ task.due_date|date:"d M Y" }}{% if task.is_overdue %} <span style="color:var(--cf-coral-dark);font-weight:700">(overdue)</span>{% endif %}{% else %}—{% endif %}</div>
+    {% if task.related_lead %}<div class="kv"><span class="k">Related lead</span>{{ task.related_lead.vehicle.display_name|default:task.related_lead }}</div>{% endif %}
+    {% if task.related_ocb %}<div class="kv"><span class="k">Related OCB</span>{{ task.related_ocb.vehicle.display_name|default:task.related_ocb }} (₹{{ task.related_ocb.ocb_price }})</div>{% endif %}
+    <div class="kv"><span class="k">Status</span><span class="pill">{{ task.get_status_display }}</span></div>
+    <div class="kv" style="border-bottom:none"><span class="k">Last updated</span>{{ task.updated_at|date:"d M Y, H:i" }}</div>
+
+    <div style="margin-top:18px">
+      <label class="lbl">Update status</label>
+      <form method="post" action="/crm/retail/tasks/{{ task.id }}/status/" style="display:flex;gap:8px;align-items:center">
+        {% csrf_token %}
+        <select class="fld" name="new_status">
+          {% for val, label in statuses %}<option value="{{ val }}" {% if val == task.status %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        <button class="btn" type="submit">Update Status</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}

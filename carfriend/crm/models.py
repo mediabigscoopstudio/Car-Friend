@@ -60,3 +60,46 @@ class Bid(models.Model):
 
     def __str__(self):
         return f"₹{self.amount} on {self.vehicle} by {self.dealer.email}"
+
+
+class Task(models.Model):
+    """Internal task (created by Retail; assigned to Sales/Procurement etc.)."""
+
+    class Status(models.TextChoices):
+        TODO        = "todo",        "To Do"
+        IN_PROGRESS = "in_progress", "In Progress"
+        DONE        = "done",        "Done"
+        CANCELLED   = "cancelled",   "Cancelled"
+
+    class Priority(models.TextChoices):
+        LOW    = "low",    "Low"
+        MEDIUM = "medium", "Medium"
+        HIGH   = "high",   "High"
+
+    title        = models.CharField(max_length=255)
+    description  = models.TextField(blank=True)
+    created_by   = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                                     related_name="created_tasks")
+    assigned_to  = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                                     related_name="assigned_tasks")
+    status       = models.CharField(max_length=12, choices=Status.choices, default=Status.TODO)
+    priority     = models.CharField(max_length=6, choices=Priority.choices, default=Priority.MEDIUM)
+    due_date     = models.DateField(null=True, blank=True)
+    related_lead = models.ForeignKey("crm.Lead", null=True, blank=True,
+                                     on_delete=models.SET_NULL, related_name="tasks")
+    related_ocb  = models.ForeignKey("auctions.OCBListing", null=True, blank=True,
+                                     on_delete=models.SET_NULL, related_name="tasks")
+    created_at   = models.DateTimeField(auto_now_add=True)
+    updated_at   = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def is_overdue(self):
+        from django.utils import timezone
+        return bool(self.due_date and self.status not in (self.Status.DONE, self.Status.CANCELLED)
+                    and self.due_date < timezone.localdate())

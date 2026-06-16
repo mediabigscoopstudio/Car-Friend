@@ -1,0 +1,25 @@
+{% extends "teams/dash_base.html" %}
+{% block title %}Lead Detail{% endblock %}
+{% block page_title %}Retail Associate · Lead Detail{% endblock %}
+{% block nav %}{% include "teams/retail/_nav.html" with active="pipeline" %}{% endblock %}
+{% block content %}
+  <a href="/crm/retail/pipeline/" style="color:var(--cf-blue);text-decoration:none;font-weight:600;font-size:13px;display:inline-block;margin-bottom:14px">&larr; Back to pipeline</a>
+  <div class="panel" style="max-width:560px">
+    <h2>{{ car }}</h2>
+    <table>
+      <tr><td style="border:none;color:var(--cf-slate);width:140px">Seller</td><td style="border:none">{{ lead.seller.get_full_name|default:lead.seller.username }}{% if lead.seller.phone %} · {{ lead.seller.phone }}{% endif %}</td></tr>
+      <tr><td style="border:none;color:var(--cf-slate)">Plate</td><td style="border:none">{{ lead.vehicle.plate_number }}</td></tr>
+      <tr><td style="border:none;color:var(--cf-slate)">Expected price</td><td style="border:none">{% if lead.vehicle.expected_price %}₹{{ lead.vehicle.expected_price }}{% else %}—{% endif %}</td></tr>
+      <tr><td style="border:none;color:var(--cf-slate)">Stage</td><td style="border:none"><span class="pill">{{ lead.get_stage_display }}</span></td></tr>
+    </table>
+    <div style="margin-top:16px">
+      {% if existing_ocb %}
+        <a class="btn-sm" href="/crm/retail/ocb/{{ existing_ocb.id }}/"><i class="bi bi-people"></i> Open OCB task</a>
+      {% elif can_ocb %}
+        <a class="btn-sm" href="/crm/retail/ocb/create/"><i class="bi bi-plus-circle"></i> Create OCB</a>
+      {% else %}
+        <span style="font-size:12px;color:var(--cf-slate)">OCB available once the lead is in Negotiation or Auction Created.</span>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

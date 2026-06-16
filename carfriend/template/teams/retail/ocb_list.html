@@ -1,0 +1,39 @@
+{% extends "teams/dash_base.html" %}
+{% block title %}OCB Board{% endblock %}
+{% block page_title %}Retail Associate · OCB Board{% endblock %}
+{% block nav %}{% include "teams/retail/_nav.html" with active="ocb" %}{% endblock %}
+{% block head_extra %}
+<style>
+  .pill-open{background:var(--cf-sky-tint);color:var(--cf-blue)}
+  .pill-prog{background:#FFF1DD;color:#B26A00}
+  .pill-closed{background:var(--cf-teal-tint);color:var(--cf-teal-dark)}
+  .pill-cancel{background:var(--cf-coral-tint);color:var(--cf-coral-dark)}
+  .top-actions{display:flex;justify-content:flex-end;margin-bottom:14px}
+</style>
+{% endblock %}
+{% block content %}
+  <div class="top-actions"><a class="btn-sm" href="/crm/retail/ocb/create/"><i class="bi bi-plus-circle"></i> Create OCB</a></div>
+  <div class="panel">
+    <h2>My OCB tasks</h2>
+    <table>
+      <thead><tr><th>Car</th><th>Client Price</th><th>Dealer Offers</th><th>Status</th><th>Created</th><th></th></tr></thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td class="car">{{ r.car }}</td>
+          <td>₹{{ r.ocb.ocb_price }}</td>
+          <td>{{ r.offers }}</td>
+          <td>
+            {% if r.ocb.status == 'open' %}<span class="pill pill-open">Open</span>
+            {% elif r.ocb.status == 'accepted' %}<span class="pill pill-closed">Closed</span>
+            {% elif r.ocb.status == 'rejected' %}<span class="pill pill-cancel">Cancelled</span>
+            {% else %}<span class="pill pill-prog">In Progress</span>{% endif %}
+          </td>
+          <td>{{ r.ocb.created_at|date:"d M Y" }}</td>
+          <td><a class="btn-sm" href="/crm/retail/ocb/{{ r.ocb.id }}/">View</a></td>
+        </tr>
+        {% empty %}<tr><td colspan="6" class="empty">No OCB tasks yet. Create one from a negotiation/auction lead.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

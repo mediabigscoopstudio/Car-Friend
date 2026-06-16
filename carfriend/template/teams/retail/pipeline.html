@@ -1,0 +1,41 @@
+{% extends "teams/dash_base.html" %}
+{% block title %}Lead Pipeline{% endblock %}
+{% block page_title %}Retail Associate · Lead Pipeline{% endblock %}
+{% block nav %}{% include "teams/retail/_nav.html" with active="pipeline" %}{% endblock %}
+{% block head_extra %}
+<style>
+  .board{display:flex;gap:14px;overflow-x:auto;padding-bottom:20px;align-items:flex-start}
+  .col{flex:0 0 250px;background:#eef3fb;border:1px solid var(--cf-mist);border-radius:12px;padding:12px}
+  .col-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .col-h .t{font-family:var(--cf-display);font-size:13px;font-weight:600;color:var(--cf-azure)}
+  .col-h .c{font-size:12px;font-weight:700;color:var(--cf-blue);background:var(--cf-white);border-radius:999px;padding:2px 9px}
+  .lc{display:block;background:var(--cf-white);border:1px solid var(--cf-mist);border-radius:10px;padding:11px 12px;margin-bottom:8px;text-decoration:none;color:inherit}
+  .lc:hover{border-color:var(--cf-blue)}
+  .lc .car{font-family:var(--cf-display);font-weight:600;color:var(--cf-azure);font-size:13px}
+  .lc .who{font-size:12px;color:var(--cf-slate);margin-top:2px}
+  .lc .foot{display:flex;justify-content:space-between;align-items:center;margin-top:7px;font-size:11px;color:var(--cf-slate)}
+  .lc .price{font-family:var(--cf-display);font-weight:700;color:var(--cf-ink)}
+  .lc .pillb{font-size:10px;font-weight:700;background:var(--cf-sky-tint);color:var(--cf-blue);border-radius:999px;padding:2px 8px;display:inline-block;margin-top:6px}
+  .none{font-size:12px;color:var(--cf-slate);text-align:center;padding:14px 0}
+</style>
+{% endblock %}
+{% block content %}
+  <div class="board">
+    {% for col in columns %}
+    <div class="col">
+      <div class="col-h"><span class="t">{{ col.label }}</span><span class="c">{{ col.count }}</span></div>
+      {% for card in col.cards %}
+      <a class="lc" href="/crm/retail/lead/{{ card.id }}/">
+        <div class="car">{{ card.car }}</div>
+        <div class="who"><i class="bi bi-person"></i> {{ card.seller }}</div>
+        <span class="pillb">{{ card.stage_label }}</span>
+        <div class="foot">
+          <span class="price">{% if card.price %}₹{{ card.price }}{% else %}—{% endif %}</span>
+          <span><i class="bi bi-clock"></i> {{ card.days }}d in stage</span>
+        </div>
+      </a>
+      {% empty %}<div class="none">No leads</div>{% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+{% endblock %}
