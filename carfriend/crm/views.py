@@ -52,6 +52,10 @@ def pipeline(request):
     if not _internal_check(request):
         return redirect('/')
 
+    # Retail Associates use their dedicated working pipeline kanban.
+    if request.user.role == User.ROLE_RETAIL:
+        return redirect('/crm/retail/pipeline/')
+
     if request.user.role == User.ROLE_RETAIL:
         leads = Lead.objects.filter(assigned_to=request.user).select_related('vehicle', 'seller')
     else:
