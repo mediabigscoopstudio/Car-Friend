@@ -2,6 +2,7 @@ from django.urls import path
 from crm import views
 from crm import views_lead_manager as lm
 from deals import views_procurement as proc
+from auctions import views_ocb as ocb
 
 urlpatterns = [
     # Teams dashboard
@@ -17,6 +18,13 @@ urlpatterns = [
     path('procurement/<int:deal_id>/checklist/',     proc.proc_checklist,     name='proc_checklist'),
     path('procurement/<int:deal_id>/esign/',         proc.proc_esign,         name='proc_esign'),
     path('procurement/<int:deal_id>/stockout/',      proc.proc_stockout,      name='proc_stockout'),
+
+    # OCB task board — Retail (board) + Sales (offers)
+    path('ocb/',                                     ocb.ocb_board,           name='ocb_board'),
+    path('ocb/create/',                              ocb.ocb_create,          name='ocb_create'),
+    path('ocb/offer/<int:offer_id>/select/',         ocb.ocb_select,          name='ocb_select'),
+    path('ocb/sales/',                               ocb.ocb_sales,           name='ocb_sales'),
+    path('ocb/<int:listing_id>/offer/',              ocb.ocb_submit_offer,    name='ocb_submit_offer'),
 
     # Lead pipeline
     path('pipeline/',                                views.pipeline,          name='pipeline'),
