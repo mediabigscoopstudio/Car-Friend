@@ -15,6 +15,8 @@ urlpatterns = [
     path('crm/sales/dashboard/',         dash.sales_dashboard,        name='dash_sales'),
     path('crm/lead-manager/dashboard/',  dash.lead_manager_dashboard, name='dash_lead_manager'),
     path('crm/procurement/dashboard/',   dash.procurement_dashboard,  name='dash_procurement'),
+    path('crm/inspection/dashboard/',    dash.inspection_dashboard,   name='dash_inspection'),
+    path('crm/inspection/visits/',       dash.inspection_visits,      name='dash_inspection_visits'),
 
     # Lead Manager (role-scoped)
     path('lead-manager/',                            lm.lm_dashboard,         name='lm_dashboard'),

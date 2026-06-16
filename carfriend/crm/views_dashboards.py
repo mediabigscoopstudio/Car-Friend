@@ -8,6 +8,7 @@ teams/dash_base.html.
 from functools import wraps
 
 from django.contrib.auth.decorators import login_required
+from django.db.models import Avg
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
@@ -111,3 +112,32 @@ def procurement_dashboard(request):
         "avg_days":       (round(sum(deltas) / len(deltas), 1) if deltas else None),
     }
     return render(request, "teams/dash_procurement.html", {"stats": stats, "queue": queue})
+
+
+# ── Inspection Associate ─────────────────────────────────────────────────────
+
+@role_dashboard(Role.INSPECTOR)
+def inspection_dashboard(request):
+    today, now = timezone.localdate(), timezone.now()
+    mine = InspectionVisit.objects.filter(inspector=request.user)
+    avg = (InspectionReport.objects.filter(visit__inspector=request.user, score__gt=0)
+           .aggregate(a=Avg("score"))["a"])
+    stats = {
+        "assigned":        mine.count(),
+        "completed_month": InspectionReport.objects.filter(
+                               visit__inspector=request.user,
+                               submitted_at__year=now.year, submitted_at__month=now.month).count(),
+        "pending_reports": mine.filter(status__in=[InspectionVisit.Status.SCHEDULED,
+                                                   InspectionVisit.Status.INPROGRESS]).count(),
+        "avg_score":       (round(avg) if avg else None),
+    }
+    todays = (mine.filter(scheduled_at__date=today)
+              .select_related("vehicle").order_by("scheduled_at"))
+    return render(request, "teams/dash_inspection.html", {"stats": stats, "todays": todays})
+
+
+@role_dashboard(Role.INSPECTOR)
+def inspection_visits(request):
+    visits = (InspectionVisit.objects.filter(inspector=request.user)
+              .select_related("vehicle").order_by("-scheduled_at"))
+    return render(request, "teams/inspection_visits.html", {"visits": visits})

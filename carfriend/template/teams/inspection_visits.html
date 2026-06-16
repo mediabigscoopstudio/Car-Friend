@@ -1,0 +1,26 @@
+{% extends "teams/dash_base.html" %}
+{% block title %}My Inspections{% endblock %}
+{% block page_title %}Inspection Associate · My Inspections{% endblock %}
+{% block nav %}
+  <a href="/crm/inspection/dashboard/"><i class="bi bi-grid-1x2"></i> <span>Dashboard</span></a>
+  <a class="on" href="/crm/inspection/visits/"><i class="bi bi-card-checklist"></i> <span>My Inspections</span></a>
+{% endblock %}
+{% block content %}
+  <div class="qa"><a class="primary" href="//inspection.carfriend.in/"><i class="bi bi-box-arrow-up-right"></i> Open inspection workspace</a></div>
+  <div class="panel">
+    <h2>All my inspection visits</h2>
+    <table>
+      <thead><tr><th>Scheduled</th><th>Car</th><th>Address</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for v in visits %}
+        <tr>
+          <td>{{ v.scheduled_at|date:"d M Y, H:i" }}</td>
+          <td class="car">{{ v.vehicle.display_name|default:v.vehicle }} · {{ v.vehicle.plate_number }}</td>
+          <td>{{ v.inspection_address|default:"—" }}</td>
+          <td><span class="pill">{{ v.get_status_display }}</span></td>
+        </tr>
+        {% empty %}<tr><td colspan="4" class="empty">No inspections assigned to you yet.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

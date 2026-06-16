@@ -1,0 +1,32 @@
+{% extends "teams/dash_base.html" %}
+{% block title %}Inspection Dashboard{% endblock %}
+{% block page_title %}Inspection Associate · Dashboard{% endblock %}
+{% block nav %}
+  <a class="on" href="/crm/inspection/dashboard/"><i class="bi bi-grid-1x2"></i> <span>Dashboard</span></a>
+  <a href="/crm/inspection/visits/"><i class="bi bi-card-checklist"></i> <span>My Inspections</span></a>
+{% endblock %}
+{% block content %}
+  <div class="stats">
+    <div class="stat"><div class="n">{{ stats.assigned }}</div><div class="l">Assigned to Me</div></div>
+    <div class="stat"><div class="n">{{ stats.completed_month }}</div><div class="l">Completed This Month</div></div>
+    <div class="stat"><div class="n">{{ stats.pending_reports }}</div><div class="l">Pending Reports</div></div>
+    <div class="stat"><div class="n">{% if stats.avg_score is not None %}{{ stats.avg_score }}{% else %}—{% endif %}</div><div class="l">Avg Score</div></div>
+  </div>
+  <div class="qa"><a class="primary" href="/crm/inspection/visits/"><i class="bi bi-card-checklist"></i> My Inspections</a></div>
+  <div class="panel">
+    <h2>Today's inspections</h2>
+    <table>
+      <thead><tr><th>Time</th><th>Car</th><th>Address</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for v in todays %}
+        <tr>
+          <td>{{ v.scheduled_at|date:"H:i" }}</td>
+          <td class="car">{{ v.vehicle.display_name|default:v.vehicle }}</td>
+          <td>{{ v.inspection_address|default:"—" }}</td>
+          <td><span class="pill">{{ v.get_status_display }}</span></td>
+        </tr>
+        {% empty %}<tr><td colspan="4" class="empty">No inspections scheduled for today.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}
