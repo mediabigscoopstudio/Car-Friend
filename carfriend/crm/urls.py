@@ -15,9 +15,9 @@ urlpatterns = [
 
     # Procurement Associate (role-scoped)
     path('procurement/',                             proc.proc_dashboard,     name='proc_dashboard'),
-    path('procurement/<int:deal_id>/checklist/',     proc.proc_checklist,     name='proc_checklist'),
-    path('procurement/<int:deal_id>/esign/',         proc.proc_esign,         name='proc_esign'),
-    path('procurement/<int:deal_id>/stockout/',      proc.proc_stockout,      name='proc_stockout'),
+    path('procurement/completed/',                   proc.proc_completed,     name='proc_completed'),
+    path('procurement/<int:deal_id>/',               proc.proc_handover,      name='proc_handover'),
+    path('procurement/<int:deal_id>/complete/',      proc.proc_complete,      name='proc_complete'),
 
     # OCB task board — Retail (board) + Sales (offers)
     path('ocb/',                                     ocb.ocb_board,           name='ocb_board'),

@@ -1,0 +1,51 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Handover · Car Friend</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+  :root{--cf-azure:#122E5A;--cf-blue:#2D6CDF;--cf-blue-700:#2057C0;--cf-blue-100:#D9E6FA;--cf-ink:#0E1B2E;--cf-slate:#51637B;--cf-mist:#DCE6F2;--cf-paper:#F6F9FE;--cf-white:#FFFFFF;--cf-coral-tint:#FFE9E6;--cf-coral-dark:#C23A2C;--cf-display:'Sora',system-ui,sans-serif;--cf-sans:'Hanken Grotesk',system-ui,sans-serif;}
+  *{box-sizing:border-box}body{margin:0;background:var(--cf-paper);color:var(--cf-ink);font-family:var(--cf-sans)}
+  .topbar{background:var(--cf-azure);color:#fff;padding:14px 28px;display:flex;align-items:center;justify-content:space-between}
+  .topbar h1{font-family:var(--cf-display);font-size:18px;font-weight:600;margin:0;display:flex;align-items:center;gap:10px}
+  .topbar a{color:rgba(255,255,255,.8);text-decoration:none;font-size:13px;font-weight:600}
+  .wrap{max-width:620px;margin:0 auto;padding:24px 24px 80px}
+  .msg{padding:10px 14px;border-radius:10px;margin-bottom:14px;font-size:13px}.msg.error{background:var(--cf-coral-tint);color:var(--cf-coral-dark)}
+  .back{color:var(--cf-blue);text-decoration:none;font-weight:600;font-size:13px;display:inline-block;margin-bottom:14px}
+  .card{background:var(--cf-white);border:1px solid var(--cf-mist);border-radius:14px;padding:22px;margin-bottom:16px}
+  .car{font-family:var(--cf-display);font-weight:600;color:var(--cf-azure);font-size:17px}
+  .meta{font-size:13px;color:var(--cf-slate);margin-top:4px}
+  h3{font-family:var(--cf-display);font-size:13px;color:var(--cf-slate);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin:0 0 12px}
+  .check{display:flex;align-items:center;gap:10px;font-size:15px;padding:8px 0;border-bottom:1px solid var(--cf-mist)}
+  .check input{width:18px;height:18px}
+  textarea{width:100%;border:1px solid var(--cf-mist);border-radius:10px;padding:10px 12px;font-family:var(--cf-sans);font-size:14px;color:var(--cf-ink);margin-top:12px}
+  textarea:focus{outline:none;border-color:var(--cf-blue);box-shadow:0 0 0 3px var(--cf-blue-100)}
+  .btn{width:100%;border:none;border-radius:11px;padding:13px;background:var(--cf-blue);color:#fff;font-family:var(--cf-sans);font-weight:600;font-size:15px;cursor:pointer;margin-top:16px}
+  .btn:hover{background:var(--cf-blue-700)}
+</style></head><body>
+<div class="topbar"><h1><i class="bi bi-box-seam"></i> Procurement — Handover</h1><a href="/auth/logout/"><i class="bi bi-box-arrow-right"></i> Sign out</a></div>
+<div class="wrap">
+  <a class="back" href="/procurement/">&larr; Back to queue</a>
+  {% if messages %}{% for m in messages %}<div class="msg {{ m.tags }}">{{ m }}</div>{% endfor %}{% endif %}
+
+  <div class="card">
+    <div class="car">{{ deal.vehicle.display_name|default:deal.vehicle }} · {{ deal.vehicle.plate_number }}</div>
+    <div class="meta"><i class="bi bi-person"></i> {{ deal.seller.get_full_name|default:deal.seller.username }}
+      &nbsp;&rarr;&nbsp; <i class="bi bi-shop"></i> {{ deal.dealer.get_full_name|default:deal.dealer.username }}</div>
+    <div class="meta">Deal amount: <strong>₹{{ deal.grand_total|default:deal.final_price }}</strong>{% if confirmed_at %} · Payment confirmed {{ confirmed_at|date:"d M Y" }}{% endif %}</div>
+  </div>
+
+  <div class="card">
+    <h3>Handover checklist</h3>
+    <form method="post" action="/procurement/{{ deal.id }}/complete/">
+      {% csrf_token %}
+      <label class="check"><input type="checkbox" name="keys_received" {% if h.keys_received %}checked{% endif %}> Keys received</label>
+      <label class="check"><input type="checkbox" name="rc_received" {% if h.rc_received %}checked{% endif %}> RC received</label>
+      <label class="check"><input type="checkbox" name="insurance_received" {% if h.insurance_received %}checked{% endif %}> Insurance received</label>
+      <label class="check" style="border-bottom:none"><input type="checkbox" name="service_history_received" {% if h.service_history_received %}checked{% endif %}> Service history received</label>
+      <textarea name="notes" rows="3" placeholder="Notes (optional)">{{ h.notes }}</textarea>
+      <button class="btn" type="submit"><i class="bi bi-check2-circle"></i> Complete handover</button>
+    </form>
+  </div>
+</div></body></html>
