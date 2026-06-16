@@ -17,22 +17,26 @@ def protected_storage():
 
 
 class Role(models.TextChoices):
-    ADMIN     = "admin",     "Admin"
-    RETAIL    = "retail",    "Retail Associate"
-    SALES     = "sales",     "Sales Associate"
-    INSPECTOR = "inspector", "Inspector"
-    SELLER    = "seller",    "Seller"
-    DEALER    = "dealer",    "Dealer/Buyer"
+    ADMIN        = "admin",        "Admin"
+    LEAD_MANAGER = "lead_manager", "Lead Manager"
+    RETAIL       = "retail",       "Retail Associate"
+    SALES        = "sales",        "Sales Associate"
+    INSPECTOR    = "inspector",    "Inspection Associate"
+    PROCUREMENT  = "procurement",  "Procurement Associate"
+    SELLER       = "seller",       "Seller"
+    DEALER       = "dealer",       "Dealer/Buyer"
 
 
 class User(AbstractUser):
     # Class-level constants for use in views
-    ROLE_SELLER    = Role.SELLER
-    ROLE_DEALER    = Role.DEALER
-    ROLE_RETAIL    = Role.RETAIL
-    ROLE_SALES     = Role.SALES
-    ROLE_INSPECTOR = Role.INSPECTOR
-    ROLE_ADMIN     = Role.ADMIN
+    ROLE_SELLER       = Role.SELLER
+    ROLE_DEALER       = Role.DEALER
+    ROLE_RETAIL       = Role.RETAIL
+    ROLE_SALES        = Role.SALES
+    ROLE_INSPECTOR    = Role.INSPECTOR
+    ROLE_ADMIN        = Role.ADMIN
+    ROLE_LEAD_MANAGER = Role.LEAD_MANAGER
+    ROLE_PROCUREMENT  = Role.PROCUREMENT
 
     role         = models.CharField(max_length=20, choices=Role.choices, default=Role.SELLER)
     phone        = models.CharField(max_length=15, blank=True)
@@ -63,9 +67,16 @@ class User(AbstractUser):
     def is_seller(self):    return self.role == Role.SELLER
     @property
     def is_dealer(self):    return self.role == Role.DEALER
+    @property
+    def is_lead_manager(self): return self.role == Role.LEAD_MANAGER
+    @property
+    def is_procurement(self):  return self.role == Role.PROCUREMENT
 
     def is_staff_role(self):
-        return self.role in [Role.RETAIL, Role.SALES, Role.INSPECTOR, Role.ADMIN]
+        return self.role in [
+            Role.ADMIN, Role.LEAD_MANAGER, Role.RETAIL,
+            Role.SALES, Role.INSPECTOR, Role.PROCUREMENT,
+        ]
 
 
 class SellerProfile(models.Model):

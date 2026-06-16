@@ -16,7 +16,9 @@ def role_required(*roles, login_url="/login_view"):
     return deco
 
 
-admin_required     = lambda v: role_required("admin")(v)
-retail_required    = lambda v: role_required("retail")(v)
-sales_required     = lambda v: role_required("sales")(v)
-inspector_required = lambda v: role_required("inspector")(v)
+admin_required        = lambda v: role_required("admin")(v)
+retail_required       = lambda v: role_required("retail")(v)
+sales_required        = lambda v: role_required("sales")(v)
+inspector_required    = lambda v: role_required("inspector")(v)
+lead_manager_required = lambda v: role_required("lead_manager")(v)
+procurement_required  = lambda v: role_required("procurement")(v)
