@@ -1,0 +1,46 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Car Friend · Internal Team Portal</title>
+<link rel="icon" type="image/webp" href="{% static 'images/Logo/Vector.webp' %}">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cf-azure:#122E5A;--cf-blue:#2D6CDF;--cf-blue-700:#2057C0;--cf-blue-100:#D9E6FA;
+    --cf-ink:#0E1B2E;--cf-slate:#51637B;--cf-mist:#DCE6F2;--cf-paper:#F6F9FE;--cf-white:#FFFFFF;
+    --cf-danger:#E24B4A;--cf-danger-tint:#FCEBEB;
+    --cf-display:'Sora',system-ui,sans-serif;--cf-sans:'Hanken Grotesk',system-ui,sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--cf-paper);font-family:var(--cf-sans);color:var(--cf-ink);padding:24px}
+  .card{background:var(--cf-white);border:1px solid var(--cf-mist);border-radius:16px;padding:40px 36px;width:100%;max-width:400px;box-shadow:0 18px 50px rgba(18,46,90,.12)}
+  .logo{display:block;height:38px;width:auto;margin:0 auto 14px}
+  .tagline{font-size:13px;color:var(--cf-slate);text-align:center;margin-bottom:28px}
+  label{display:block;font-family:var(--cf-display);font-size:11px;font-weight:600;color:var(--cf-slate);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+  input{width:100%;background:var(--cf-white);border:1px solid var(--cf-mist);color:var(--cf-ink);border-radius:10px;padding:11px 14px;font-size:14px;font-family:var(--cf-sans);margin-bottom:16px}
+  input:focus{outline:none;border-color:var(--cf-blue);box-shadow:0 0 0 3px var(--cf-blue-100)}
+  button{width:100%;background:var(--cf-blue);color:#fff;border:none;border-radius:11px;padding:13px;font-family:var(--cf-sans);font-size:15px;font-weight:600;cursor:pointer;margin-top:4px;transition:background .15s}
+  button:hover{background:var(--cf-blue-700)}
+  .error{background:var(--cf-danger-tint);border:1px solid var(--cf-danger);color:var(--cf-danger);border-radius:9px;padding:10px 14px;margin-bottom:16px;font-size:13px}
+</style>
+</head>
+<body>
+  <div class="card">
+    <img class="logo" src="{% static 'images/Logo/Logo.png' %}" alt="Car Friend">
+    <p class="tagline">Internal Team Portal</p>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      <label>Email</label>
+      <input type="email" name="email" required autofocus>
+      <label>Password</label>
+      <input type="password" name="password" required>
+      <button type="submit">Sign in →</button>
+    </form>
+  </div>
+</body>
+</html>

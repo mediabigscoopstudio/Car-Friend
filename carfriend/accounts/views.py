@@ -121,7 +121,11 @@ def login_page(request):
             return redirect(dest)
         else:
             error = "The email or password you entered is incorrect."
-    return render(request, "www/auth/login.html", {"error": error, "next": next_url})
+    # Internal hosts (teams/master/inspection) get a clean staff login card with
+    # no public www header/footer; the www host keeps the public login.
+    host_label = request.get_host().split(":")[0].split(".")[0].lower()
+    template = "auth/team_login.html" if host_label in ("teams", "master", "inspection") else "www/auth/login.html"
+    return render(request, template, {"error": error, "next": next_url})
 
 
 def register_page(request):
