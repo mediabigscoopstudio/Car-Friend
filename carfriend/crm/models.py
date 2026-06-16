@@ -7,6 +7,7 @@ class Lead(models.Model):
 
     STAGE_NEW         = 'new'
     STAGE_QUALIFIED   = 'qualified'
+    STAGE_UNQUALIFIED = 'unqualified'
     STAGE_INSP_SCHED  = 'inspection_scheduled'
     STAGE_INSP_DONE   = 'inspection_done'
     STAGE_APPROVED    = 'admin_approved'
@@ -17,6 +18,7 @@ class Lead(models.Model):
     STAGE_CHOICES = [
         (STAGE_NEW,         'New'),
         (STAGE_QUALIFIED,   'Qualified'),
+        (STAGE_UNQUALIFIED, 'Un-Qualified'),
         (STAGE_INSP_SCHED,  'Inspection Scheduled'),
         (STAGE_INSP_DONE,   'Inspection Done'),
         (STAGE_APPROVED,    'Admin Approved'),

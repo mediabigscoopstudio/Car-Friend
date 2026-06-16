@@ -1,9 +1,15 @@
 from django.urls import path
 from crm import views
+from crm import views_lead_manager as lm
 
 urlpatterns = [
     # Teams dashboard
     path('',                                         views.teams_dashboard,   name='teams_dashboard'),
+
+    # Lead Manager (role-scoped)
+    path('lead-manager/',                            lm.lm_dashboard,         name='lm_dashboard'),
+    path('lead-manager/<int:lead_id>/qualify/',      lm.lm_qualify,           name='lm_qualify'),
+    path('lead-manager/<int:lead_id>/assign/',       lm.lm_assign_inspection, name='lm_assign_inspection'),
 
     # Lead pipeline
     path('pipeline/',                                views.pipeline,          name='pipeline'),

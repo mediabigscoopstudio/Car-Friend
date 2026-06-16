@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lead Manager · Car Friend</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+  :root{
+    --cf-azure:#122E5A;--cf-blue:#2D6CDF;--cf-blue-700:#2057C0;--cf-blue-100:#D9E6FA;
+    --cf-sky:#5AA9E6;--cf-sky-tint:#EAF1FB;--cf-ink:#0E1B2E;--cf-slate:#51637B;
+    --cf-mist:#DCE6F2;--cf-paper:#F6F9FE;--cf-white:#FFFFFF;--cf-teal:#0FB5C9;
+    --cf-teal-tint:#E1F6F8;--cf-teal-dark:#0A7E8C;--cf-coral:#FF6A5A;--cf-coral-tint:#FFE9E6;--cf-coral-dark:#C23A2C;
+    --cf-display:'Sora',system-ui,sans-serif;--cf-sans:'Hanken Grotesk',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cf-paper);color:var(--cf-ink);font-family:var(--cf-sans)}
+  .topbar{background:var(--cf-azure);color:#fff;padding:14px 28px;display:flex;align-items:center;justify-content:space-between}
+  .topbar h1{font-family:var(--cf-display);font-size:18px;font-weight:600;margin:0;display:flex;align-items:center;gap:10px}
+  .topbar a{color:rgba(255,255,255,.8);text-decoration:none;font-size:13px;font-weight:600}
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 24px 80px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+  @media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .stat{background:var(--cf-white);border:1px solid var(--cf-mist);border-radius:12px;padding:16px}
+  .stat .n{font-family:var(--cf-display);font-size:26px;font-weight:700;color:var(--cf-azure)}
+  .stat .l{font-size:12px;color:var(--cf-slate);font-weight:600}
+  .msg{padding:10px 14px;border-radius:10px;margin-bottom:14px;font-size:13px}
+  .msg.success{background:var(--cf-teal-tint);color:var(--cf-teal-dark)}
+  .msg.error{background:var(--cf-coral-tint);color:var(--cf-coral-dark)}
+  h2{font-family:var(--cf-display);font-size:16px;color:var(--cf-azure);font-weight:600;margin:8px 0 14px}
+  .lead{background:var(--cf-white);border:1px solid var(--cf-mist);border-radius:14px;padding:18px;margin-bottom:14px}
+  .lead-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .lead-car{font-family:var(--cf-display);font-weight:600;color:var(--cf-azure);font-size:15px}
+  .lead-meta{font-size:13px;color:var(--cf-slate);margin-top:2px}
+  .chip{font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--cf-sky-tint);color:var(--cf-azure);white-space:nowrap}
+  .chip.q{background:var(--cf-teal-tint);color:var(--cf-teal-dark)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:14px}
+  .btn{border:none;border-radius:9px;padding:9px 14px;font-family:var(--cf-sans);font-weight:600;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+  .btn-primary{background:var(--cf-blue);color:#fff}.btn-primary:hover{background:var(--cf-blue-700)}
+  .btn-teal{background:var(--cf-teal);color:#fff}
+  .btn-ghost{background:transparent;border:1px solid var(--cf-mist);color:var(--cf-slate)}
+  .btn-call{background:var(--cf-sky-tint);color:var(--cf-blue)}
+  .fld{border:1px solid var(--cf-mist);border-radius:9px;padding:8px 10px;font-family:var(--cf-sans);font-size:13px;color:var(--cf-ink)}
+  .fld:focus{outline:none;border-color:var(--cf-blue);box-shadow:0 0 0 3px var(--cf-blue-100)}
+  .assign{border-top:1px solid var(--cf-mist);margin-top:14px;padding-top:14px}
+  .lbl{font-size:11px;font-weight:600;color:var(--cf-slate);display:block;margin-bottom:3px}
+  .empty{text-align:center;color:var(--cf-slate);padding:40px;background:var(--cf-white);border:1px dashed var(--cf-mist);border-radius:14px}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1><i class="bi bi-clipboard-check"></i> Lead Manager</h1>
+  <a href="/auth/logout/"><i class="bi bi-box-arrow-right"></i> Sign out</a>
+</div>
+<div class="wrap">
+
+  {% if messages %}{% for m in messages %}<div class="msg {{ m.tags }}">{{ m }}</div>{% endfor %}{% endif %}
+
+  <div class="stats">
+    <div class="stat"><div class="n">{{ counts.new }}</div><div class="l">New</div></div>
+    <div class="stat"><div class="n">{{ counts.qualified }}</div><div class="l">Qualified</div></div>
+    <div class="stat"><div class="n">{{ counts.scheduled }}</div><div class="l">Inspection booked</div></div>
+    <div class="stat"><div class="n">{{ counts.unqualified }}</div><div class="l">Un-qualified</div></div>
+  </div>
+
+  <h2>Incoming leads</h2>
+  {% for lead in leads %}
+  <div class="lead">
+    <div class="lead-head">
+      <div>
+        <div class="lead-car">{{ lead.vehicle.display_name|default:lead.vehicle }}</div>
+        <div class="lead-meta">
+          <i class="bi bi-person"></i> {{ lead.seller.get_full_name|default:lead.seller.username }}
+          {% if lead.seller.phone %}· <i class="bi bi-telephone"></i> {{ lead.seller.phone }}{% endif %}
+          · {{ lead.created_at|date:"d M Y" }}
+        </div>
+      </div>
+      <span class="chip {% if lead.stage == STAGE_QUALIFIED %}q{% endif %}">{{ lead.get_stage_display }}</span>
+    </div>
+
+    <div class="row">
+      {% if lead.seller.phone %}<a class="btn btn-call" href="tel:{{ lead.seller.phone }}"><i class="bi bi-telephone-fill"></i> Call</a>{% endif %}
+      <form method="post" action="/lead-manager/{{ lead.id }}/qualify/" style="display:inline-flex;gap:8px;align-items:center">
+        {% csrf_token %}
+        <input type="hidden" name="decision" value="qualified">
+        <input class="fld" name="note" placeholder="Note (optional)" style="width:150px">
+        <button class="btn btn-teal" type="submit"><i class="bi bi-check2"></i> Qualify</button>
+      </form>
+      <form method="post" action="/lead-manager/{{ lead.id }}/qualify/" style="display:inline">
+        {% csrf_token %}
+        <input type="hidden" name="decision" value="unqualified">
+        <button class="btn btn-ghost" type="submit"><i class="bi bi-x"></i> Un-qualify</button>
+      </form>
+    </div>
+
+    {% if lead.stage == STAGE_QUALIFIED or lead.stage == STAGE_NEW %}
+    <div class="assign">
+      <form method="post" action="/lead-manager/{{ lead.id }}/assign/" class="row">
+        {% csrf_token %}
+        <div><span class="lbl">Inspection Associate</span>
+          <select class="fld" name="inspector_id" required>
+            <option value="">Select inspector…</option>
+            {% for ins in inspectors %}<option value="{{ ins.id }}">{{ ins.get_full_name|default:ins.username }}</option>{% endfor %}
+          </select>
+        </div>
+        <div><span class="lbl">Date &amp; time</span><input class="fld" type="datetime-local" name="scheduled_at" required></div>
+        <div style="flex:1;min-width:160px"><span class="lbl">Address (optional)</span><input class="fld" name="inspection_address" placeholder="Inspection address" style="width:100%"></div>
+        <button class="btn btn-primary" type="submit"><i class="bi bi-calendar-check"></i> Book inspection</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+  {% empty %}
+  <div class="empty"><i class="bi bi-inbox" style="font-size:28px;color:var(--cf-mist)"></i><p>No active leads right now.</p></div>
+  {% endfor %}
+
+</div>
+</body>
+</html>
