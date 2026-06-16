@@ -85,3 +85,29 @@ def lead_manager_dashboard(request):
     recent = (Lead.objects.filter(stage=Lead.STAGE_NEW)
               .select_related("vehicle", "seller").order_by("-created_at")[:8])
     return render(request, "teams/dash_lead_manager.html", {"stats": stats, "recent": recent})
+
+
+# ── Procurement Associate ────────────────────────────────────────────────────
+
+@role_dashboard(Role.PROCUREMENT)
+def procurement_dashboard(request):
+    today, now = timezone.localdate(), timezone.now()
+    paid = (Deal.objects.filter(status=Deal.Status.PAID)
+            .select_related("vehicle", "seller", "dealer").order_by("-updated_at"))
+    queue = []
+    for d in paid:
+        h = getattr(d, "handover", None)
+        if h and h.stock_out_at:
+            continue
+        pay = d.payments.filter(status="confirmed").order_by("-confirmed_at").first()
+        queue.append({"deal": d, "confirmed_at": pay.confirmed_at if pay else None})
+
+    done = HandoverChecklist.objects.filter(stock_out_at__isnull=False)
+    deltas = [(h.stock_out_at - h.created_at).days for h in done if h.stock_out_at and h.created_at]
+    stats = {
+        "pending":        len(queue),
+        "completed_today": done.filter(stock_out_at__date=today).count(),
+        "completed_month": done.filter(stock_out_at__year=now.year, stock_out_at__month=now.month).count(),
+        "avg_days":       (round(sum(deltas) / len(deltas), 1) if deltas else None),
+    }
+    return render(request, "teams/dash_procurement.html", {"stats": stats, "queue": queue})

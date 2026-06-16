@@ -1,0 +1,35 @@
+{% extends "teams/dash_base.html" %}
+{% block title %}Procurement Dashboard{% endblock %}
+{% block page_title %}Procurement Associate · Dashboard{% endblock %}
+{% block nav %}
+  <a class="on" href="/crm/procurement/dashboard/"><i class="bi bi-grid-1x2"></i> <span>Dashboard</span></a>
+  <a href="/procurement/"><i class="bi bi-box-seam"></i> <span>Handover Queue</span></a>
+  <a href="/procurement/completed/"><i class="bi bi-check2-circle"></i> <span>Completed Handovers</span></a>
+{% endblock %}
+{% block content %}
+  <div class="stats">
+    <div class="stat"><div class="n">{{ stats.pending }}</div><div class="l">Pending Handovers</div></div>
+    <div class="stat"><div class="n">{{ stats.completed_today }}</div><div class="l">Completed Today</div></div>
+    <div class="stat"><div class="n">{{ stats.completed_month }}</div><div class="l">Completed This Month</div></div>
+    <div class="stat"><div class="n">{% if stats.avg_days is not None %}{{ stats.avg_days }}d{% else %}—{% endif %}</div><div class="l">Avg Handover Time</div></div>
+  </div>
+  <div class="qa"><a class="primary" href="/procurement/"><i class="bi bi-box-seam"></i> View Handover Queue</a></div>
+  <div class="panel">
+    <h2>Handover queue</h2>
+    <table>
+      <thead><tr><th>Seller</th><th>Dealer</th><th>Car</th><th>Deal Amount</th><th>Payment Date</th><th></th></tr></thead>
+      <tbody>
+        {% for it in queue %}
+        <tr>
+          <td>{{ it.deal.seller.get_full_name|default:it.deal.seller.username }}</td>
+          <td>{{ it.deal.dealer.get_full_name|default:it.deal.dealer.username }}</td>
+          <td class="car">{{ it.deal.vehicle.display_name|default:it.deal.vehicle }}</td>
+          <td>₹{{ it.deal.grand_total|default:it.deal.final_price }}</td>
+          <td>{% if it.confirmed_at %}{{ it.confirmed_at|date:"d M Y" }}{% else %}—{% endif %}</td>
+          <td><a class="btn-sm" href="/procurement/{{ it.deal.id }}/">Handover</a></td>
+        </tr>
+        {% empty %}<tr><td colspan="6" class="empty">No cars awaiting handover.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}
