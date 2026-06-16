@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Dashboard{% endblock %} · Car Friend</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+{% block head_extra %}{% endblock %}
+<style>
+  :root{--cf-azure:#122E5A;--cf-azure-700:#1B3F73;--cf-blue:#2D6CDF;--cf-blue-700:#2057C0;--cf-sky:#5AA9E6;--cf-sky-tint:#EAF1FB;--cf-ink:#0E1B2E;--cf-slate:#51637B;--cf-mist:#DCE6F2;--cf-paper:#F6F9FE;--cf-white:#FFFFFF;--cf-teal:#0FB5C9;--cf-teal-tint:#E1F6F8;--cf-teal-dark:#0A7E8C;--cf-coral-tint:#FFE9E6;--cf-coral-dark:#C23A2C;--cf-display:'Sora',system-ui,sans-serif;--cf-sans:'Hanken Grotesk',system-ui,sans-serif;}
+  *{box-sizing:border-box}body{margin:0;background:var(--cf-paper);color:var(--cf-ink);font-family:var(--cf-sans);display:flex;min-height:100vh}
+  .sidebar{width:230px;flex-shrink:0;background:var(--cf-azure);color:#fff;display:flex;flex-direction:column;padding:20px 0}
+  .sidebar .brand{font-family:var(--cf-display);font-weight:700;font-size:18px;padding:0 22px 4px;display:flex;align-items:center;gap:8px}
+  .sidebar .role{font-size:10px;font-weight:700;letter-spacing:1px;color:var(--cf-sky);padding:0 22px 22px;text-transform:uppercase}
+  .sidebar nav{display:flex;flex-direction:column;gap:2px;flex:1}
+  .sidebar nav a{display:flex;align-items:center;gap:10px;padding:11px 22px;color:rgba(255,255,255,.72);text-decoration:none;font-size:14px;font-weight:500;border-left:3px solid transparent}
+  .sidebar nav a:hover{color:#fff;background:rgba(255,255,255,.06)}
+  .sidebar nav a.on{color:#fff;background:rgba(45,108,223,.25);border-left-color:var(--cf-sky)}
+  .sidebar .out{padding:14px 22px 0;border-top:1px solid rgba(255,255,255,.12);margin-top:8px}
+  .sidebar .out a{color:rgba(255,255,255,.6);text-decoration:none;font-size:13px;font-weight:600}
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .topbar{background:var(--cf-white);border-bottom:1px solid var(--cf-mist);padding:16px 28px;font-family:var(--cf-display);font-size:18px;font-weight:600;color:var(--cf-azure)}
+  .content{padding:24px 28px 70px;max-width:1080px}
+  .msg{padding:10px 14px;border-radius:10px;margin-bottom:16px;font-size:13px}.msg.success{background:var(--cf-teal-tint);color:var(--cf-teal-dark)}.msg.error{background:var(--cf-coral-tint);color:var(--cf-coral-dark)}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+  @media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}.sidebar{width:64px}.sidebar .brand span,.sidebar .role,.sidebar nav a span,.sidebar .out{display:none}}
+  .stat{background:var(--cf-white);border:1px solid var(--cf-mist);border-radius:12px;padding:16px}
+  .stat .n{font-family:var(--cf-display);font-size:26px;font-weight:700;color:var(--cf-azure)}
+  .stat .l{font-size:12px;color:var(--cf-slate);font-weight:600;margin-top:2px}
+  .qa{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px}
+  .qa a{display:inline-flex;align-items:center;gap:7px;padding:10px 16px;border-radius:10px;font-weight:600;font-size:13px;text-decoration:none;border:1px solid var(--cf-mist);background:var(--cf-white);color:var(--cf-ink)}
+  .qa a.primary{background:var(--cf-blue);color:#fff;border-color:var(--cf-blue)}
+  .qa a.primary:hover{background:var(--cf-blue-700)}
+  .qa a:hover{border-color:var(--cf-blue)}
+  .panel{background:var(--cf-white);border:1px solid var(--cf-mist);border-radius:14px;padding:18px 20px}
+  .panel h2{font-family:var(--cf-display);font-size:15px;font-weight:600;color:var(--cf-azure);margin:0 0 14px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--cf-slate);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--cf-mist)}
+  td{padding:10px;border-bottom:1px solid var(--cf-mist);color:var(--cf-ink)}
+  tr:last-child td{border-bottom:none}
+  .car{font-weight:600;color:var(--cf-azure)}
+  .pill{font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--cf-sky-tint);color:var(--cf-blue)}
+  .btn-sm{padding:6px 12px;border-radius:8px;background:var(--cf-blue);color:#fff;text-decoration:none;font-size:12px;font-weight:600}
+  .btn-sm:hover{background:var(--cf-blue-700)}
+  .empty{color:var(--cf-slate);text-align:center;padding:26px;font-size:13px}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="brand"><i class="bi bi-car-front-fill"></i> <span>Car Friend</span></div>
+  <div class="role">{{ request.user.get_role_display }}</div>
+  <nav>{% block nav %}{% endblock %}</nav>
+  <div class="out"><a href="/auth/logout/"><i class="bi bi-box-arrow-right"></i> Sign out</a></div>
+</aside>
+<div class="main">
+  <div class="topbar">{% block page_title %}Dashboard{% endblock %}</div>
+  <div class="content">
+    {% if messages %}{% for m in messages %}<div class="msg {{ m.tags }}">{{ m }}</div>{% endfor %}{% endif %}
+    {% block content %}{% endblock %}
+  </div>
+</div>
+</body>
+</html>

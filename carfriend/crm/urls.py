@@ -2,12 +2,16 @@ from django.urls import path
 from crm import views
 from crm import views_lead_manager as lm
 from crm import views_retail as retail
+from crm import views_dashboards as dash
 from deals import views_procurement as proc
 from auctions import views_ocb as ocb
 
 urlpatterns = [
     # Teams dashboard
     path('',                                         views.teams_dashboard,   name='teams_dashboard'),
+
+    # ── Role-scoped landing dashboards (one view + template per role) ──
+    path('crm/retail/dashboard/',        dash.retail_dashboard,       name='dash_retail'),
 
     # Lead Manager (role-scoped)
     path('lead-manager/',                            lm.lm_dashboard,         name='lm_dashboard'),

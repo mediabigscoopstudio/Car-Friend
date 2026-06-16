@@ -1,0 +1,32 @@
+{% extends "teams/dash_base.html" %}
+{% block title %}Retail Dashboard{% endblock %}
+{% block page_title %}Retail Associate · Dashboard{% endblock %}
+{% block nav %}
+  <a class="on" href="/crm/retail/dashboard/"><i class="bi bi-grid-1x2"></i> <span>Dashboard</span></a>
+  <a href="/retail/"><i class="bi bi-kanban"></i> <span>Lead Pipeline</span></a>
+{% endblock %}
+{% block content %}
+  <div class="stats">
+    <div class="stat"><div class="n">{{ stats.active }}</div><div class="l">My Active Leads</div></div>
+    <div class="stat"><div class="n">{{ stats.awaiting }}</div><div class="l">Awaiting My Action</div></div>
+    <div class="stat"><div class="n">{{ stats.ocbs }}</div><div class="l">OCBs Active</div></div>
+    <div class="stat"><div class="n">{{ stats.closed }}</div><div class="l">Deals Closed</div></div>
+  </div>
+  <div class="qa"><a class="primary" href="/retail/"><i class="bi bi-kanban"></i> View Lead Pipeline</a></div>
+  <div class="panel">
+    <h2>My recent leads</h2>
+    <table>
+      <thead><tr><th>Car</th><th>Seller</th><th>Stage</th><th></th></tr></thead>
+      <tbody>
+        {% for l in recent %}
+        <tr>
+          <td class="car">{{ l.vehicle.display_name|default:l.vehicle }}</td>
+          <td>{{ l.seller.get_full_name|default:l.seller.username }}</td>
+          <td><span class="pill">{{ l.get_stage_display }}</span></td>
+          <td><a class="btn-sm" href="/retail/lead/{{ l.id }}/">Open</a></td>
+        </tr>
+        {% empty %}<tr><td colspan="4" class="empty">No leads assigned to you yet.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}
