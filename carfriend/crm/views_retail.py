@@ -96,13 +96,15 @@ def retail_ocb_create(request):
     guard = _require_retail(request)
     if guard:
         return guard
-    leads = (Lead.objects.filter(assigned_to=request.user,
-                                 stage__in=[Lead.STAGE_NEGOTIATION, Lead.STAGE_AUCTION])
-             .select_related("vehicle"))
+    # Leads are not assigned to the Retail Associate in the current workflow
+    # (assigned_to is null or the Lead Manager) — same reason the pipeline view
+    # shows all leads — so do NOT filter by assigned_to or the dropdown is empty.
+    leads = (Lead.objects.filter(stage__in=[Lead.STAGE_NEGOTIATION, Lead.STAGE_AUCTION])
+             .select_related("vehicle").order_by("-updated_at"))
     sales = User.objects.filter(role=Role.SALES, is_suspended=False).order_by("username")
 
     if request.method == "POST":
-        lead = get_object_or_404(Lead, id=request.POST.get("lead_id"), assigned_to=request.user)
+        lead = get_object_or_404(Lead, id=request.POST.get("lead_id"))
         try:
             price = int(request.POST.get("ocb_price", "0"))
         except (TypeError, ValueError):
@@ -127,10 +129,15 @@ def retail_ocb_create(request):
         messages.success(request, "OCB task created.")
         return redirect(f"/crm/retail/ocb/{ocb.id}/")
 
+    try:
+        preselect = int(request.GET.get("lead", "") or 0)
+    except (TypeError, ValueError):
+        preselect = 0
     return render(request, "teams/retail/ocb_create.html", {
         "leads": [{"id": l.id, "label": f"{_car(l.vehicle)} · {l.vehicle.plate_number}" if l.vehicle else l.id,
                    "price": l.vehicle.expected_price if l.vehicle else ""} for l in leads],
         "sales": sales,
+        "preselect": preselect,
     })
 
 

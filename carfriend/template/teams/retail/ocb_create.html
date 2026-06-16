@@ -16,7 +16,7 @@
       <label class="cf-label">Select Lead (negotiation / auction created)</label>
       <select class="cf-field" name="lead_id" id="leadSel" required>
         <option value="">Select a lead…</option>
-        {% for l in leads %}<option value="{{ l.id }}" data-price="{{ l.price }}">{{ l.label }}</option>{% endfor %}
+        {% for l in leads %}<option value="{{ l.id }}" data-price="{{ l.price }}" {% if l.id == preselect %}selected{% endif %}>{{ l.label }}</option>{% endfor %}
       </select>
       <label class="cf-label">Client-suitable price (₹)</label>
       <input class="cf-field" type="number" name="ocb_price" id="priceFld" min="1" required>
@@ -38,9 +38,13 @@
 <script>
   // auto-fill the expected price as a starting client price
   var sel = document.getElementById('leadSel');
-  if (sel) sel.addEventListener('change', function () {
-    var p = this.options[this.selectedIndex].getAttribute('data-price');
+  function fillPrice() {
+    var p = sel.options[sel.selectedIndex].getAttribute('data-price');
     if (p && p !== 'None' && p !== '') document.getElementById('priceFld').value = parseInt(p, 10) || '';
-  });
+  }
+  if (sel) {
+    sel.addEventListener('change', fillPrice);
+    if (sel.value) fillPrice();  // a lead pre-selected via ?lead=<id>
+  }
 </script>
 {% endblock %}
