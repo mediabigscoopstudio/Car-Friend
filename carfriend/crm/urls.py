@@ -1,6 +1,7 @@
 from django.urls import path
 from crm import views
 from crm import views_lead_manager as lm
+from deals import views_procurement as proc
 
 urlpatterns = [
     # Teams dashboard
@@ -10,6 +11,12 @@ urlpatterns = [
     path('lead-manager/',                            lm.lm_dashboard,         name='lm_dashboard'),
     path('lead-manager/<int:lead_id>/qualify/',      lm.lm_qualify,           name='lm_qualify'),
     path('lead-manager/<int:lead_id>/assign/',       lm.lm_assign_inspection, name='lm_assign_inspection'),
+
+    # Procurement Associate (role-scoped)
+    path('procurement/',                             proc.proc_dashboard,     name='proc_dashboard'),
+    path('procurement/<int:deal_id>/checklist/',     proc.proc_checklist,     name='proc_checklist'),
+    path('procurement/<int:deal_id>/esign/',         proc.proc_esign,         name='proc_esign'),
+    path('procurement/<int:deal_id>/stockout/',      proc.proc_stockout,      name='proc_stockout'),
 
     # Lead pipeline
     path('pipeline/',                                views.pipeline,          name='pipeline'),

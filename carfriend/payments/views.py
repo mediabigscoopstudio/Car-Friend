@@ -36,5 +36,12 @@ def payment_confirm(request, id):
         notify(d.dealer, "payment_ok",
                title="Payment confirmed",
                body=f"₹{p.amount:,} for {d.vehicle.title}")
+        # Notify Procurement Associates that the car is ready for handover.
+        from accounts.models import Role, User
+        for proc_user in User.objects.filter(role=Role.PROCUREMENT, is_suspended=False):
+            notify(proc_user, "payment_ok",
+                   title="Handover ready",
+                   body=f"Payment confirmed for {d.vehicle} — ready for handover.",
+                   url="/procurement/")
         return redirect("/payments_pending")
     return render(request, "master/payment_confirm.html", {"active": "payments", "p": p})
