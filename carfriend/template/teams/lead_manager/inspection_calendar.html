@@ -1,0 +1,80 @@
+{% extends "teams/dash_base.html" %}
+{% block title %}Inspection Calendar{% endblock %}
+{% block page_title %}Lead Manager · Inspection Calendar{% endblock %}
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+<style>
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+  .legend .it{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--cf-slate);font-weight:600}
+  .legend .dot{width:12px;height:12px;border-radius:3px}
+  .cal-card{background:var(--cf-white);border:1px solid var(--cf-mist);border-radius:14px;padding:16px}
+  .fc{font-family:var(--cf-sans);font-size:13px}
+  .fc .fc-toolbar-title{font-family:var(--cf-display);font-size:18px;color:var(--cf-azure)}
+  .fc .fc-button{background:var(--cf-blue);border-color:var(--cf-blue);font-size:12px;text-transform:capitalize}
+  .fc .fc-button-active{background:var(--cf-azure)!important;border-color:var(--cf-azure)!important}
+  .fc-event{cursor:pointer;border:none;font-weight:600}
+  .modal-ov{position:fixed;inset:0;background:rgba(14,27,46,.45);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
+  .modal-ov.show{display:flex}
+  .modal-card{background:var(--cf-white);border-radius:14px;max-width:420px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(18,46,90,.25)}
+  .modal-card h3{font-family:var(--cf-display);font-size:17px;color:var(--cf-azure);margin:0 0 14px}
+  .modal-row{display:flex;gap:8px;font-size:13px;padding:7px 0;border-bottom:1px solid var(--cf-mist)}
+  .modal-row .k{width:96px;color:var(--cf-slate);font-weight:600;flex-shrink:0}
+  .modal-row .v{color:var(--cf-ink);font-weight:600}
+  .modal-close{margin-top:16px;width:100%;padding:10px;border:none;border-radius:10px;background:var(--cf-blue);color:#fff;font-weight:600;font-family:var(--cf-sans);cursor:pointer}
+</style>
+{% endblock %}
+{% block sidebar_user %}
+  <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:1px">{{ request.user.get_full_name|default:request.user.username }}</div>
+  <div style="font-size:11px;color:rgba(255,255,255,.55);margin-bottom:10px">{{ request.user.email }}</div>
+{% endblock %}
+{% block nav %}
+  <a href="/crm/lead-manager/dashboard/"><i class="bi bi-grid-1x2"></i> <span>Dashboard</span></a>
+  <a href="/lead-manager/"><i class="bi bi-people"></i> <span>All Leads</span></a>
+  <a class="on" href="/crm/lead-manager/inspection-calendar/"><i class="bi bi-calendar3"></i> <span>Inspection Calendar</span></a>
+{% endblock %}
+{% block content %}
+  <div class="legend">
+    {% for l in legend %}<div class="it"><span class="dot" style="background:{{ l.colour }}"></span>{{ l.name }}</div>{% endfor %}
+    <div class="it"><span class="dot" style="background:#8595AB"></span>Unassigned</div>
+  </div>
+  <div class="cal-card"><div id="calendar"></div></div>
+
+  <div class="modal-ov" id="visitModal">
+    <div class="modal-card">
+      <h3 id="m_title">Inspection</h3>
+      <div class="modal-row"><span class="k">Inspector</span><span class="v" id="m_inspector"></span></div>
+      <div class="modal-row"><span class="k">Seller</span><span class="v" id="m_seller"></span></div>
+      <div class="modal-row"><span class="k">Car</span><span class="v" id="m_car"></span></div>
+      <div class="modal-row"><span class="k">Address</span><span class="v" id="m_address"></span></div>
+      <div class="modal-row"><span class="k">Scheduled</span><span class="v" id="m_time"></span></div>
+      <div class="modal-row" style="border-bottom:none"><span class="k">Status</span><span class="v" id="m_status"></span></div>
+      <button class="modal-close" onclick="document.getElementById('visitModal').classList.remove('show')">Close</button>
+    </div>
+  </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var modal = document.getElementById('visitModal');
+    var cal = new FullCalendar.Calendar(document.getElementById('calendar'), {
+      initialView: 'timeGridWeek',
+      headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
+      nowIndicator: true, slotMinTime: '07:00:00', slotMaxTime: '21:00:00', height: 'auto',
+      events: '/crm/api/inspection-visits/',
+      eventClick: function (info) {
+        info.jsEvent.preventDefault();
+        var p = info.event.extendedProps;
+        document.getElementById('m_title').textContent = info.event.title;
+        document.getElementById('m_inspector').textContent = p.inspector || '—';
+        document.getElementById('m_seller').textContent = p.seller || '—';
+        document.getElementById('m_car').textContent = p.car || '—';
+        document.getElementById('m_address').textContent = p.address || '—';
+        document.getElementById('m_time').textContent = info.event.start ? info.event.start.toLocaleString() : '—';
+        document.getElementById('m_status').textContent = p.status || '—';
+        modal.classList.add('show');
+      }
+    });
+    cal.render();
+    modal.addEventListener('click', function (e) { if (e.target === modal) modal.classList.remove('show'); });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "teams/dash_base.html" %}
+{% block title %}Lead Manager Dashboard{% endblock %}
+{% block page_title %}Lead Manager · Dashboard{% endblock %}
+{% block sidebar_user %}
+  <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:1px">{{ request.user.get_full_name|default:request.user.username }}</div>
+  <div style="font-size:11px;color:rgba(255,255,255,.55);margin-bottom:10px">{{ request.user.email }}</div>
+{% endblock %}
+{% block nav %}
+  <a class="on" href="/crm/lead-manager/dashboard/"><i class="bi bi-grid-1x2"></i> <span>Dashboard</span></a>
+  <a href="/lead-manager/"><i class="bi bi-people"></i> <span>All Leads</span></a>
+  <a href="/crm/lead-manager/inspection-calendar/"><i class="bi bi-calendar3"></i> <span>Inspection Calendar</span></a>
+{% endblock %}
+{% block content %}
+  <div class="stats">
+    <div class="stat"><div class="n">{{ total_leads }}</div><div class="l">Total Leads</div></div>
+    <div class="stat"><div class="n">{{ new_leads }}</div><div class="l">New Leads</div></div>
+    <div class="stat"><div class="n">{{ inspections_scheduled }}</div><div class="l">Inspections Scheduled</div></div>
+    <div class="stat"><div class="n">{{ qualified_today }}</div><div class="l">Qualified Today</div></div>
+  </div>
+
+  <div class="qa">
+    <a class="primary" href="/lead-manager/"><i class="bi bi-people"></i> View All Leads</a>
+    <a href="/crm/lead-manager/inspection-calendar/"><i class="bi bi-calendar3"></i> Inspection Calendar</a>
+  </div>
+
+  <div class="panel">
+    <h2>Leads Needing Action</h2>
+    <table>
+      <thead><tr><th>Vehicle</th><th>Seller</th><th>Stage</th><th>Listed Date</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for l in recent_leads %}
+        <tr>
+          <td class="car">{{ l.vehicle.display_name|default:l.vehicle }}</td>
+          <td>{{ l.seller.get_full_name|default:l.seller.username }}</td>
+          <td><span class="pill">{{ l.get_stage_display }}</span></td>
+          <td>{{ l.created_at|date:"d M Y" }}</td>
+          <td>
+            {% if l.stage == 'qualified' %}
+              <a class="btn-sm" href="/lead-manager/">Assign Inspector</a>
+            {% else %}
+              <a class="btn-sm" style="background:transparent;border:1px solid var(--cf-blue);color:var(--cf-blue)" href="/lead-manager/">View</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}<tr><td colspan="5" class="empty">No new leads at the moment</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

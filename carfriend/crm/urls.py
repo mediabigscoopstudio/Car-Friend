@@ -13,7 +13,9 @@ urlpatterns = [
     # ── Role-scoped landing dashboards (one view + template per role) ──
     path('crm/retail/dashboard/',        dash.retail_dashboard,       name='dash_retail'),
     path('crm/sales/dashboard/',         dash.sales_dashboard,        name='dash_sales'),
-    path('crm/lead-manager/dashboard/',  dash.lead_manager_dashboard, name='dash_lead_manager'),
+    path('crm/lead-manager/dashboard/',           views.lead_manager_dashboard, name='lead_manager_dashboard'),
+    path('crm/lead-manager/inspection-calendar/', views.lead_manager_calendar,  name='lead_manager_calendar'),
+    path('crm/api/inspection-visits/',            views.inspection_visits_json, name='inspection_visits_json'),
     path('crm/procurement/dashboard/',   dash.procurement_dashboard,  name='dash_procurement'),
     path('crm/inspection/dashboard/',    dash.inspection_dashboard,   name='dash_inspection'),
     path('crm/inspection/visits/',       dash.inspection_visits,      name='dash_inspection_visits'),

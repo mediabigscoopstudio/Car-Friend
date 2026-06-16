@@ -51,7 +51,7 @@
   <div class="brand"><i class="bi bi-car-front-fill"></i> <span>Car Friend</span></div>
   <div class="role">{{ request.user.get_role_display }}</div>
   <nav>{% block nav %}{% endblock %}</nav>
-  <div class="out"><a href="/auth/logout/"><i class="bi bi-box-arrow-right"></i> Sign out</a></div>
+  <div class="out">{% block sidebar_user %}{% endblock %}<a href="/auth/logout/"><i class="bi bi-box-arrow-right"></i> Sign out</a></div>
 </aside>
 <div class="main">
   <div class="topbar">{% block page_title %}Dashboard{% endblock %}</div>

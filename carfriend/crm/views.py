@@ -1,6 +1,11 @@
+from datetime import timedelta
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.http import JsonResponse
+from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from accounts.models import User, DealerProfile
 from vehicles.models import Vehicle
 from crm.models import Lead, Bid
@@ -225,3 +230,97 @@ def inspector_dashboard(request):
         'pending': pending,
         'done':    done,
     })
+
+
+# ── Lead Manager: dedicated dashboard + inspection calendar ───────────────────
+
+_INSPECTOR_PALETTE = ["#2D6CDF", "#0FB5C9", "#FF6A5A", "#5AA9E6",
+                      "#7C4DFF", "#E8A33D", "#1B9E77", "#C2185B"]
+
+
+def _inspector_colour(inspector_id):
+    if not inspector_id:
+        return "#8595AB"
+    return _INSPECTOR_PALETTE[inspector_id % len(_INSPECTOR_PALETTE)]
+
+
+def _require_lead_manager(request):
+    """Return a redirect response if the user isn't a Lead Manager, else None.
+    Not authenticated -> teams login; wrong role -> their own dashboard."""
+    if not request.user.is_authenticated:
+        return redirect('/auth/login/')
+    if request.user.role != User.ROLE_LEAD_MANAGER and not request.user.is_superuser:
+        from accounts.views import get_dashboard_url
+        return redirect(get_dashboard_url(request.user))
+    return None
+
+
+def lead_manager_dashboard(request):
+    guard = _require_lead_manager(request)
+    if guard:
+        return guard
+    today = timezone.localdate()
+    ctx = {
+        'total_leads':           Lead.objects.count(),
+        'new_leads':             Lead.objects.filter(stage='new').count(),
+        'inspections_scheduled': Lead.objects.filter(stage='inspection_scheduled').count(),
+        'qualified_today':       Lead.objects.filter(stage='qualified', updated_at__date=today).count(),
+        'recent_leads':          Lead.objects.filter(stage__in=['new', 'qualified'])
+                                     .select_related('vehicle', 'seller').order_by('-created_at')[:10],
+    }
+    return render(request, 'teams/lead_manager/dashboard.html', ctx)
+
+
+def lead_manager_calendar(request):
+    guard = _require_lead_manager(request)
+    if guard:
+        return guard
+    inspectors = User.objects.filter(role=User.ROLE_INSPECTOR, is_suspended=False).order_by('username')
+    legend = [{'name': (i.get_full_name() or i.username), 'colour': _inspector_colour(i.id)}
+              for i in inspectors]
+    return render(request, 'teams/lead_manager/inspection_calendar.html', {'legend': legend})
+
+
+def inspection_visits_json(request):
+    guard = _require_lead_manager(request)
+    if guard:
+        return guard
+    qs = InspectionVisit.objects.select_related('vehicle', 'inspector', 'lead__seller')
+    start, end = request.GET.get('start'), request.GET.get('end')
+    if start and parse_datetime(start):
+        qs = qs.filter(scheduled_at__gte=parse_datetime(start))
+    if end and parse_datetime(end):
+        qs = qs.filter(scheduled_at__lte=parse_datetime(end))
+
+    events = []
+    for v in qs:
+        veh = v.vehicle
+        car = ''
+        if veh:
+            car = f"{veh.make} {veh.model} {veh.year}".strip()
+            if getattr(veh, 'plate_number', ''):
+                car += f" ({veh.plate_number})"
+        seller = ''
+        lead = getattr(v, 'lead', None)
+        if lead and getattr(lead, 'seller', None):
+            seller = lead.seller.get_full_name() or lead.seller.username
+        elif veh and getattr(veh, 'seller', None):
+            seller = veh.seller.get_full_name() or veh.seller.username
+        insp = v.inspector
+        inspector_name = (insp.get_full_name() or insp.username) if insp else 'Unassigned'
+        start_at = getattr(v, 'scheduled_at', None)
+        events.append({
+            'id': v.id,
+            'title': (f"{car} — {seller}".strip(' —') or 'Inspection'),
+            'start': start_at.isoformat() if start_at else None,
+            'end': (start_at + timedelta(hours=1)).isoformat() if start_at else None,
+            'color': _inspector_colour(v.inspector_id),
+            'extendedProps': {
+                'inspector': inspector_name,
+                'car': car or '—',
+                'seller': seller or '—',
+                'address': getattr(v, 'inspection_address', '') or '—',
+                'status': v.get_status_display(),
+            },
+        })
+    return JsonResponse(events, safe=False)
