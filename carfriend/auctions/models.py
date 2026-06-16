@@ -96,3 +96,23 @@ class OCBListing(models.Model):
     updated_at  = models.DateTimeField(auto_now=True)
 
     def __str__(self): return f"OCB ₹{self.ocb_price:,} · {self.vehicle}"
+
+
+class OCBOffer(models.Model):
+    """A dealer offer collected by a Sales Associate against an OCB task.
+    The Retail Associate reviews all offers and selects the winner to close."""
+
+    ocb_listing  = models.ForeignKey(OCBListing, on_delete=models.CASCADE, related_name="offers")
+    dealer       = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                                     related_name="ocb_dealer_offers")
+    price        = models.PositiveIntegerField()
+    notes        = models.TextField(blank=True)
+    submitted_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                     on_delete=models.SET_NULL, related_name="ocb_offers_submitted")
+    is_selected  = models.BooleanField(default=False)
+    created_at   = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-price", "-created_at"]
+
+    def __str__(self): return f"OCB offer ₹{self.price:,} · {self.dealer}"

@@ -21,6 +21,12 @@ class Deal(models.Model):
     status             = models.CharField(max_length=10, choices=Status.choices, default=Status.OPEN)
     assigned_sales     = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
                                            on_delete=models.SET_NULL, related_name="deals_assigned")
+    # Finalization breakdown (set on closure)
+    gst_percentage     = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    gst_amount         = models.PositiveIntegerField(default=0)
+    additional_charges = models.JSONField(default=list, blank=True)   # [{"label": str, "amount": int}, ...]
+    cf_commission      = models.PositiveIntegerField(default=0)
+    grand_total        = models.PositiveIntegerField(default=0)
     created_at         = models.DateTimeField(auto_now_add=True)
     updated_at         = models.DateTimeField(auto_now=True)
 
@@ -29,6 +35,13 @@ class Deal(models.Model):
     @property
     def margin(self):
         return self.final_price - self.seller_shown_price
+
+    @property
+    def additional_charges_total(self):
+        try:
+            return sum(int(c.get("amount", 0)) for c in (self.additional_charges or []))
+        except (TypeError, ValueError, AttributeError):
+            return 0
 
 
 class DealAgreement(models.Model):
@@ -41,3 +54,30 @@ class DealAgreement(models.Model):
     created_at       = models.DateTimeField(auto_now_add=True)
 
     def __str__(self): return f"Agreement · {self.deal}"
+
+
+class HandoverChecklist(models.Model):
+    """Procurement Associate handover checklist for a closed/paid deal."""
+
+    deal                     = models.OneToOneField(Deal, on_delete=models.CASCADE, related_name="handover")
+    keys_received            = models.BooleanField(default=False)
+    rc_received              = models.BooleanField(default=False)
+    insurance_received       = models.BooleanField(default=False)
+    service_history_received = models.BooleanField(default=False)
+    notes                    = models.TextField(blank=True)
+    stock_out_at             = models.DateTimeField(null=True, blank=True)
+    completed_by             = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                                 on_delete=models.SET_NULL, related_name="handovers_completed")
+    created_at               = models.DateTimeField(auto_now_add=True)
+    updated_at               = models.DateTimeField(auto_now=True)
+
+    def __str__(self): return f"Handover · {self.deal}"
+
+    @property
+    def all_received(self):
+        return all([self.keys_received, self.rc_received,
+                    self.insurance_received, self.service_history_received])
+
+    @property
+    def is_stocked_out(self):
+        return self.stock_out_at is not None
