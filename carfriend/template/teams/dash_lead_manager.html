@@ -1,0 +1,36 @@
+{% extends "teams/dash_base.html" %}
+{% block title %}Lead Manager Dashboard{% endblock %}
+{% block page_title %}Lead Manager · Dashboard{% endblock %}
+{% block nav %}
+  <a class="on" href="/crm/lead-manager/dashboard/"><i class="bi bi-grid-1x2"></i> <span>Dashboard</span></a>
+  <a href="/lead-manager/"><i class="bi bi-people"></i> <span>All Leads</span></a>
+  <a href="/lead-manager/calendar/"><i class="bi bi-calendar3"></i> <span>Inspection Calendar</span></a>
+{% endblock %}
+{% block content %}
+  <div class="stats">
+    <div class="stat"><div class="n">{{ stats.total }}</div><div class="l">Total Leads</div></div>
+    <div class="stat"><div class="n">{{ stats.new }}</div><div class="l">New Leads</div></div>
+    <div class="stat"><div class="n">{{ stats.qualified }}</div><div class="l">Qualified Today</div></div>
+    <div class="stat"><div class="n">{{ stats.scheduled }}</div><div class="l">Inspections Scheduled</div></div>
+  </div>
+  <div class="qa">
+    <a class="primary" href="/lead-manager/"><i class="bi bi-people"></i> View All Leads</a>
+    <a href="/lead-manager/calendar/"><i class="bi bi-calendar3"></i> Inspection Calendar</a>
+  </div>
+  <div class="panel">
+    <h2>New leads needing action</h2>
+    <table>
+      <thead><tr><th>Car</th><th>Seller</th><th>Received</th><th></th></tr></thead>
+      <tbody>
+        {% for l in recent %}
+        <tr>
+          <td class="car">{{ l.vehicle.display_name|default:l.vehicle }}</td>
+          <td>{{ l.seller.get_full_name|default:l.seller.username }}</td>
+          <td>{{ l.created_at|date:"d M Y" }}</td>
+          <td><a class="btn-sm" href="/lead-manager/">Triage</a></td>
+        </tr>
+        {% empty %}<tr><td colspan="4" class="empty">No new leads waiting.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

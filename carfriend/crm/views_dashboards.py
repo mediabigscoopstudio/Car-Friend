@@ -69,3 +69,19 @@ def sales_dashboard(request):
         "my_offers": o.offers.filter(submitted_by=request.user).count(),
     } for o in rows]
     return render(request, "teams/dash_sales.html", {"stats": stats, "listings": listings})
+
+
+# ── Lead Manager ─────────────────────────────────────────────────────────────
+
+@role_dashboard(Role.LEAD_MANAGER)
+def lead_manager_dashboard(request):
+    today = timezone.localdate()
+    stats = {
+        "total":     Lead.objects.count(),
+        "new":       Lead.objects.filter(stage=Lead.STAGE_NEW).count(),
+        "qualified": Lead.objects.filter(stage=Lead.STAGE_QUALIFIED, updated_at__date=today).count(),
+        "scheduled": Lead.objects.filter(stage=Lead.STAGE_INSP_SCHED).count(),
+    }
+    recent = (Lead.objects.filter(stage=Lead.STAGE_NEW)
+              .select_related("vehicle", "seller").order_by("-created_at")[:8])
+    return render(request, "teams/dash_lead_manager.html", {"stats": stats, "recent": recent})

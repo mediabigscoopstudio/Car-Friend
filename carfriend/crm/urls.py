@@ -13,6 +13,7 @@ urlpatterns = [
     # ── Role-scoped landing dashboards (one view + template per role) ──
     path('crm/retail/dashboard/',        dash.retail_dashboard,       name='dash_retail'),
     path('crm/sales/dashboard/',         dash.sales_dashboard,        name='dash_sales'),
+    path('crm/lead-manager/dashboard/',  dash.lead_manager_dashboard, name='dash_lead_manager'),
 
     # Lead Manager (role-scoped)
     path('lead-manager/',                            lm.lm_dashboard,         name='lm_dashboard'),
