@@ -99,7 +99,9 @@
     <div class="sidebar-role">
       {% if request.user.role == 'retail' %}Retail Associate
       {% elif request.user.role == 'sales' %}Sales Associate
-      {% elif request.user.role == 'inspector' %}Inspector
+      {% elif request.user.role == 'inspector' %}Inspection Associate
+      {% elif request.user.role == 'lead_manager' %}Lead Manager
+      {% elif request.user.role == 'procurement' %}Procurement Associate
       {% elif request.user.role == 'admin' %}Admin
       {% else %}Internal{% endif %}
     </div>
@@ -121,7 +123,7 @@
     </a>
     {% endif %}
 
-    {% if request.user.role != 'retail' and request.user.role != 'inspector' %}
+    {% if request.user.role == 'sales' or request.user.role == 'admin' %}
     <div class="nav-group-label">Sales CRM</div>
     <a class="sidebar-link {% block nav_dealers %}{% endblock %}" href="{% url 'dealers' %}">
       <i class="bi bi-building"></i> Dealer Network
