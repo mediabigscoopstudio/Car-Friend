@@ -27,17 +27,46 @@
       </select>
       <label class="cf-label">Due Date</label>
       <input class="cf-field" type="date" name="due_date">
-      <label class="cf-label">Related Lead (optional)</label>
-      <select class="cf-field" name="related_lead">
+      <label class="cf-label">Related OCB</label>
+      <select class="cf-field" name="related_ocb" id="ocbSel">
+        <option value="">— none —</option>
+        {% for o in ocbs %}<option value="{{ o.id }}" data-lead="{{ o.lead }}">{{ o.label }}</option>{% endfor %}
+      </select>
+      <div id="linkedLead" style="display:none;font-size:12px;color:var(--g1);background:var(--gs);border-radius:8px;padding:8px 12px;margin:-4px 0 12px"><i class="bi bi-link-45deg"></i> Linked lead: <span id="linkedLeadName"></span></div>
+
+      <label class="cf-label" id="leadLabel">Related Lead (only if no OCB)</label>
+      <select class="cf-field" name="related_lead" id="leadSel">
         <option value="">—</option>
         {% for l in leads %}<option value="{{ l.id }}">{{ l.label }}</option>{% endfor %}
-      </select>
-      <label class="cf-label">Related OCB (optional)</label>
-      <select class="cf-field" name="related_ocb">
-        <option value="">—</option>
-        {% for o in ocbs %}<option value="{{ o.id }}">{{ o.label }}</option>{% endfor %}
       </select>
       <button class="btn-cf" type="submit" style="margin-top:6px"><i class="bi bi-plus-circle"></i> Create Task</button>
     </form>
   </div>
+{% endblock %}
+{% block extra_js %}
+<script>
+  // Related OCB is the primary selector. Picking an OCB auto-resolves its lead
+  // server-side, so we surface the resolved lead and disable the manual dropdown.
+  var ocbSel = document.getElementById('ocbSel');
+  var leadSel = document.getElementById('leadSel');
+  var leadLabel = document.getElementById('leadLabel');
+  var linked = document.getElementById('linkedLead');
+  var linkedName = document.getElementById('linkedLeadName');
+  function syncLead() {
+    var opt = ocbSel.options[ocbSel.selectedIndex];
+    var leadTxt = opt ? (opt.getAttribute('data-lead') || '') : '';
+    if (ocbSel.value) {
+      linkedName.textContent = leadTxt || 'auto-resolved on save';
+      linked.style.display = 'block';
+      leadSel.value = '';
+      leadSel.disabled = true;
+      leadLabel.style.opacity = '.5';
+    } else {
+      linked.style.display = 'none';
+      leadSel.disabled = false;
+      leadLabel.style.opacity = '1';
+    }
+  }
+  if (ocbSel) { ocbSel.addEventListener('change', syncLead); syncLead(); }
+</script>
 {% endblock %}

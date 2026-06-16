@@ -217,7 +217,10 @@ def retail_task_create(request):
         return guard
     assignees = (User.objects.filter(role__in=[Role.SALES, Role.PROCUREMENT], is_suspended=False)
                  .order_by("role", "username"))
-    leads = Lead.objects.filter(assigned_to=request.user).select_related("vehicle")
+    # Leads aren't assigned to the Retail Associate in this workflow (null or the
+    # Lead Manager), so an assigned_to filter returns empty — same as the pipeline
+    # and OCB views. Show all leads for the optional fallback dropdown.
+    leads = Lead.objects.all().select_related("vehicle").order_by("-updated_at")
     ocbs = OCBListing.objects.filter(assigned_to=request.user).select_related("vehicle")
 
     if request.method == "POST":
@@ -230,6 +233,16 @@ def retail_task_create(request):
         priority = request.POST.get("priority")
         if priority not in dict(Task.Priority.choices):
             priority = Task.Priority.MEDIUM
+        # OCB is the primary selector. Every OCB is tied to a lead through its
+        # vehicle (Lead.vehicle is OneToOne), so when an OCB is chosen we
+        # auto-resolve the lead from it and ignore the manual lead field. Only
+        # when no OCB is selected do we use the optional Related Lead dropdown.
+        related_ocb = OCBListing.objects.filter(id=request.POST.get("related_ocb"),
+                                                assigned_to=request.user).first()
+        if related_ocb:
+            related_lead = Lead.objects.filter(vehicle=related_ocb.vehicle).first()
+        else:
+            related_lead = Lead.objects.filter(id=request.POST.get("related_lead")).first()
         task = Task.objects.create(
             title=title,
             description=(request.POST.get("description") or "").strip(),
@@ -237,20 +250,30 @@ def retail_task_create(request):
             assigned_to=assignee,
             priority=priority,
             due_date=request.POST.get("due_date") or None,
-            related_lead=Lead.objects.filter(id=request.POST.get("related_lead"),
-                                             assigned_to=request.user).first(),
-            related_ocb=OCBListing.objects.filter(id=request.POST.get("related_ocb"),
-                                                  assigned_to=request.user).first(),
+            related_lead=related_lead,
+            related_ocb=related_ocb,
         )
         notify(assignee, "task_assigned", title="New task assigned",
                body=task.title, url="/")
         messages.success(request, "Task created.")
         return redirect("/crm/retail/tasks/")
 
+    # Each OCB carries its auto-resolved lead label so the form can show
+    # "Linked lead: …" when an OCB is picked.
+    ocb_rows = []
+    for o in ocbs:
+        olead = Lead.objects.filter(vehicle=o.vehicle).select_related("seller").first()
+        if olead:
+            who = (olead.seller.get_full_name() or olead.seller.username) if olead.seller else ""
+            lead_label = f"#{olead.id} · {_car(o.vehicle)}" + (f" · {who}" if who else "")
+        else:
+            lead_label = ""
+        ocb_rows.append({"id": o.id, "label": f"{_car(o.vehicle)} (₹{o.ocb_price})", "lead": lead_label})
+
     return render(request, "teams/retail/task_create.html", {
         "assignees": assignees,
         "leads": [{"id": l.id, "label": f"{_car(l.vehicle)}" if l.vehicle else f"Lead #{l.id}"} for l in leads],
-        "ocbs": [{"id": o.id, "label": f"{_car(o.vehicle)} (₹{o.ocb_price})"} for o in ocbs],
+        "ocbs": ocb_rows,
         "priorities": Task.Priority.choices,
     })
 
