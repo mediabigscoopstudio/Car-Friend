@@ -19,12 +19,14 @@ urlpatterns = [
     path('procurement/<int:deal_id>/',               proc.proc_handover,      name='proc_handover'),
     path('procurement/<int:deal_id>/complete/',      proc.proc_complete,      name='proc_complete'),
 
-    # OCB task board — Retail (board) + Sales (offers)
+    # OCB task board — Retail (My OCBs) + Sales (open board) + shared detail
     path('ocb/',                                     ocb.ocb_board,           name='ocb_board'),
     path('ocb/create/',                              ocb.ocb_create,          name='ocb_create'),
-    path('ocb/offer/<int:offer_id>/select/',         ocb.ocb_select,          name='ocb_select'),
     path('ocb/sales/',                               ocb.ocb_sales,           name='ocb_sales'),
+    path('ocb/offer/<int:offer_id>/select/',         ocb.ocb_select,          name='ocb_select'),
+    path('ocb/<int:listing_id>/',                    ocb.ocb_detail,          name='ocb_detail'),
     path('ocb/<int:listing_id>/offer/',              ocb.ocb_submit_offer,    name='ocb_submit_offer'),
+    path('ocb/<int:listing_id>/message/',            ocb.ocb_message,         name='ocb_message'),
 
     # Lead pipeline
     path('pipeline/',                                views.pipeline,          name='pipeline'),

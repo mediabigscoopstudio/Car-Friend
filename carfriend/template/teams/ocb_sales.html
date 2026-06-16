@@ -1,56 +1,36 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
+<!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OCB Offers · Car Friend</title>
+<title>OCB Board · Car Friend</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
-  :root{--cf-azure:#122E5A;--cf-blue:#2D6CDF;--cf-blue-700:#2057C0;--cf-blue-100:#D9E6FA;--cf-sky-tint:#EAF1FB;--cf-ink:#0E1B2E;--cf-slate:#51637B;--cf-mist:#DCE6F2;--cf-paper:#F6F9FE;--cf-white:#FFFFFF;--cf-teal-tint:#E1F6F8;--cf-teal-dark:#0A7E8C;--cf-coral-tint:#FFE9E6;--cf-coral-dark:#C23A2C;--cf-display:'Sora',system-ui,sans-serif;--cf-sans:'Hanken Grotesk',system-ui,sans-serif;}
+  :root{--cf-azure:#122E5A;--cf-blue:#2D6CDF;--cf-blue-700:#2057C0;--cf-sky-tint:#EAF1FB;--cf-ink:#0E1B2E;--cf-slate:#51637B;--cf-mist:#DCE6F2;--cf-paper:#F6F9FE;--cf-white:#FFFFFF;--cf-display:'Sora',system-ui,sans-serif;--cf-sans:'Hanken Grotesk',system-ui,sans-serif;}
   *{box-sizing:border-box}body{margin:0;background:var(--cf-paper);color:var(--cf-ink);font-family:var(--cf-sans)}
   .topbar{background:var(--cf-azure);color:#fff;padding:14px 28px;display:flex;align-items:center;justify-content:space-between}
   .topbar h1{font-family:var(--cf-display);font-size:18px;font-weight:600;margin:0;display:flex;align-items:center;gap:10px}
   .topbar a{color:rgba(255,255,255,.8);text-decoration:none;font-size:13px;font-weight:600}
-  .wrap{max-width:900px;margin:0 auto;padding:28px 24px 80px}
-  .msg{padding:10px 14px;border-radius:10px;margin-bottom:14px;font-size:13px}.msg.success{background:var(--cf-teal-tint);color:var(--cf-teal-dark)}.msg.error{background:var(--cf-coral-tint);color:var(--cf-coral-dark)}
-  .card{background:var(--cf-white);border:1px solid var(--cf-mist);border-radius:14px;padding:18px;margin-bottom:16px}
+  .wrap{max-width:920px;margin:0 auto;padding:24px 24px 80px}
+  .msg{padding:10px 14px;border-radius:10px;margin-bottom:14px;font-size:13px;background:#E1F6F8;color:#0A7E8C}
+  .row{background:var(--cf-white);border:1px solid var(--cf-mist);border-radius:14px;padding:16px 18px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;text-decoration:none;color:inherit}
+  .row:hover{border-color:var(--cf-blue)}
   .car{font-family:var(--cf-display);font-weight:600;color:var(--cf-azure);font-size:15px}
   .meta{font-size:13px;color:var(--cf-slate);margin-top:2px}
-  .fld{border:1px solid var(--cf-mist);border-radius:9px;padding:8px 10px;font-family:var(--cf-sans);font-size:13px;color:var(--cf-ink)}
-  .fld:focus{outline:none;border-color:var(--cf-blue);box-shadow:0 0 0 3px var(--cf-blue-100)}
-  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;border-top:1px solid var(--cf-mist);margin-top:12px;padding-top:12px}
-  .lbl{font-size:11px;font-weight:600;color:var(--cf-slate);display:block;margin-bottom:3px}
-  .btn{border:none;border-radius:9px;padding:9px 14px;background:var(--cf-blue);color:#fff;font-family:var(--cf-sans);font-weight:600;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
-  .btn:hover{background:var(--cf-blue-700)}
-  .existing{font-size:13px;color:var(--cf-slate);margin-top:6px}
-  .empty{text-align:center;color:var(--cf-slate);padding:40px;background:var(--cf-white);border:1px dashed var(--cf-mist);border-radius:14px}
-</style>
-</head>
-<body>
-<div class="topbar"><h1><i class="bi bi-chat-left-dots"></i> OCB — Submit Dealer Offers</h1><a href="/auth/logout/"><i class="bi bi-box-arrow-right"></i> Sign out</a></div>
+  .pill{background:var(--cf-sky-tint);color:var(--cf-blue);font-weight:700;font-size:12px;padding:4px 12px;border-radius:999px}
+  .empty{text-align:center;color:var(--cf-slate);padding:46px;background:var(--cf-white);border:1px dashed var(--cf-mist);border-radius:14px}
+</style></head><body>
+<div class="topbar"><h1><i class="bi bi-chat-left-dots"></i> OCB Board — Sales</h1><a href="/auth/logout/"><i class="bi bi-box-arrow-right"></i> Sign out</a></div>
 <div class="wrap">
-  {% if messages %}{% for m in messages %}<div class="msg {{ m.tags }}">{{ m }}</div>{% endfor %}{% endif %}
-
+  {% if messages %}{% for m in messages %}<div class="msg">{{ m }}</div>{% endfor %}{% endif %}
   {% for t in tasks %}
-  <div class="card">
-    <div class="car">{{ t.vehicle.display_name|default:t.vehicle }}</div>
-    <div class="meta">Client price: <strong>₹{{ t.ocb_price }}</strong> · {{ t.offers.count }} offer{{ t.offers.count|pluralize }} so far</div>
-    {% for o in t.offers.all %}<div class="existing">• ₹{{ o.price }} — {{ o.dealer.get_full_name|default:o.dealer.username }}</div>{% endfor %}
-    <form method="post" action="/ocb/{{ t.id }}/offer/" class="row">
-      {% csrf_token %}
-      <div><span class="lbl">Dealer</span>
-        <select class="fld" name="dealer_id" required><option value="">Select dealer…</option>
-          {% for d in dealers %}<option value="{{ d.id }}">{{ d.get_full_name|default:d.username }}</option>{% endfor %}
-        </select></div>
-      <div><span class="lbl">Offer price (₹)</span><input class="fld" type="number" name="price" min="1" required></div>
-      <div style="flex:1;min-width:160px"><span class="lbl">Notes</span><input class="fld" name="notes" placeholder="Optional" style="width:100%"></div>
-      <button class="btn" type="submit"><i class="bi bi-plus-circle"></i> Submit offer</button>
-    </form>
-  </div>
+  <a class="row" href="/ocb/{{ t.id }}/">
+    <div>
+      <div class="car">{{ t.vehicle.display_name|default:t.vehicle }}</div>
+      <div class="meta">Client price: <strong>₹{{ t.ocb_price }}</strong> · {{ t.get_status_display }}</div>
+    </div>
+    <span class="pill">{{ t.offers.count }} offer{{ t.offers.count|pluralize }}</span>
+  </a>
   {% empty %}
-  <div class="empty"><i class="bi bi-inbox" style="font-size:28px;color:var(--cf-mist)"></i><p>No active OCB tasks.</p></div>
+  <div class="empty"><i class="bi bi-inbox" style="font-size:28px;color:var(--cf-mist)"></i><p>No open OCB tasks.</p></div>
   {% endfor %}
-</div>
-</body>
-</html>
+</div></body></html>
