@@ -1,40 +1,38 @@
-{% extends "teams/dash_base.html" %}
-{% block title %}OCB Detail{% endblock %}
-{% block page_title %}Retail Associate · OCB Task{% endblock %}
-{% block nav %}{% include "teams/retail/_nav.html" with active="ocb" %}{% endblock %}
-{% block head_extra %}
-<style>
+{% extends 'teams/base.html' %}
+{% block title %}OCB Detail · CarFriend Teams{% endblock %}
+{% block page_title %}OCB Task{% endblock %}
+{% block nav_ocb %}active{% endblock %}
+{% block extra_css %}
+  .msg{font-size:13px;padding:9px 12px;border-radius:8px;margin-bottom:12px;background:var(--gs);color:var(--g1)}
+  .msg.error{background:#FCE8E8;color:#B42318}
+  .backlink{color:var(--g1);text-decoration:none;font-weight:600;font-size:13px;display:inline-block;margin-bottom:14px}
   .ocb-grid{display:grid;grid-template-columns:260px 1fr 300px;gap:16px;align-items:start}
   @media(max-width:980px){.ocb-grid{grid-template-columns:1fr}}
-  .pnl{background:var(--cf-white);border:1px solid var(--cf-mist);border-radius:14px;padding:18px}
-  .pnl h3{font-family:var(--cf-display);font-size:13px;color:var(--cf-slate);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin:0 0 12px}
-  .kv{font-size:13px;padding:6px 0;border-bottom:1px solid var(--cf-mist)}
-  .kv .k{color:var(--cf-slate);font-weight:600}
-  .kv .v{color:var(--cf-ink);font-weight:600}
-  .offer{border:1px solid var(--cf-mist);border-radius:10px;padding:10px 12px;margin-bottom:8px}
-  .offer.win{border-color:var(--cf-teal);background:var(--cf-teal-tint)}
-  .offer .p{font-family:var(--cf-display);font-weight:700;color:var(--cf-azure)}
-  .offer .meta{font-size:12px;color:var(--cf-slate);margin-top:2px}
-  .selbtn{margin-top:8px;border:none;border-radius:8px;padding:7px 12px;background:var(--cf-teal);color:#fff;font-weight:600;font-size:12px;cursor:pointer}
+  .kv{font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)}
+  .kv .k{color:var(--txt2);font-weight:600}
+  .kv .v{color:var(--txt);font-weight:600}
+  .offer{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+  .offer.win{border-color:var(--g2);background:var(--gs)}
+  .offer .p{font-family:'Poppins',sans-serif;font-weight:700;color:var(--g1)}
+  .offer .meta{font-size:12px;color:var(--txt2);margin-top:2px}
   .chat{display:flex;flex-direction:column;gap:8px;max-height:340px;overflow:auto;margin-bottom:12px}
   .bub{max-width:85%;padding:8px 11px;border-radius:12px;font-size:13px}
-  .bub .who{font-size:10px;font-weight:700;color:var(--cf-slate);margin-bottom:2px}
-  .bub.me{align-self:flex-end;background:var(--cf-blue);color:#fff}.bub.me .who{color:rgba(255,255,255,.8)}
-  .bub.them{align-self:flex-start;background:var(--cf-sky-tint);color:var(--cf-ink)}
+  .bub .who{font-size:10px;font-weight:700;color:var(--txt2);margin-bottom:2px}
+  .bub.me{align-self:flex-end;background:var(--g1);color:#fff}.bub.me .who{color:rgba(255,255,255,.8)}
+  .bub.them{align-self:flex-start;background:var(--mist);color:var(--txt);border:1px solid var(--line)}
   .bub .t{font-size:10px;opacity:.7;margin-top:2px}
   .mform{display:flex;gap:8px}
-  .mform input{flex:1;border:1px solid var(--cf-mist);border-radius:9px;padding:8px 10px;font-family:var(--cf-sans);font-size:13px}
-  .mform button{border:none;border-radius:9px;padding:8px 14px;background:var(--cf-blue);color:#fff;font-weight:600;cursor:pointer}
-  .note{font-size:11px;color:var(--cf-slate);margin-top:10px;line-height:1.5}
-</style>
+  .mform input{flex:1;border:1.5px solid var(--line);border-radius:9px;padding:8px 10px;font-family:'Inter',sans-serif;font-size:13px}
+  .mform input:focus{outline:none;border-color:var(--g1)}
+  .note{font-size:11px;color:var(--txt2);margin-top:10px;line-height:1.5}
 {% endblock %}
 {% block content %}
   {% if messages %}{% for m in messages %}<div class="msg {{ m.tags }}">{{ m }}</div>{% endfor %}{% endif %}
-  <a href="/crm/retail/ocb/" style="color:var(--cf-blue);text-decoration:none;font-weight:600;font-size:13px;display:inline-block;margin-bottom:14px">&larr; Back to OCB board</a>
+  <a href="/crm/retail/ocb/" class="backlink">&larr; Back to OCB board</a>
   <div class="ocb-grid">
 
-    <div class="pnl">
-      <h3>OCB Info</h3>
+    <div class="cf-card">
+      <div class="cf-card-title"><i class="bi bi-info-circle"></i> OCB Info</div>
       <div class="kv"><div class="k">Car</div><div class="v">{{ car }} · {{ ocb.vehicle.plate_number }}</div></div>
       <div class="kv"><div class="k">Client Price</div><div class="v">₹{{ ocb.ocb_price }}</div></div>
       <div class="kv"><div class="k">Status</div><div class="v">
@@ -43,28 +41,28 @@
       <div class="kv" style="border-bottom:none"><div class="k">Sales Associate(s)</div><div class="v">{{ sales_names }}</div></div>
     </div>
 
-    <div class="pnl">
-      <h3>Dealer Offers</h3>
+    <div class="cf-card">
+      <div class="cf-card-title"><i class="bi bi-cash-stack"></i> Dealer Offers</div>
       {% for o in offers %}
       <div class="offer {% if o.is_selected %}win{% endif %}">
         <div><span class="p">₹{{ o.price }}</span> · {{ o.dealer.get_full_name|default:o.dealer.username }}</div>
         {% if o.notes %}<div class="meta">{{ o.notes }}</div>{% endif %}
         <div class="meta">by {{ o.submitted_by.get_full_name|default:o.submitted_by.username|default:"—" }} · {{ o.created_at|date:"d M, H:i" }}</div>
         {% if o.is_selected %}
-          <div class="meta" style="color:var(--cf-teal-dark);font-weight:700;margin-top:6px"><i class="bi bi-trophy"></i> Winner — deal price ₹{{ o.price }}</div>
+          <div class="meta" style="color:var(--g1);font-weight:700;margin-top:6px"><i class="bi bi-trophy"></i> Winner — deal price ₹{{ o.price }}</div>
         {% elif ocb.status != 'accepted' %}
           <form method="post" action="/crm/retail/ocb/{{ ocb.id }}/select-winner/" style="display:inline">
             {% csrf_token %}<input type="hidden" name="offer_id" value="{{ o.id }}">
-            <button class="selbtn" type="submit"><i class="bi bi-trophy"></i> Select as Winner</button>
+            <button class="btn-cf" type="submit" style="margin-top:8px;padding:6px 12px;font-size:12px"><i class="bi bi-trophy"></i> Select as Winner</button>
           </form>
         {% endif %}
       </div>
-      {% empty %}<div class="meta" style="color:var(--cf-slate);font-size:13px">No dealer offers yet.</div>{% endfor %}
+      {% empty %}<div class="meta" style="color:var(--txt2);font-size:13px">No dealer offers yet.</div>{% endfor %}
       <div class="note">A dealer is connected when a Sales Associate submits an offer with the dealer's details. Select the winning offer to close the OCB — the final deal price is the winning offer price.</div>
     </div>
 
-    <div class="pnl">
-      <h3>Messages (Retail &harr; Sales)</h3>
+    <div class="cf-card">
+      <div class="cf-card-title"><i class="bi bi-chat-dots"></i> Messages (Retail &harr; Sales)</div>
       <div class="chat">
         {% for msg in thread %}
         <div class="bub {% if msg.sender_id == request.user.id %}me{% else %}them{% endif %}">
@@ -72,12 +70,12 @@
           <div>{{ msg.message }}</div>
           <div class="t">{{ msg.created_at|date:"d M, H:i" }}</div>
         </div>
-        {% empty %}<div class="meta" style="color:var(--cf-slate);font-size:13px">No messages yet.</div>{% endfor %}
+        {% empty %}<div class="meta" style="color:var(--txt2);font-size:13px">No messages yet.</div>{% endfor %}
       </div>
       <form method="post" action="/crm/retail/ocb/{{ ocb.id }}/" class="mform">
         {% csrf_token %}
         <input name="message" placeholder="Message Sales…" required>
-        <button type="submit"><i class="bi bi-send"></i></button>
+        <button class="btn-cf" type="submit"><i class="bi bi-send"></i></button>
       </form>
     </div>
 

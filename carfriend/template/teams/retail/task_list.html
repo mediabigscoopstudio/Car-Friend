@@ -1,29 +1,27 @@
-{% extends "teams/dash_base.html" %}
-{% block title %}Task Manager{% endblock %}
-{% block page_title %}Retail Associate · Task Manager{% endblock %}
-{% block nav %}{% include "teams/retail/_nav.html" with active="tasks" %}{% endblock %}
-{% block head_extra %}
-<style>
+{% extends 'teams/base.html' %}
+{% block title %}Task Manager · CarFriend Teams{% endblock %}
+{% block page_title %}Task Manager{% endblock %}
+{% block nav_tasks %}active{% endblock %}
+{% block extra_css %}
   .top-actions{display:flex;justify-content:flex-end;margin-bottom:14px}
   .board{display:flex;gap:14px;overflow-x:auto;padding-bottom:20px;align-items:flex-start}
-  .col{flex:0 0 260px;background:#eef3fb;border:1px solid var(--cf-mist);border-radius:12px;padding:12px}
+  .col{flex:0 0 260px;background:var(--mist);border:1px solid var(--line);border-radius:12px;padding:12px}
   .col-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-  .col-h .t{font-family:var(--cf-display);font-size:13px;font-weight:600;color:var(--cf-azure)}
-  .col-h .c{font-size:12px;font-weight:700;color:var(--cf-blue);background:var(--cf-white);border-radius:999px;padding:2px 9px}
-  .tk{display:block;background:var(--cf-white);border:1px solid var(--cf-mist);border-radius:10px;padding:11px 12px;margin-bottom:8px;text-decoration:none;color:inherit}
-  .tk:hover{border-color:var(--cf-blue)}
-  .tk .ti{font-weight:600;color:var(--cf-azure);font-size:13px}
-  .tk .who{font-size:12px;color:var(--cf-slate);margin-top:3px}
+  .col-h .t{font-family:'Poppins',sans-serif;font-size:13px;font-weight:700;color:var(--txt)}
+  .col-h .c{font-size:12px;font-weight:700;color:var(--g1);background:#fff;border:1px solid var(--line);border-radius:999px;padding:2px 9px}
+  .tk{display:block;background:#fff;border:1px solid var(--line);border-radius:10px;padding:11px 12px;margin-bottom:8px;text-decoration:none;color:inherit}
+  .tk:hover{border-color:var(--g1)}
+  .tk .ti{font-weight:600;color:var(--txt);font-size:13px}
+  .tk .who{font-size:12px;color:var(--txt2);margin-top:3px}
   .tk .row{display:flex;gap:6px;align-items:center;margin-top:7px;flex-wrap:wrap}
   .pr{font-size:10px;font-weight:700;border-radius:999px;padding:2px 8px}
-  .pr-low{background:#EEF1F5;color:#51637B}.pr-medium{background:#FFF1DD;color:#B26A00}.pr-high{background:var(--cf-coral-tint);color:var(--cf-coral-dark)}
-  .due{font-size:11px;color:var(--cf-slate)} .due.over{color:var(--cf-coral-dark);font-weight:700}
-  .tag{font-size:10px;background:var(--cf-sky-tint);color:var(--cf-blue);border-radius:6px;padding:2px 7px}
-  .none{font-size:12px;color:var(--cf-slate);text-align:center;padding:14px 0}
-</style>
+  .pr-low{background:#EEF1F5;color:#51637B}.pr-medium{background:#FFF1DD;color:#B26A00}.pr-high{background:#FCE8E8;color:#B42318}
+  .due{font-size:11px;color:var(--txt2)} .due.over{color:#B42318;font-weight:700}
+  .tag{font-size:10px;background:var(--gs);color:var(--g1);border-radius:6px;padding:2px 7px}
+  .none{font-size:12px;color:var(--txt3);text-align:center;padding:14px 0}
 {% endblock %}
 {% block content %}
-  <div class="top-actions"><a class="btn-sm" href="/crm/retail/tasks/create/"><i class="bi bi-plus-circle"></i> Create Task</a></div>
+  <div class="top-actions"><a class="btn-cf" href="/crm/retail/tasks/create/"><i class="bi bi-plus-circle"></i> Create Task</a></div>
   <div class="board">
     {% for col in columns %}
     <div class="col">
