@@ -27,6 +27,10 @@ def get_dashboard_url(user):
         return "/auth/dealer/dashboard/"
     elif user.role == Role.LEAD_MANAGER:
         return "/lead-manager/"
+    elif user.role == Role.RETAIL:
+        return "/retail/"
+    elif user.role == Role.SALES:
+        return "/ocb/sales/"
     elif user.role == Role.PROCUREMENT:
         return "/procurement/"
     elif user.is_internal:

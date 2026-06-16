@@ -1,0 +1,67 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lead · Car Friend</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+  :root{--cf-azure:#122E5A;--cf-blue:#2D6CDF;--cf-blue-700:#2057C0;--cf-blue-100:#D9E6FA;--cf-sky-tint:#EAF1FB;--cf-ink:#0E1B2E;--cf-slate:#51637B;--cf-mist:#DCE6F2;--cf-paper:#F6F9FE;--cf-white:#FFFFFF;--cf-teal-tint:#E1F6F8;--cf-teal-dark:#0A7E8C;--cf-display:'Sora',system-ui,sans-serif;--cf-sans:'Hanken Grotesk',system-ui,sans-serif;}
+  *{box-sizing:border-box}body{margin:0;background:var(--cf-paper);color:var(--cf-ink);font-family:var(--cf-sans)}
+  .topbar{background:var(--cf-azure);color:#fff;padding:14px 28px;display:flex;align-items:center;justify-content:space-between}
+  .topbar h1{font-family:var(--cf-display);font-size:18px;font-weight:600;margin:0;display:flex;align-items:center;gap:10px}
+  .topbar a{color:rgba(255,255,255,.85);text-decoration:none;font-size:13px;font-weight:600;margin-left:16px}
+  .wrap{max-width:620px;margin:0 auto;padding:24px 24px 80px}
+  .back{color:var(--cf-blue);text-decoration:none;font-weight:600;font-size:13px;display:inline-block;margin-bottom:14px}
+  .msg{padding:10px 14px;border-radius:10px;margin-bottom:14px;font-size:13px;background:var(--cf-teal-tint);color:var(--cf-teal-dark)}
+  .card{background:var(--cf-white);border:1px solid var(--cf-mist);border-radius:14px;padding:22px;margin-bottom:16px}
+  .car{font-family:var(--cf-display);font-weight:600;color:var(--cf-azure);font-size:18px}
+  .meta{font-size:13px;color:var(--cf-slate);margin-top:4px}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:4px 12px;border-radius:999px;background:var(--cf-sky-tint);color:var(--cf-blue);margin-top:8px}
+  h3{font-family:var(--cf-display);font-size:13px;color:var(--cf-slate);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin:0 0 12px}
+  .lbl{font-size:11px;font-weight:600;color:var(--cf-slate);display:block;margin-bottom:4px}
+  .fld{width:100%;border:1px solid var(--cf-mist);border-radius:10px;padding:10px 12px;font-family:var(--cf-sans);font-size:14px;color:var(--cf-ink);margin-bottom:12px}
+  .fld:focus{outline:none;border-color:var(--cf-blue);box-shadow:0 0 0 3px var(--cf-blue-100)}
+  .btn{border:none;border-radius:10px;padding:11px 16px;background:var(--cf-blue);color:#fff;font-weight:600;font-size:14px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+  .btn:hover{background:var(--cf-blue-700)}
+</style></head><body>
+<div class="topbar"><h1><i class="bi bi-card-checklist"></i> Lead Detail</h1>
+  <div><a href="/retail/">Pipeline</a><a href="/auth/logout/">Sign out</a></div></div>
+<div class="wrap">
+  <a class="back" href="/retail/">&larr; Back to pipeline</a>
+  {% if messages %}{% for m in messages %}<div class="msg">{{ m }}</div>{% endfor %}{% endif %}
+
+  <div class="card">
+    <div class="car">{{ lead.vehicle.display_name|default:lead.vehicle }}{% if lead.vehicle.year %} · {{ lead.vehicle.year }}{% endif %}</div>
+    <div class="meta"><i class="bi bi-person"></i> {{ lead.seller.get_full_name|default:lead.seller.username }}
+      {% if lead.seller.phone %}· <i class="bi bi-telephone"></i> {{ lead.seller.phone }}{% endif %}</div>
+    <div class="meta">Plate: {{ lead.vehicle.plate_number }} · Expected price: {% if lead.vehicle.expected_price %}₹{{ lead.vehicle.expected_price }}{% else %}—{% endif %}</div>
+    <span class="pill">{{ lead.get_stage_display }}</span>
+  </div>
+
+  {% if existing_ocb %}
+  <div class="card">
+    <h3>OCB task</h3>
+    <p class="meta" style="margin-top:0">An OCB task exists for this car (₹{{ existing_ocb.ocb_price }} · {{ existing_ocb.get_status_display }}).</p>
+    <a class="btn" href="/ocb/{{ existing_ocb.id }}/"><i class="bi bi-people"></i> Open OCB task</a>
+  </div>
+  {% elif can_ocb %}
+  <div class="card">
+    <h3>Create OCB</h3>
+    <p class="meta" style="margin-top:0;margin-bottom:14px">Hand this car to the Sales team to collect dealer offers. A Retail Associate negotiates the best deal on the seller's behalf.</p>
+    <form method="post" action="/ocb/create/">
+      {% csrf_token %}
+      <input type="hidden" name="vehicle_id" value="{{ lead.vehicle.id }}">
+      <input type="hidden" name="next" value="/retail/lead/{{ lead.id }}/">
+      <label class="lbl">Car</label>
+      <input class="fld" value="{{ lead.vehicle.display_name|default:lead.vehicle }} · {{ lead.vehicle.plate_number }}" disabled>
+      <label class="lbl">Client-suitable price (₹)</label>
+      <input class="fld" type="number" name="ocb_price" min="1" required>
+      <label class="lbl">Notes (optional)</label>
+      <textarea class="fld" name="notes" rows="2" placeholder="Context for the Sales team"></textarea>
+      <button class="btn" type="submit"><i class="bi bi-plus-circle"></i> Create OCB task</button>
+    </form>
+  </div>
+  {% else %}
+  <div class="card"><p class="meta" style="margin:0">OCB can be created once the lead reaches <strong>Negotiation</strong> or <strong>Auction Created</strong>.</p></div>
+  {% endif %}
+</div></body></html>

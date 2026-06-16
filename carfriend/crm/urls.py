@@ -1,6 +1,7 @@
 from django.urls import path
 from crm import views
 from crm import views_lead_manager as lm
+from crm import views_retail as retail
 from deals import views_procurement as proc
 from auctions import views_ocb as ocb
 
@@ -12,6 +13,10 @@ urlpatterns = [
     path('lead-manager/',                            lm.lm_dashboard,         name='lm_dashboard'),
     path('lead-manager/<int:lead_id>/qualify/',      lm.lm_qualify,           name='lm_qualify'),
     path('lead-manager/<int:lead_id>/assign/',       lm.lm_assign_inspection, name='lm_assign_inspection'),
+
+    # Retail Associate (role-scoped: pipeline + OCB)
+    path('retail/',                                  retail.retail_pipeline,  name='retail_pipeline'),
+    path('retail/lead/<int:lead_id>/',               retail.retail_lead_detail, name='retail_lead_detail'),
 
     # Procurement Associate (role-scoped)
     path('procurement/',                             proc.proc_dashboard,     name='proc_dashboard'),

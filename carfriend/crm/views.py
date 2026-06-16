@@ -14,6 +14,13 @@ def _internal_check(request):
     )
 
 
+def _sales_or_admin(request):
+    # Sales CRM (dealer network + deals) is for Sales Associates + Admin only.
+    return request.user.is_authenticated and (
+        request.user.role in [User.ROLE_SALES, User.ROLE_ADMIN] or request.user.is_superuser
+    )
+
+
 # ── Teams Dashboard ───────────────────────────────────────────────────────────
 
 @login_required(login_url='/auth/login/')
@@ -160,7 +167,7 @@ def sellers(request):
 
 @login_required(login_url='/auth/login/')
 def dealers(request):
-    if not _internal_check(request):
+    if not _sales_or_admin(request):
         return redirect('/')
     all_dealers = DealerProfile.objects.select_related('user').order_by('-created_at')
     return render(request, 'teams/dealers.html', {'dealers': all_dealers})
@@ -168,7 +175,7 @@ def dealers(request):
 
 @login_required(login_url='/auth/login/')
 def dealer_detail(request, dealer_id):
-    if not _internal_check(request):
+    if not _sales_or_admin(request):
         return redirect('/')
     dealer = get_object_or_404(DealerProfile, id=dealer_id)
     bids = Bid.objects.filter(dealer=dealer.user).select_related('vehicle').order_by('-created_at')
@@ -179,7 +186,7 @@ def dealer_detail(request, dealer_id):
 
 @login_required(login_url='/auth/login/')
 def deals(request):
-    if not _internal_check(request):
+    if not _sales_or_admin(request):
         return redirect('/')
     vehicles_in_play = Vehicle.objects.filter(
         status__in=[Vehicle.STATUS_AUCTION, Vehicle.STATUS_APPROVED, Vehicle.STATUS_INSPECTED]
@@ -189,7 +196,7 @@ def deals(request):
 
 @login_required(login_url='/auth/login/')
 def deal_detail(request, vehicle_id):
-    if not _internal_check(request):
+    if not _sales_or_admin(request):
         return redirect('/')
     vehicle = get_object_or_404(Vehicle, id=vehicle_id)
     bids = Bid.objects.filter(vehicle=vehicle).select_related('dealer').order_by('-amount')

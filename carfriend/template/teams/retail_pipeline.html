@@ -1,0 +1,45 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lead Pipeline · Car Friend</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+  :root{--cf-azure:#122E5A;--cf-blue:#2D6CDF;--cf-sky-tint:#EAF1FB;--cf-ink:#0E1B2E;--cf-slate:#51637B;--cf-mist:#DCE6F2;--cf-paper:#F6F9FE;--cf-white:#FFFFFF;--cf-display:'Sora',system-ui,sans-serif;--cf-sans:'Hanken Grotesk',system-ui,sans-serif;}
+  *{box-sizing:border-box}body{margin:0;background:var(--cf-paper);color:var(--cf-ink);font-family:var(--cf-sans)}
+  .topbar{background:var(--cf-azure);color:#fff;padding:14px 28px;display:flex;align-items:center;justify-content:space-between}
+  .topbar h1{font-family:var(--cf-display);font-size:18px;font-weight:600;margin:0;display:flex;align-items:center;gap:10px}
+  .topbar .links a{color:rgba(255,255,255,.85);text-decoration:none;font-size:13px;font-weight:600;margin-left:18px}
+  .topbar .links a.on{color:#fff;border-bottom:2px solid var(--cf-sky)}
+  .board{display:flex;gap:14px;overflow-x:auto;padding:22px 24px 60px;align-items:flex-start}
+  .col{flex:0 0 260px;background:#eef3fb;border:1px solid var(--cf-mist);border-radius:12px;padding:12px}
+  .col-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .col-h .t{font-family:var(--cf-display);font-size:13px;font-weight:600;color:var(--cf-azure)}
+  .col-h .c{font-size:12px;font-weight:700;color:var(--cf-blue);background:var(--cf-white);border-radius:999px;padding:2px 9px}
+  .card{display:block;background:var(--cf-white);border:1px solid var(--cf-mist);border-radius:10px;padding:11px 12px;margin-bottom:8px;text-decoration:none;color:inherit}
+  .card:hover{border-color:var(--cf-blue)}
+  .card .car{font-family:var(--cf-display);font-weight:600;color:var(--cf-azure);font-size:13px}
+  .card .who{font-size:12px;color:var(--cf-slate);margin-top:2px}
+  .card .foot{display:flex;justify-content:space-between;align-items:center;margin-top:7px;font-size:11px;color:var(--cf-slate)}
+  .card .price{font-family:var(--cf-display);font-weight:700;color:var(--cf-ink)}
+  .none{font-size:12px;color:var(--cf-slate);text-align:center;padding:10px 0}
+</style></head><body>
+<div class="topbar"><h1><i class="bi bi-kanban"></i> Lead Pipeline — Retail</h1>
+  <div class="links"><a class="on" href="/retail/">Pipeline</a><a href="/ocb/">My OCBs</a><a href="/auth/logout/">Sign out</a></div></div>
+<div class="board">
+  {% for col in columns %}
+  <div class="col">
+    <div class="col-h"><span class="t">{{ col.label }}</span><span class="c">{{ col.count }}</span></div>
+    {% for card in col.cards %}
+    <a class="card" href="/retail/lead/{{ card.id }}/">
+      <div class="car">{{ card.car }}{% if card.year %} · {{ card.year }}{% endif %}</div>
+      <div class="who"><i class="bi bi-person"></i> {{ card.seller }}</div>
+      <div class="foot">
+        <span class="price">{% if card.price %}₹{{ card.price }}{% else %}—{% endif %}</span>
+        <span><i class="bi bi-clock"></i> {{ card.days }}d in stage</span>
+      </div>
+    </a>
+    {% empty %}<div class="none">—</div>{% endfor %}
+  </div>
+  {% endfor %}
+</div></body></html>
