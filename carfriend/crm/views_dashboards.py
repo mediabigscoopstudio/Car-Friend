@@ -47,3 +47,25 @@ def retail_dashboard(request):
     }
     recent = mine.select_related("vehicle", "seller").order_by("-updated_at")[:8]
     return render(request, "teams/dash_retail.html", {"stats": stats, "recent": recent})
+
+
+# ── Sales Associate ──────────────────────────────────────────────────────────
+
+@role_dashboard(Role.SALES)
+def sales_dashboard(request):
+    stats = {
+        "active_ocbs": OCBListing.objects.filter(status=OCBListing.Status.OPEN).count(),
+        "my_offers":   OCBOffer.objects.filter(submitted_by=request.user).count(),
+        "dealers":     DealerProfile.objects.count(),
+        "closed":      Deal.objects.filter(assigned_sales=request.user, status=Deal.Status.CLOSED).count(),
+    }
+    rows = list(OCBListing.objects.filter(status=OCBListing.Status.OPEN)
+                .select_related("vehicle").order_by("-created_at")[:5])
+    if len(rows) < 5:
+        rows += list(OCBListing.objects.exclude(status=OCBListing.Status.OPEN)
+                     .select_related("vehicle").order_by("-created_at")[:5 - len(rows)])
+    listings = [{
+        "ocb": o,
+        "my_offers": o.offers.filter(submitted_by=request.user).count(),
+    } for o in rows]
+    return render(request, "teams/dash_sales.html", {"stats": stats, "listings": listings})

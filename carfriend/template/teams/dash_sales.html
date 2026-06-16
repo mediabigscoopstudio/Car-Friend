@@ -1,0 +1,39 @@
+{% extends "teams/dash_base.html" %}
+{% block title %}Sales Dashboard{% endblock %}
+{% block page_title %}Sales Associate · Dashboard{% endblock %}
+{% block nav %}
+  <a class="on" href="/crm/sales/dashboard/"><i class="bi bi-grid-1x2"></i> <span>Dashboard</span></a>
+  <a href="/ocb/sales/"><i class="bi bi-chat-left-dots"></i> <span>OCB Board</span></a>
+  <a href="/dealers/"><i class="bi bi-shop"></i> <span>Dealer Network</span></a>
+  <a href="/deals/"><i class="bi bi-briefcase"></i> <span>Deals</span></a>
+{% endblock %}
+{% block content %}
+  <div class="stats">
+    <div class="stat"><div class="n">{{ stats.active_ocbs }}</div><div class="l">Active OCBs</div></div>
+    <div class="stat"><div class="n">{{ stats.my_offers }}</div><div class="l">My Offers Submitted</div></div>
+    <div class="stat"><div class="n">{{ stats.dealers }}</div><div class="l">Dealers in Network</div></div>
+    <div class="stat"><div class="n">{{ stats.closed }}</div><div class="l">Deals Closed</div></div>
+  </div>
+  <div class="qa">
+    <a class="primary" href="/ocb/sales/"><i class="bi bi-chat-left-dots"></i> View OCB Board</a>
+    <a href="/dealers/"><i class="bi bi-shop"></i> My Dealers</a>
+    <a href="/deals/"><i class="bi bi-briefcase"></i> View Deals</a>
+  </div>
+  <div class="panel">
+    <h2>Recent OCB listings</h2>
+    <table>
+      <thead><tr><th>Car</th><th>Client Price</th><th>My Offers</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for row in listings %}
+        <tr>
+          <td class="car">{{ row.ocb.vehicle.display_name|default:row.ocb.vehicle }}</td>
+          <td>₹{{ row.ocb.ocb_price }}</td>
+          <td>{{ row.my_offers }}</td>
+          <td><span class="pill">{{ row.ocb.get_status_display }}</span></td>
+          <td><a class="btn-sm" href="/ocb/{{ row.ocb.id }}/">View</a></td>
+        </tr>
+        {% empty %}<tr><td colspan="5" class="empty">No OCB listings yet.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}
