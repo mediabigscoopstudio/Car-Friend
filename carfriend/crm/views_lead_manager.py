@@ -5,8 +5,12 @@ the lead data; they triage incoming leads, qualify/un-qualify, and book an
 inspection by assigning an Inspection Associate.
 """
 
+from datetime import timedelta
+
 from django.contrib import messages
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_POST
 
 from accounts.decorators import lead_manager_required
@@ -16,6 +20,31 @@ from crm.models import Lead
 from inspections.models import InspectionVisit
 from notifications.services import notify
 from vehicles.models import Vehicle
+
+# Consistent per-inspector colour palette (calendar events + legend).
+INSPECTOR_PALETTE = ["#2D6CDF", "#0FB5C9", "#FF6A5A", "#5AA9E6",
+                     "#7C4DFF", "#E8A33D", "#1B9E77", "#C2185B"]
+
+
+def _inspector_colour(inspector_id):
+    if not inspector_id:
+        return "#8595AB"
+    return INSPECTOR_PALETTE[inspector_id % len(INSPECTOR_PALETTE)]
+
+
+_STATUS_PILL = {
+    InspectionVisit.Status.SCHEDULED: "Scheduled",
+    InspectionVisit.Status.INPROGRESS: "In Progress",
+}
+
+
+def _visit_seller(visit):
+    lead = getattr(visit, "lead", None)
+    if lead and lead.seller:
+        return lead.seller.get_full_name() or lead.seller.username
+    if visit.vehicle and visit.vehicle.seller:
+        return visit.vehicle.seller.get_full_name() or visit.vehicle.seller.username
+    return "—"
 
 
 @lead_manager_required
@@ -96,3 +125,56 @@ def lm_assign_inspection(request, lead_id):
            body=f"{lead.vehicle} — scheduled {scheduled_at}", url="/")
     messages.success(request, "Inspection booked and assigned.")
     return redirect("/lead-manager/")
+
+
+# ── Inspection staff calendar ────────────────────────────────────────────────
+
+@lead_manager_required
+def lm_calendar(request):
+    inspectors = User.objects.filter(role=Role.INSPECTOR, is_suspended=False).order_by("username")
+    legend = [{"name": (i.get_full_name() or i.username), "colour": _inspector_colour(i.id)}
+              for i in inspectors]
+    return render(request, "teams/lead_calendar.html", {"legend": legend})
+
+
+@lead_manager_required
+def lm_calendar_events(request):
+    """FullCalendar event feed (filtered by the ?start/?end range it sends)."""
+    qs = InspectionVisit.objects.select_related("vehicle", "inspector", "lead__seller")
+    start, end = request.GET.get("start"), request.GET.get("end")
+    if start and parse_datetime(start):
+        qs = qs.filter(scheduled_at__gte=parse_datetime(start))
+    if end and parse_datetime(end):
+        qs = qs.filter(scheduled_at__lte=parse_datetime(end))
+
+    events = []
+    for v in qs:
+        seller = _visit_seller(v)
+        car = v.vehicle.display_name if v.vehicle else ""
+        events.append({
+            "id": v.id,
+            "title": f"{seller} · {car}".strip(" ·"),
+            "start": v.scheduled_at.isoformat() if v.scheduled_at else None,
+            "end": (v.scheduled_at + timedelta(hours=1)).isoformat() if v.scheduled_at else None,
+            "color": _inspector_colour(v.inspector_id),
+            "url": f"/lead-manager/inspection/{v.id}/",
+            "extendedProps": {
+                "inspector": (v.inspector.get_full_name() or v.inspector.username) if v.inspector else "Unassigned",
+                "seller": seller,
+                "car": car,
+                "address": v.inspection_address or "",
+                "status": _STATUS_PILL.get(v.status, "Done"),
+            },
+        })
+    return JsonResponse(events, safe=False)
+
+
+@lead_manager_required
+def lm_inspection_detail(request, visit_id):
+    visit = get_object_or_404(
+        InspectionVisit.objects.select_related("vehicle", "inspector", "lead__seller"), id=visit_id)
+    report = getattr(visit, "report", None)
+    return render(request, "teams/lead_inspection_detail.html", {
+        "visit": visit, "report": report, "seller": _visit_seller(visit),
+        "status_label": _STATUS_PILL.get(visit.status, "Done"),
+    })

@@ -1,0 +1,59 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inspection Calendar · Car Friend</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<style>
+  :root{--cf-azure:#122E5A;--cf-blue:#2D6CDF;--cf-sky:#5AA9E6;--cf-ink:#0E1B2E;--cf-slate:#51637B;--cf-mist:#DCE6F2;--cf-paper:#F6F9FE;--cf-white:#FFFFFF;--cf-display:'Sora',system-ui,sans-serif;--cf-sans:'Hanken Grotesk',system-ui,sans-serif;}
+  *{box-sizing:border-box}body{margin:0;background:var(--cf-paper);color:var(--cf-ink);font-family:var(--cf-sans)}
+  .topbar{background:var(--cf-azure);color:#fff;padding:14px 28px;display:flex;align-items:center;justify-content:space-between}
+  .topbar h1{font-family:var(--cf-display);font-size:18px;font-weight:600;margin:0;display:flex;align-items:center;gap:10px}
+  .topbar a{color:rgba(255,255,255,.8);text-decoration:none;font-size:13px;font-weight:600;margin-left:18px}
+  .topbar a.on{color:#fff;border-bottom:2px solid var(--cf-sky);padding-bottom:2px}
+  .wrap{max-width:1100px;margin:0 auto;padding:22px 24px 60px}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+  .legend .it{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--cf-slate);font-weight:600}
+  .legend .dot{width:12px;height:12px;border-radius:3px}
+  .cal-card{background:var(--cf-white);border:1px solid var(--cf-mist);border-radius:14px;padding:16px}
+  .fc{font-family:var(--cf-sans);font-size:13px}
+  .fc .fc-toolbar-title{font-family:var(--cf-display);font-size:18px;color:var(--cf-azure)}
+  .fc .fc-button{background:var(--cf-blue);border-color:var(--cf-blue);font-size:12px;text-transform:capitalize}
+  .fc .fc-button:hover{background:var(--cf-blue-700,#2057C0)}
+  .fc .fc-button-active{background:var(--cf-azure)!important;border-color:var(--cf-azure)!important}
+  .fc-event{cursor:pointer;border:none;font-weight:600}
+</style></head><body>
+<div class="topbar"><h1><i class="bi bi-calendar3"></i> Inspection Calendar</h1>
+  <div><a href="/lead-manager/">Leads</a><a class="on" href="/lead-manager/calendar/">Inspection Calendar</a><a href="/auth/logout/">Sign out</a></div></div>
+<div class="wrap">
+  <div class="legend">
+    {% for l in legend %}<div class="it"><span class="dot" style="background:{{ l.colour }}"></span>{{ l.name }}</div>{% endfor %}
+    <div class="it"><span class="dot" style="background:#8595AB"></span>Unassigned</div>
+  </div>
+  <div class="cal-card"><div id="calendar"></div></div>
+</div>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var el = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(el, {
+      initialView: 'timeGridWeek',
+      headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
+      nowIndicator: true,
+      slotMinTime: '07:00:00',
+      slotMaxTime: '21:00:00',
+      height: 'auto',
+      events: '/lead-manager/calendar/events/',
+      eventClick: function (info) {
+        info.jsEvent.preventDefault();
+        if (info.event.url) { window.location.href = info.event.url; }
+      },
+      eventDidMount: function (info) {
+        var p = info.event.extendedProps;
+        info.el.title = p.inspector + ' — ' + p.status + (p.address ? ' @ ' + p.address : '');
+      }
+    });
+    calendar.render();
+  });
+</script>
+</body></html>

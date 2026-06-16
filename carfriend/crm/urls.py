@@ -11,6 +11,9 @@ urlpatterns = [
 
     # Lead Manager (role-scoped)
     path('lead-manager/',                            lm.lm_dashboard,         name='lm_dashboard'),
+    path('lead-manager/calendar/',                   lm.lm_calendar,          name='lm_calendar'),
+    path('lead-manager/calendar/events/',            lm.lm_calendar_events,   name='lm_calendar_events'),
+    path('lead-manager/inspection/<int:visit_id>/',  lm.lm_inspection_detail, name='lm_inspection_detail'),
     path('lead-manager/<int:lead_id>/qualify/',      lm.lm_qualify,           name='lm_qualify'),
     path('lead-manager/<int:lead_id>/assign/',       lm.lm_assign_inspection, name='lm_assign_inspection'),
 

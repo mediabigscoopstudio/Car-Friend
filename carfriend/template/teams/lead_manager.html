@@ -20,6 +20,8 @@
   .topbar{background:var(--cf-azure);color:#fff;padding:14px 28px;display:flex;align-items:center;justify-content:space-between}
   .topbar h1{font-family:var(--cf-display);font-size:18px;font-weight:600;margin:0;display:flex;align-items:center;gap:10px}
   .topbar a{color:rgba(255,255,255,.8);text-decoration:none;font-size:13px;font-weight:600}
+  .topbar .links a{margin-left:18px}
+  .topbar .links a.on{color:#fff;border-bottom:2px solid var(--cf-sky,#5AA9E6);padding-bottom:2px}
   .wrap{max-width:1080px;margin:0 auto;padding:28px 24px 80px}
   .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
   @media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}}
@@ -52,7 +54,11 @@
 <body>
 <div class="topbar">
   <h1><i class="bi bi-clipboard-check"></i> Lead Manager</h1>
-  <a href="/auth/logout/"><i class="bi bi-box-arrow-right"></i> Sign out</a>
+  <div class="links">
+    <a class="on" href="/lead-manager/">Leads</a>
+    <a href="/lead-manager/calendar/">Inspection Calendar</a>
+    <a href="/auth/logout/">Sign out</a>
+  </div>
 </div>
 <div class="wrap">
 

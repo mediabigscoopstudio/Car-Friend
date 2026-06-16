@@ -1,0 +1,56 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inspection · Car Friend</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+  :root{--cf-azure:#122E5A;--cf-blue:#2D6CDF;--cf-sky-tint:#EAF1FB;--cf-ink:#0E1B2E;--cf-slate:#51637B;--cf-mist:#DCE6F2;--cf-paper:#F6F9FE;--cf-white:#FFFFFF;--cf-teal-tint:#E1F6F8;--cf-teal-dark:#0A7E8C;--cf-display:'Sora',system-ui,sans-serif;--cf-sans:'Hanken Grotesk',system-ui,sans-serif;}
+  *{box-sizing:border-box}body{margin:0;background:var(--cf-paper);color:var(--cf-ink);font-family:var(--cf-sans)}
+  .topbar{background:var(--cf-azure);color:#fff;padding:14px 28px;display:flex;align-items:center;justify-content:space-between}
+  .topbar h1{font-family:var(--cf-display);font-size:18px;font-weight:600;margin:0;display:flex;align-items:center;gap:10px}
+  .topbar a{color:rgba(255,255,255,.8);text-decoration:none;font-size:13px;font-weight:600}
+  .wrap{max-width:640px;margin:0 auto;padding:24px 24px 80px}
+  .back{color:var(--cf-blue);text-decoration:none;font-weight:600;font-size:13px;display:inline-block;margin-bottom:14px}
+  .card{background:var(--cf-white);border:1px solid var(--cf-mist);border-radius:14px;padding:22px;margin-bottom:16px}
+  .car{font-family:var(--cf-display);font-weight:600;color:var(--cf-azure);font-size:17px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;margin-top:14px}
+  .it .l{font-size:11px;font-weight:600;color:var(--cf-slate);text-transform:uppercase;letter-spacing:.4px}
+  .it .v{font-size:14px;font-weight:600;color:var(--cf-ink);margin-top:2px}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:4px 12px;border-radius:999px;background:var(--cf-sky-tint);color:var(--cf-blue)}
+  h3{font-family:var(--cf-display);font-size:13px;color:var(--cf-slate);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin:0 0 12px}
+  .ro{font-size:12px;color:var(--cf-slate);background:var(--cf-sky-tint);border-radius:8px;padding:6px 12px;display:inline-block;margin-bottom:12px}
+</style></head><body>
+<div class="topbar"><h1><i class="bi bi-clipboard-data"></i> Inspection Detail</h1><a href="/auth/logout/">Sign out</a></div>
+<div class="wrap">
+  <a class="back" href="/lead-manager/calendar/">&larr; Back to calendar</a>
+  <div class="ro"><i class="bi bi-eye"></i> Read-only view</div>
+
+  <div class="card">
+    <div class="car">{{ visit.vehicle.display_name|default:visit.vehicle }} · {{ visit.vehicle.plate_number }}</div>
+    <span class="pill" style="margin-top:8px">{{ status_label }}</span>
+    <div class="grid">
+      <div class="it"><div class="l">Seller</div><div class="v">{{ seller }}</div></div>
+      <div class="it"><div class="l">Inspector</div><div class="v">{{ visit.inspector.get_full_name|default:visit.inspector.username|default:"Unassigned" }}</div></div>
+      <div class="it"><div class="l">Scheduled</div><div class="v">{{ visit.scheduled_at|date:"d M Y, H:i" }}</div></div>
+      <div class="it"><div class="l">Address</div><div class="v">{{ visit.inspection_address|default:"—" }}</div></div>
+    </div>
+  </div>
+
+  {% if report %}
+  <div class="card">
+    <h3>Inspection report</h3>
+    <div class="grid">
+      <div class="it"><div class="l">Score</div><div class="v">{{ report.score }}/100</div></div>
+      <div class="it"><div class="l">Grade</div><div class="v">{{ report.condition_grade|default:"—" }}</div></div>
+      <div class="it"><div class="l">Est. market value</div><div class="v">{% if report.est_market_value %}₹{{ report.est_market_value }}{% else %}—{% endif %}</div></div>
+      <div class="it"><div class="l">Decision</div><div class="v">{{ report.get_decision_display }}</div></div>
+      <div class="it"><div class="l">Photos</div><div class="v">{{ report.media.count }}</div></div>
+      <div class="it"><div class="l">Submitted</div><div class="v">{{ report.submitted_at|date:"d M Y"|default:"—" }}</div></div>
+    </div>
+    {% if report.decision_note %}<p class="meta" style="margin-top:14px;color:var(--cf-slate);font-size:13px"><strong>Note:</strong> {{ report.decision_note }}</p>{% endif %}
+  </div>
+  {% else %}
+  <div class="card"><p style="margin:0;color:var(--cf-slate);font-size:13px">No inspection report submitted yet.</p></div>
+  {% endif %}
+</div></body></html>
