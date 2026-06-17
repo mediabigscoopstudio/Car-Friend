@@ -109,7 +109,7 @@
 
   <nav class="sidebar-nav">
     <div class="nav-group-label">Overview</div>
-    <a class="sidebar-link {% block nav_dash %}{% endblock %}" href="{% url 'teams_dashboard' %}">
+    <a class="sidebar-link {% block nav_dash %}{% endblock %}" href="{% if request.user.role == 'sales' %}/crm/sales/dashboard/{% else %}{% url 'teams_dashboard' %}{% endif %}">
       <i class="bi bi-grid-1x2"></i> Dashboard
     </a>
 

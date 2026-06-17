@@ -32,6 +32,10 @@ def _sales_or_admin(request):
 def teams_dashboard(request):
     if not _internal_check(request):
         return redirect('/')
+    # Sales Associates must never see the generic lead dashboard — send them to
+    # their own OCB-centric dashboard (no leads / sellers).
+    if request.user.is_sales:
+        return redirect('/crm/sales/dashboard/')
     ctx = {
         'total_leads':   Lead.objects.count(),
         'new_leads':     Lead.objects.filter(stage=Lead.STAGE_NEW).count(),
@@ -51,6 +55,8 @@ def teams_dashboard(request):
 def pipeline(request):
     if not _internal_check(request):
         return redirect('/')
+    if request.user.is_sales:            # Sales Associates have no lead access
+        return redirect('/crm/sales/dashboard/')
 
     # Full lead pipeline. Leads are not assigned to individual Retail Associates
     # in the current workflow (assigned_to is null or the Lead Manager), so an
@@ -164,6 +170,8 @@ def assign_inspector(request, lead_id):
 def sellers(request):
     if not _internal_check(request):
         return redirect('/')
+    if request.user.is_sales:            # Sales Associates have no seller access
+        return redirect('/crm/sales/dashboard/')
     all_sellers = User.objects.filter(role=User.ROLE_SELLER).prefetch_related('vehicles', 'leads')
     return render(request, 'teams/sellers.html', {'sellers': all_sellers})
 

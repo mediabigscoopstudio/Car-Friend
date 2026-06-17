@@ -56,22 +56,23 @@ def retail_dashboard(request):
 def sales_dashboard(request):
     u = request.user
     # Everything is scoped to this Sales Associate — no leads, no seller pipeline.
-    active = (OCBListing.objects.filter(sales_associate=u)
-              .exclude(status__in=[OCBListing.Status.ACCEPTED, OCBListing.Status.REJECTED]))
+    active_statuses = [OCBListing.Status.OPEN, OCBListing.Status.COUNTERED]
     stats = {
-        "active_ocbs": active.count(),
+        "active_ocbs": OCBListing.objects.filter(sales_associate=u, status__in=active_statuses).count(),
         "my_offers":   OCBOffer.objects.filter(submitted_by=u).count(),
         "open_tasks":  Task.objects.filter(assigned_to=u)
                            .exclude(status__in=[Task.Status.DONE, Task.Status.CANCELLED]).count(),
-        "deals_won":   Deal.objects.filter(assigned_sales=u).count(),
+        "dealers":     DealerProfile.objects.count(),
     }
-    rows = (OCBListing.objects.filter(sales_associate=u)
-            .select_related("vehicle").prefetch_related("offers").order_by("-created_at")[:8])
+    # My OCBs — active (open/countered) first, then newest.
+    qs = (OCBListing.objects.filter(sales_associate=u)
+          .select_related("vehicle").prefetch_related("offers"))
+    rows = sorted(qs, key=lambda o: (o.status not in active_statuses, -o.created_at.timestamp()))
     listings = [{
         "ocb": o,
         "my_offers": o.offers.filter(submitted_by=u).count(),
     } for o in rows]
-    return render(request, "teams/dash_sales.html", {"stats": stats, "listings": listings})
+    return render(request, "teams/sales/dashboard.html", {"stats": stats, "listings": listings})
 
 
 # ── Lead Manager ─────────────────────────────────────────────────────────────

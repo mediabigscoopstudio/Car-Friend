@@ -1,0 +1,76 @@
+{% extends 'teams/base.html' %}
+{% block title %}Sales Dashboard · CarFriend Teams{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block nav_dash %}active{% endblock %}
+{% block extra_css %}
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+  @media(max-width:880px){.stat-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:480px){.stat-grid{grid-template-columns:1fr}}
+  .cols{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
+  @media(max-width:900px){.cols{grid-template-columns:1fr}}
+  .pill{font-size:11px;font-weight:700;border-radius:999px;padding:3px 10px;display:inline-block}
+  .pill-open{background:var(--gs);color:var(--g1)}
+  .pill-prog{background:#FFF1DD;color:#B26A00}
+  .pill-closed{background:#E7F3EA;color:var(--g1)}
+  .pill-cancel{background:#FCE8E8;color:#B42318}
+  .tbl-wrap{overflow-x:auto}
+  .qa{display:flex;flex-direction:column;gap:8px}
+  .qstat{display:flex;align-items:center;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid var(--line)}
+  .qstat:last-child{border-bottom:none}
+  .qstat .k{color:var(--txt2);font-weight:600}
+  .qstat .v{font-family:'Poppins',sans-serif;font-weight:800;color:var(--txt)}
+{% endblock %}
+{% block content %}
+  <div class="stat-grid">
+    <div class="stat-mini"><span class="val">{{ stats.active_ocbs }}</span><span class="lbl">My Active OCBs</span></div>
+    <div class="stat-mini"><span class="val">{{ stats.my_offers }}</span><span class="lbl">Offers Submitted</span></div>
+    <div class="stat-mini"><span class="val">{{ stats.open_tasks }}</span><span class="lbl">My Open Tasks</span></div>
+    <div class="stat-mini"><span class="val">{{ stats.dealers }}</span><span class="lbl">Dealers in Network</span></div>
+  </div>
+
+  <div class="cols">
+    <!-- Main: My OCBs (no leads / sellers) -->
+    <div class="cf-card">
+      <div class="cf-card-title"><i class="bi bi-people"></i> My OCBs</div>
+      <div class="tbl-wrap">
+        <table class="cf-table">
+          <thead><tr><th>Car</th><th>Client Price</th><th>My Offers</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            {% for row in listings %}
+            <tr>
+              <td style="font-weight:600">{{ row.ocb.vehicle.make }} {{ row.ocb.vehicle.model }} {{ row.ocb.vehicle.year }}</td>
+              <td>₹{{ row.ocb.ocb_price }}</td>
+              <td>{{ row.my_offers }}</td>
+              <td>
+                {% if row.ocb.status == 'open' %}<span class="pill pill-open">Open</span>
+                {% elif row.ocb.status == 'accepted' %}<span class="pill pill-closed">Closed</span>
+                {% elif row.ocb.status == 'rejected' %}<span class="pill pill-cancel">Cancelled</span>
+                {% else %}<span class="pill pill-prog">In Progress</span>{% endif %}
+              </td>
+              <td><a class="btn-cf-ghost" href="/crm/sales/ocb/{{ row.ocb.id }}/">View</a></td>
+            </tr>
+            {% empty %}<tr><td colspan="5" style="text-align:center;color:var(--txt3);padding:24px">No OCBs assigned to you yet.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Right: Quick Actions + Quick Stats -->
+    <div>
+      <div class="cf-card">
+        <div class="cf-card-title"><i class="bi bi-lightning-charge"></i> Quick Actions</div>
+        <div class="qa">
+          <a class="btn-cf" href="/crm/sales/ocb/"><i class="bi bi-people"></i> View My OCBs</a>
+          <a class="btn-cf-ghost" href="/crm/sales/tasks/"><i class="bi bi-check2-square"></i> My Tasks</a>
+          <a class="btn-cf-ghost" href="{% url 'dealers' %}"><i class="bi bi-building"></i> Dealer Network</a>
+        </div>
+      </div>
+      <div class="cf-card">
+        <div class="cf-card-title"><i class="bi bi-bar-chart"></i> Quick Stats</div>
+        <div class="qstat"><span class="k">Active OCBs</span><span class="v">{{ stats.active_ocbs }}</span></div>
+        <div class="qstat"><span class="k">Offers Submitted</span><span class="v">{{ stats.my_offers }}</span></div>
+        <div class="qstat"><span class="k">Open Tasks</span><span class="v">{{ stats.open_tasks }}</span></div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
