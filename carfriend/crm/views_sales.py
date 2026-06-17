@@ -11,7 +11,7 @@ from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from accounts.models import Role, User
+from accounts.models import DealerProfile, Role, User
 from auctions.models import OCBListing, OCBMessage, OCBOffer
 from crm.models import Task, TaskNote
 from notifications.services import notify
@@ -65,7 +65,9 @@ def sales_ocb_detail(request, ocb_id):
                     notify(ocb.assigned_to, "task_assigned", title="New OCB message",
                            body=text[:80], url=f"/crm/retail/ocb/{ocb.id}/")
         elif action == "offer":
-            dealer = User.objects.filter(id=request.POST.get("dealer_id"), role=Role.DEALER).first()
+            # Accept any user that has a DealerProfile (not gated on role flag).
+            dealer = User.objects.filter(id=request.POST.get("dealer_id"),
+                                         dealer_profile__isnull=False).first()
             try:
                 price = int(request.POST.get("price", "0"))
             except (TypeError, ValueError):
@@ -85,26 +87,19 @@ def sales_ocb_detail(request, ocb_id):
     offers = ocb.offers.select_related("dealer").filter(submitted_by=request.user)
     thread = ocb.messages.select_related("sender").all()
     instructions = ocb.messages.filter(message__startswith="Instructions for Sales:").first()
-    # Full dealership identity in the dropdown so dealers are distinguishable:
-    # "<Dealership Name> — <City> (<Contact Person>)".
-    dealer_users = (User.objects.filter(role=Role.DEALER, is_suspended=False)
-                    .select_related("dealer_profile").order_by("username"))
+    # Source the dropdown from DealerProfile (every dealer in the network), NOT
+    # User.role==dealer — some dealer accounts don't carry that role flag, which
+    # was hiding them. Label: "<Dealership Name> — <City> (<Contact Person>)".
     dealers = []
-    for d in dealer_users:
-        prof = getattr(d, "dealer_profile", None)
-        contact = d.get_full_name() or d.username
-        if prof and prof.dealership_name:
-            label = prof.dealership_name
-            if prof.city:
-                label += f" — {prof.city}"
-            if contact:
-                label += f" ({contact})"
-        else:
-            # No DealerProfile/dealership name — keep options distinguishable.
-            label = contact
-            if prof and prof.city:
-                label += f" — {prof.city}"
-        dealers.append({"id": d.id, "label": label})
+    for prof in DealerProfile.objects.select_related("user").order_by("dealership_name"):
+        u = prof.user
+        contact = u.get_full_name() or u.username
+        label = prof.dealership_name or contact
+        if prof.city:
+            label += f" — {prof.city}"
+        if prof.dealership_name and contact:
+            label += f" ({contact})"
+        dealers.append({"id": u.id, "label": label})
     return render(request, "teams/sales/ocb_detail.html", {
         "ocb": ocb, "car": _car(ocb.vehicle), "offers": offers, "thread": thread,
         "dealers": dealers, "instructions": instructions,
