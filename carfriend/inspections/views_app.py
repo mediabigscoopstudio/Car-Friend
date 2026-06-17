@@ -132,13 +132,17 @@ def insp_upload_media(request, id):
         from .services import convert_to_webp
         convert_to_webp(media, f)            # logs loudly + returns False on error; raw kept
     elif kind == "video":
-        from .services import convert_to_mp4
-        if not convert_to_mp4(media, f):     # ffmpeg missing/failed → keep raw, transcode later
+        from .services import convert_to_mp4, is_web_ready_video
+        if is_web_ready_video(f):
+            pass                             # already MP4 → store as-is, no ffmpeg needed
+        elif not convert_to_mp4(media, f):   # other format + ffmpeg missing/failed → keep raw
             media.needs_transcode = True
             logger.warning("TODO transcode: stored raw VIDEO for report %s (ffmpeg unavailable).", r.id)
     elif kind == "audio":
-        from .services import convert_audio
-        if not convert_audio(media, f):
+        from .services import convert_audio, is_web_ready_audio
+        if is_web_ready_audio(f):
+            pass                             # already mp3/m4a/aac → store as-is
+        elif not convert_audio(media, f):
             media.needs_transcode = True
             logger.warning("TODO transcode: stored raw AUDIO for report %s (ffmpeg unavailable).", r.id)
 

@@ -94,6 +94,22 @@ def _ffmpeg_to_temp(raw_file, args, out_suffix, label, pk):
             os.unlink(tmp_out_path)
 
 
+def is_web_ready_video(upload):
+    """True if the upload is already an MP4 — no transcode needed, store as-is."""
+    name = (getattr(upload, "name", "") or "").lower()
+    ctype = (getattr(upload, "content_type", "") or "").lower()
+    return name.endswith(".mp4") or ctype in ("video/mp4",)
+
+
+def is_web_ready_audio(upload):
+    """True if the upload is already a web-playable audio format (mp3/m4a/aac)."""
+    name = (getattr(upload, "name", "") or "").lower()
+    ctype = (getattr(upload, "content_type", "") or "").lower()
+    return name.endswith((".mp3", ".m4a", ".aac")) or ctype in (
+        "audio/mpeg", "audio/mp3", "audio/mp4", "audio/aac", "audio/x-m4a",
+    )
+
+
 def convert_to_mp4(media, raw_file):
     """Transcode an uploaded video to MP4 (H.264 + AAC) → media.mp4_file (save=False).
 
