@@ -1,52 +1,149 @@
-from django.shortcuts import render, redirect, get_object_or_404
+"""Sales Associate (teams host) — OCB board (assigned-only), restricted Task
+Manager, OCB dealer offers + Retail<->Sales chat.
 
-from accounts.decorators import sales_required
-from accounts.models import DealerProfile
-from auctions.models import OCBListing
-from core.models import log
-from deals.models import Deal
+Strict scope: a Sales Associate only ever sees OCBs whose sales_associate is
+them, and tasks assigned to them. They submit dealer offers and chat on an OCB,
+and add/update their own task notes — but they cannot edit OCB data, select an
+OCB winner, change a task status, or create tasks (all Retail-only).
+"""
+
+from django.contrib import messages
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
+
+from accounts.models import Role, User
+from auctions.models import OCBListing, OCBMessage, OCBOffer
+from crm.models import Task, TaskNote
 from notifications.services import notify
 
 
-@sales_required
-def dealers(request):
-    return render(request, "teams/dealers.html", {"active": "dealers", "dealers": DealerProfile.objects.all()})
+def _require_sales(request):
+    if not request.user.is_authenticated:
+        return redirect("/auth/login/")
+    if request.user.role != User.ROLE_SALES and not request.user.is_superuser:
+        from accounts.views import get_dashboard_url
+        return redirect(get_dashboard_url(request.user))
+    return None
 
 
-@sales_required
-def dealer_detail(request, id):
-    d = get_object_or_404(DealerProfile, id=id)
-    return render(request, "teams/dealer.html", {
-        "active": "dealers",
-        "d":    d,
-        "comms": d.user.dealer_comms.all(),
-        "ocb":  d.user.ocb_offers.all(),
+def _car(vehicle):
+    if not vehicle:
+        return "—"
+    return f"{vehicle.make} {vehicle.model} {vehicle.year}".strip()
+
+
+# ── OCB (assigned to me only) ────────────────────────────────────────────────
+
+def sales_ocb_list(request):
+    guard = _require_sales(request)
+    if guard:
+        return guard
+    ocbs = (OCBListing.objects.filter(sales_associate=request.user)
+            .select_related("vehicle").prefetch_related("offers").order_by("-created_at"))
+    rows = [{"ocb": o, "car": _car(o.vehicle),
+             "my_offers": o.offers.filter(submitted_by=request.user).count()} for o in ocbs]
+    return render(request, "teams/sales/ocb_list.html", {"rows": rows})
+
+
+def sales_ocb_detail(request, ocb_id):
+    guard = _require_sales(request)
+    if guard:
+        return guard
+    ocb = get_object_or_404(OCBListing.objects.select_related("vehicle"), id=ocb_id)
+    # Only the assigned Sales Associate (or a superuser) may view/act.
+    if ocb.sales_associate_id != request.user.id and not request.user.is_superuser:
+        messages.error(request, "This OCB is not assigned to you.")
+        return redirect("/crm/sales/ocb/")
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "message":
+            text = (request.POST.get("message") or "").strip()
+            if text:
+                OCBMessage.objects.create(ocb_listing=ocb, sender=request.user, message=text)
+                if ocb.assigned_to and ocb.assigned_to != request.user:
+                    notify(ocb.assigned_to, "task_assigned", title="New OCB message",
+                           body=text[:80], url=f"/crm/retail/ocb/{ocb.id}/")
+        elif action == "offer":
+            dealer = User.objects.filter(id=request.POST.get("dealer_id"), role=Role.DEALER).first()
+            try:
+                price = int(request.POST.get("price", "0"))
+            except (TypeError, ValueError):
+                price = 0
+            if not dealer or price <= 0:
+                messages.error(request, "Pick a dealer and enter a valid offer price.")
+            else:
+                OCBOffer.objects.create(
+                    ocb_listing=ocb, dealer=dealer, price=price,
+                    notes=(request.POST.get("notes") or "").strip(), submitted_by=request.user)
+                if ocb.assigned_to and ocb.assigned_to != request.user:
+                    notify(ocb.assigned_to, "task_assigned", title="New dealer offer",
+                           body=f"₹{price:,} for {_car(ocb.vehicle)}", url=f"/crm/retail/ocb/{ocb.id}/")
+                messages.success(request, "Offer submitted.")
+        return redirect(f"/crm/sales/ocb/{ocb.id}/")
+
+    offers = ocb.offers.select_related("dealer").filter(submitted_by=request.user)
+    thread = ocb.messages.select_related("sender").all()
+    instructions = ocb.messages.filter(message__startswith="Instructions for Sales:").first()
+    dealers = User.objects.filter(role=Role.DEALER, is_suspended=False).order_by("username")
+    return render(request, "teams/sales/ocb_detail.html", {
+        "ocb": ocb, "car": _car(ocb.vehicle), "offers": offers, "thread": thread,
+        "dealers": dealers, "instructions": instructions,
     })
 
 
-@sales_required
-def deal_pipeline(request):
-    return render(
-        request, "teams/deals.html",
-        {"active": "deals", "deals": Deal.objects.filter(assigned_sales=request.user)},
-    )
+# ── Task Manager (assigned to me only; status read-only; notes editable) ──────
+
+def sales_task_list(request):
+    guard = _require_sales(request)
+    if guard:
+        return guard
+    tasks = (Task.objects.filter(assigned_to=request.user)
+             .select_related("related_ocb__vehicle", "related_lead__vehicle"))
+    columns = []
+    for value, label in Task.Status.choices:
+        items = [t for t in tasks if t.status == value]
+        columns.append({"value": value, "label": label, "count": len(items), "tasks": items})
+    return render(request, "teams/sales/task_list.html", {"columns": columns})
 
 
-@sales_required
-def ocb_assign(request):
-    if request.method == "POST":
-        ocb = get_object_or_404(OCBListing, id=request.POST["ocb_id"])
-        ocb.assigned_to_id = request.POST["dealer_id"]
-        ocb.save()
-        log(request.user, "ocb.assign", ocb, request, dealer=ocb.assigned_to_id)
-        if ocb.assigned_to:
-            notify(
-                ocb.assigned_to, "bid_update",
-                title=f"OCB offer: {ocb.vehicle.title}",
-                body=f"One Click Buy at ₹{ocb.ocb_price:,}.",
-            )
-        return redirect("/ocb")
-    return render(
-        request, "teams/ocb.html",
-        {"active": "ocb", "listings": OCBListing.objects.filter(status="open")},
-    )
+def sales_task_detail(request, task_id):
+    guard = _require_sales(request)
+    if guard:
+        return guard
+    task = get_object_or_404(
+        Task.objects.select_related("created_by", "assigned_to",
+                                    "related_ocb__vehicle", "related_lead__vehicle"),
+        id=task_id)
+    if task.assigned_to_id != request.user.id and not request.user.is_superuser:
+        messages.error(request, "This task is not assigned to you.")
+        return redirect("/crm/sales/tasks/")
+    notes = task.notes.select_related("author").all()
+    return render(request, "teams/sales/task_detail.html", {"task": task, "notes": notes})
+
+
+@require_POST
+def sales_task_add_note(request, task_id):
+    guard = _require_sales(request)
+    if guard:
+        return guard
+    task = get_object_or_404(Task, id=task_id)
+    if task.assigned_to_id != request.user.id and not request.user.is_superuser:
+        messages.error(request, "This task is not assigned to you.")
+        return redirect("/crm/sales/tasks/")
+    text = (request.POST.get("note") or "").strip()
+    note_id = request.POST.get("note_id")
+    if text:
+        if note_id:
+            # Authors may edit only their own notes.
+            existing = TaskNote.objects.filter(id=note_id, task=task, author=request.user).first()
+            if existing:
+                existing.note = text
+                existing.save(update_fields=["note", "updated_at"])
+                messages.success(request, "Note updated.")
+            else:
+                messages.error(request, "You can only edit your own notes.")
+        else:
+            TaskNote.objects.create(task=task, author=request.user, note=text)
+            messages.success(request, "Note added.")
+    return redirect(f"/crm/sales/tasks/{task.id}/")

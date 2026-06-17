@@ -2,6 +2,7 @@ from django.urls import path
 from crm import views
 from crm import views_lead_manager as lm
 from crm import views_retail as retail
+from crm import views_sales as sales
 from crm import views_dashboards as dash
 from deals import views_procurement as proc
 from auctions import views_ocb as ocb
@@ -39,6 +40,13 @@ urlpatterns = [
     path('crm/retail/tasks/create/',                   retail.retail_task_create,      name='retail_task_create'),
     path('crm/retail/tasks/<int:task_id>/',            retail.retail_task_detail,      name='retail_task_detail'),
     path('crm/retail/tasks/<int:task_id>/status/',     retail.retail_task_status_update, name='retail_task_status_update'),
+
+    # Sales Associate (role-scoped: OCB assigned-only + restricted tasks)
+    path('crm/sales/ocb/',                             sales.sales_ocb_list,           name='sales_ocb_list'),
+    path('crm/sales/ocb/<int:ocb_id>/',                sales.sales_ocb_detail,         name='sales_ocb_detail'),
+    path('crm/sales/tasks/',                           sales.sales_task_list,          name='sales_task_list'),
+    path('crm/sales/tasks/<int:task_id>/',             sales.sales_task_detail,        name='sales_task_detail'),
+    path('crm/sales/tasks/<int:task_id>/note/',        sales.sales_task_add_note,      name='sales_task_add_note'),
 
     # Procurement Associate (role-scoped)
     path('procurement/',                             proc.proc_dashboard,     name='proc_dashboard'),

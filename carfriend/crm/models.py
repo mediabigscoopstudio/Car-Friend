@@ -103,3 +103,21 @@ class Task(models.Model):
         from django.utils import timezone
         return bool(self.due_date and self.status not in (self.Status.DONE, self.Status.CANCELLED)
                     and self.due_date < timezone.localdate())
+
+
+class TaskNote(models.Model):
+    """A note on a Task. The assigned Sales Associate (or any participant) can
+    add notes; status stays Retail-controlled. Authors may edit their own notes."""
+
+    task       = models.ForeignKey("crm.Task", on_delete=models.CASCADE, related_name="notes")
+    author     = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                                    related_name="task_notes")
+    note       = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"note by {self.author} on task {self.task_id}"

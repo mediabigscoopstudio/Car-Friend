@@ -14,7 +14,7 @@ from django.utils import timezone
 
 from accounts.models import DealerProfile, Role, User
 from auctions.models import OCBListing, OCBOffer
-from crm.models import Lead
+from crm.models import Lead, Task
 from deals.models import Deal, HandoverChecklist
 from inspections.models import InspectionReport, InspectionVisit
 
@@ -54,20 +54,22 @@ def retail_dashboard(request):
 
 @role_dashboard(Role.SALES)
 def sales_dashboard(request):
+    u = request.user
+    # Everything is scoped to this Sales Associate — no leads, no seller pipeline.
+    active = (OCBListing.objects.filter(sales_associate=u)
+              .exclude(status__in=[OCBListing.Status.ACCEPTED, OCBListing.Status.REJECTED]))
     stats = {
-        "active_ocbs": OCBListing.objects.filter(status=OCBListing.Status.OPEN).count(),
-        "my_offers":   OCBOffer.objects.filter(submitted_by=request.user).count(),
-        "dealers":     DealerProfile.objects.count(),
-        "closed":      Deal.objects.filter(assigned_sales=request.user, status=Deal.Status.CLOSED).count(),
+        "active_ocbs": active.count(),
+        "my_offers":   OCBOffer.objects.filter(submitted_by=u).count(),
+        "open_tasks":  Task.objects.filter(assigned_to=u)
+                           .exclude(status__in=[Task.Status.DONE, Task.Status.CANCELLED]).count(),
+        "deals_won":   Deal.objects.filter(assigned_sales=u).count(),
     }
-    rows = list(OCBListing.objects.filter(status=OCBListing.Status.OPEN)
-                .select_related("vehicle").order_by("-created_at")[:5])
-    if len(rows) < 5:
-        rows += list(OCBListing.objects.exclude(status=OCBListing.Status.OPEN)
-                     .select_related("vehicle").order_by("-created_at")[:5 - len(rows)])
+    rows = (OCBListing.objects.filter(sales_associate=u)
+            .select_related("vehicle").prefetch_related("offers").order_by("-created_at")[:8])
     listings = [{
         "ocb": o,
-        "my_offers": o.offers.filter(submitted_by=request.user).count(),
+        "my_offers": o.offers.filter(submitted_by=u).count(),
     } for o in rows]
     return render(request, "teams/dash_sales.html", {"stats": stats, "listings": listings})
 

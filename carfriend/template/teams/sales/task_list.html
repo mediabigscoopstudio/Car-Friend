@@ -1,0 +1,44 @@
+{% extends 'teams/base.html' %}
+{% block title %}My Tasks · CarFriend Teams{% endblock %}
+{% block page_title %}Task Manager{% endblock %}
+{% block nav_sales_tasks %}active{% endblock %}
+{% block extra_css %}
+  .hint{font-size:12px;color:var(--txt3);margin-bottom:12px}
+  .board{display:flex;gap:14px;overflow-x:auto;padding-bottom:20px;align-items:flex-start}
+  .col{flex:0 0 264px;background:var(--mist);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .col-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .col-h .t{font-family:'Poppins',sans-serif;font-size:13px;font-weight:700;color:var(--txt)}
+  .col-h .c{font-size:12px;font-weight:700;color:var(--g1);background:#fff;border:1px solid var(--line);border-radius:999px;padding:2px 9px}
+  .tk{display:block;background:#fff;border:1px solid var(--line);border-left:3px solid var(--line);
+      border-radius:10px;padding:11px 13px;margin-bottom:8px;text-decoration:none;color:inherit;transition:box-shadow .15s}
+  .tk:hover{box-shadow:0 2px 8px rgba(14,17,14,.07)}
+  .tk-high{border-left-color:#A32D2D}.tk-medium{border-left-color:#BA7517}.tk-low{border-left-color:#888780}
+  .tk .ti{font-size:15px;font-weight:500;color:var(--txt);line-height:1.3}
+  .tk .due{display:inline-flex;align-items:center;gap:4px;font-size:13px;color:var(--txt2);margin-top:7px}
+  .tk .due.over{color:#A32D2D;font-weight:600}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:3px 9px;border-radius:8px;line-height:1.4}
+  .chip-pr-high{background:#FCE8E8;color:#A32D2D}.chip-pr-medium{background:#FBEFD9;color:#BA7517}.chip-pr-low{background:#EEEEEC;color:#888780}
+  .chip-out{background:var(--mist);border:.5px solid var(--line);color:var(--txt2)}
+  .none{font-size:12px;color:var(--txt3);text-align:center;padding:14px 0}
+{% endblock %}
+{% block content %}
+  <div class="hint"><i class="bi bi-info-circle"></i> Read-only board — task status is managed by the Retail Associate. Open a task to add notes.</div>
+  <div class="board">
+    {% for col in columns %}
+    <div class="col">
+      <div class="col-h"><span class="t">{{ col.label }}</span><span class="c">{{ col.count }}</span></div>
+      {% for t in col.tasks %}
+      <a class="tk tk-{{ t.priority }}" href="/crm/sales/tasks/{{ t.id }}/">
+        <div class="ti">{{ t.title }}</div>
+        {% if t.due_date %}<div class="due {% if t.is_overdue %}over{% endif %}"><i class="bi bi-calendar3"></i> {{ t.due_date|date:"d M" }}</div>{% endif %}
+        <div class="chips">
+          <span class="chip chip-pr-{{ t.priority }}"><i class="bi bi-flag-fill"></i> {{ t.get_priority_display }}</span>
+          {% if t.related_ocb %}<span class="chip chip-out"><i class="bi bi-hammer"></i> OCB · {{ t.related_ocb.vehicle.model|default:t.related_ocb.vehicle.make }}</span>{% endif %}
+        </div>
+      </a>
+      {% empty %}<div class="none">No tasks</div>{% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+{% endblock %}

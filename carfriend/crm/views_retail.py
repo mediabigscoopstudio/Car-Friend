@@ -112,14 +112,16 @@ def retail_ocb_create(request):
         if price <= 0:
             messages.error(request, "Enter a valid client-suitable price.")
             return redirect("/crm/retail/ocb/create/")
+        # Resolve the chosen Sales Associate first so we can store the link on
+        # the OCB (sales_associate) — this is what scopes the Sales OCB board.
+        sales_user = User.objects.filter(id=request.POST.get("sales_id"), role=Role.SALES).first()
         ocb = OCBListing.objects.create(
             vehicle=lead.vehicle, ocb_price=price, assigned_to=request.user,
-            status=OCBListing.Status.OPEN)
+            sales_associate=sales_user, status=OCBListing.Status.OPEN)
         notes = (request.POST.get("notes") or "").strip()
         if notes:
             OCBMessage.objects.create(ocb_listing=ocb, sender=request.user,
                                       message=f"Instructions for Sales: {notes}")
-        sales_user = User.objects.filter(id=request.POST.get("sales_id"), role=Role.SALES).first()
         if sales_user:
             OCBMessage.objects.create(
                 ocb_listing=ocb, sender=request.user,

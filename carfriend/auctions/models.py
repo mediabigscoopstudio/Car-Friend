@@ -91,6 +91,10 @@ class OCBListing(models.Model):
     ocb_price   = models.PositiveIntegerField()
     assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
                                     on_delete=models.SET_NULL, related_name="ocb_offers")
+    # The Sales Associate this OCB is assigned to (set by Retail at creation).
+    # Distinct from assigned_to, which is the Retail creator/owner of the OCB.
+    sales_associate = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                        on_delete=models.SET_NULL, related_name="sales_ocbs")
     status      = models.CharField(max_length=10, choices=Status.choices, default=Status.OPEN)
     created_at  = models.DateTimeField(auto_now_add=True)
     updated_at  = models.DateTimeField(auto_now=True)

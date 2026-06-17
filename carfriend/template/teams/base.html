@@ -134,6 +134,14 @@
 
     {% if request.user.role == 'sales' or request.user.role == 'admin' %}
     <div class="nav-group-label">Sales CRM</div>
+    {% if request.user.role == 'sales' %}
+    <a class="sidebar-link {% block nav_sales_ocb %}{% endblock %}" href="/crm/sales/ocb/">
+      <i class="bi bi-people"></i> OCB
+    </a>
+    <a class="sidebar-link {% block nav_sales_tasks %}{% endblock %}" href="/crm/sales/tasks/">
+      <i class="bi bi-check2-square"></i> Task Manager
+    </a>
+    {% endif %}
     <a class="sidebar-link {% block nav_dealers %}{% endblock %}" href="{% url 'dealers' %}">
       <i class="bi bi-building"></i> Dealer Network
     </a>

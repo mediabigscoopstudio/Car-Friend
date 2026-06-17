@@ -1,0 +1,101 @@
+{% extends 'teams/base.html' %}
+{% block title %}OCB · CarFriend Teams{% endblock %}
+{% block page_title %}OCB{% endblock %}
+{% block nav_sales_ocb %}active{% endblock %}
+{% block extra_css %}
+  .msg{font-size:13px;padding:9px 12px;border-radius:8px;margin-bottom:12px;background:var(--gs);color:var(--g1)}
+  .msg.error{background:#FCE8E8;color:#B42318}
+  .backlink{color:var(--g1);text-decoration:none;font-weight:600;font-size:13px;display:inline-block;margin-bottom:14px}
+  .ocb-grid{display:grid;grid-template-columns:280px 1fr 300px;gap:16px;align-items:start}
+  @media(max-width:980px){.ocb-grid{grid-template-columns:1fr}}
+  .kv{font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)}
+  .kv .k{color:var(--txt2);font-weight:600}
+  .kv .v{color:var(--txt);font-weight:600}
+  .ro{font-size:11px;color:var(--txt3);margin-top:8px}
+  .offer{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+  .offer.win{border-color:var(--g2);background:var(--gs)}
+  .offer .p{font-family:'Poppins',sans-serif;font-weight:700;color:var(--g1)}
+  .offer .meta{font-size:12px;color:var(--txt2);margin-top:2px}
+  .sel{font-size:11px;font-weight:700;color:var(--g1);margin-top:6px}
+  .chat{display:flex;flex-direction:column;gap:8px;max-height:340px;overflow:auto;margin-bottom:12px}
+  .bub{max-width:85%;padding:8px 11px;border-radius:12px;font-size:13px}
+  .bub .who{font-size:10px;font-weight:700;color:var(--txt2);margin-bottom:2px}
+  .bub.me{align-self:flex-end;background:var(--g1);color:#fff}.bub.me .who{color:rgba(255,255,255,.8)}
+  .bub.them{align-self:flex-start;background:var(--mist);color:var(--txt);border:1px solid var(--line)}
+  .bub .t{font-size:10px;opacity:.7;margin-top:2px}
+  .mform{display:flex;gap:8px}
+  .mform input{flex:1;border:1.5px solid var(--line);border-radius:9px;padding:8px 10px;font-family:'Inter',sans-serif;font-size:13px}
+  .mform input:focus{outline:none;border-color:var(--g1)}
+{% endblock %}
+{% block content %}
+  {% if messages %}{% for m in messages %}<div class="msg {{ m.tags }}">{{ m }}</div>{% endfor %}{% endif %}
+  <a href="/crm/sales/ocb/" class="backlink">&larr; Back to my OCBs</a>
+  <div class="ocb-grid">
+
+    <!-- A) OCB INFO — read-only (owned by Retail) -->
+    <div class="cf-card">
+      <div class="cf-card-title"><i class="bi bi-info-circle"></i> OCB Info</div>
+      <div class="kv"><div class="k">Car</div><div class="v">{{ car }} · {{ ocb.vehicle.plate_number }}</div></div>
+      <div class="kv"><div class="k">Client Price</div><div class="v">₹{{ ocb.ocb_price }}</div></div>
+      <div class="kv"><div class="k">Status</div><div class="v">
+        {% if ocb.status == 'open' %}Open{% elif ocb.status == 'accepted' %}Closed{% elif ocb.status == 'rejected' %}Cancelled{% else %}In Progress{% endif %}</div></div>
+      <div class="kv" style="border-bottom:none"><div class="k">Notes from Retail</div>
+        <div class="v" style="font-weight:400;color:var(--txt2)">{% if instructions %}{{ instructions.message }}{% else %}—{% endif %}</div></div>
+      <div class="ro"><i class="bi bi-lock"></i> OCB details are managed by the Retail Associate and cannot be edited here.</div>
+    </div>
+
+    <!-- B) DEALER OFFERS — Sales can submit (no winner selection) -->
+    <div class="cf-card">
+      <div class="cf-card-title"><i class="bi bi-cash-stack"></i> Dealer Offers</div>
+      {% if ocb.status != 'accepted' %}
+      <form method="post" action="/crm/sales/ocb/{{ ocb.id }}/">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="offer">
+        <label class="cf-label">Dealer</label>
+        <select class="cf-field" name="dealer_id" required>
+          <option value="">Select dealer…</option>
+          {% for d in dealers %}<option value="{{ d.id }}">{{ d.get_full_name|default:d.username }}</option>{% endfor %}
+        </select>
+        <label class="cf-label">Offered Price (₹)</label>
+        <input class="cf-field" type="number" name="price" min="1" required>
+        <label class="cf-label">Notes</label>
+        <textarea class="cf-field" name="notes" rows="2" placeholder="Optional"></textarea>
+        <button class="btn-cf" type="submit" style="margin-top:4px"><i class="bi bi-plus-circle"></i> Submit Offer</button>
+      </form>
+      <hr style="border:none;border-top:1px solid var(--line);margin:16px 0">
+      {% else %}
+      <div class="ro" style="margin-bottom:12px"><i class="bi bi-lock"></i> This OCB is closed — no further offers.</div>
+      {% endif %}
+      <div style="font-size:12px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">My submitted offers</div>
+      {% for o in offers %}
+      <div class="offer {% if o.is_selected %}win{% endif %}">
+        <div><span class="p">₹{{ o.price }}</span> · {{ o.dealer.get_full_name|default:o.dealer.username }}</div>
+        {% if o.notes %}<div class="meta">{{ o.notes }}</div>{% endif %}
+        <div class="meta">{{ o.created_at|date:"d M, H:i" }}</div>
+        {% if o.is_selected %}<div class="sel"><i class="bi bi-trophy"></i> Selected by Retail (winner)</div>{% endif %}
+      </div>
+      {% empty %}<div class="meta" style="color:var(--txt2);font-size:13px">You haven't submitted any offers yet.</div>{% endfor %}
+    </div>
+
+    <!-- C) CHAT (Sales <-> Retail) -->
+    <div class="cf-card">
+      <div class="cf-card-title"><i class="bi bi-chat-dots"></i> Messages (Sales &harr; Retail)</div>
+      <div class="chat">
+        {% for msg in thread %}
+        <div class="bub {% if msg.sender_id == request.user.id %}me{% else %}them{% endif %}">
+          <div class="who">{{ msg.sender.get_full_name|default:msg.sender.username }}</div>
+          <div>{{ msg.message }}</div>
+          <div class="t">{{ msg.created_at|date:"d M, H:i" }}</div>
+        </div>
+        {% empty %}<div class="meta" style="color:var(--txt2);font-size:13px">No messages yet.</div>{% endfor %}
+      </div>
+      <form method="post" action="/crm/sales/ocb/{{ ocb.id }}/" class="mform">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="message">
+        <input name="message" placeholder="Message Retail…" required>
+        <button class="btn-cf" type="submit"><i class="bi bi-send"></i></button>
+      </form>
+    </div>
+
+  </div>
+{% endblock %}
