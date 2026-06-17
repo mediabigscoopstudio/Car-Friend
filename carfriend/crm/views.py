@@ -36,6 +36,9 @@ def teams_dashboard(request):
     # their own OCB-centric dashboard (no leads / sellers).
     if request.user.is_sales:
         return redirect('/crm/sales/dashboard/')
+    # Procurement Associates only handle handovers — send them to their dashboard.
+    if request.user.is_procurement:
+        return redirect('/crm/procurement/dashboard/')
     ctx = {
         'total_leads':   Lead.objects.count(),
         'new_leads':     Lead.objects.filter(stage=Lead.STAGE_NEW).count(),
@@ -57,6 +60,8 @@ def pipeline(request):
         return redirect('/')
     if request.user.is_sales:            # Sales Associates have no lead access
         return redirect('/crm/sales/dashboard/')
+    if request.user.is_procurement:      # Procurement has no lead access
+        return redirect('/crm/procurement/dashboard/')
 
     # Full lead pipeline. Leads are not assigned to individual Retail Associates
     # in the current workflow (assigned_to is null or the Lead Manager), so an
@@ -172,6 +177,8 @@ def sellers(request):
         return redirect('/')
     if request.user.is_sales:            # Sales Associates have no seller access
         return redirect('/crm/sales/dashboard/')
+    if request.user.is_procurement:      # Procurement has no seller access
+        return redirect('/crm/procurement/dashboard/')
     all_sellers = User.objects.filter(role=User.ROLE_SELLER).prefetch_related('vehicles', 'leads')
     return render(request, 'teams/sellers.html', {'sellers': all_sellers})
 

@@ -4,6 +4,7 @@ from crm import views_lead_manager as lm
 from crm import views_retail as retail
 from crm import views_sales as sales
 from crm import views_dashboards as dash
+from crm import views_procurement as pcr
 from deals import views_procurement as proc
 from auctions import views_ocb as ocb
 
@@ -17,7 +18,10 @@ urlpatterns = [
     path('crm/lead-manager/dashboard/',           views.lead_manager_dashboard, name='lead_manager_dashboard'),
     path('crm/lead-manager/inspection-calendar/', views.lead_manager_calendar,  name='lead_manager_calendar'),
     path('crm/api/inspection-visits/',            views.inspection_visits_json, name='inspection_visits_json'),
-    path('crm/procurement/dashboard/',   dash.procurement_dashboard,  name='dash_procurement'),
+    path('crm/procurement/dashboard/',   pcr.procurement_dashboard,   name='dash_procurement'),
+    path('crm/procurement/queue/',                     pcr.procurement_queue,     name='procurement_queue'),
+    path('crm/procurement/handover/<int:deal_id>/',    pcr.procurement_handover,  name='procurement_handover'),
+    path('crm/procurement/completed/',                 pcr.procurement_completed, name='procurement_completed'),
     path('crm/inspection/dashboard/',    dash.inspection_dashboard,   name='dash_inspection'),
     path('crm/inspection/visits/',       dash.inspection_visits,      name='dash_inspection_visits'),
 

@@ -109,11 +109,11 @@
 
   <nav class="sidebar-nav">
     <div class="nav-group-label">Overview</div>
-    <a class="sidebar-link {% block nav_dash %}{% endblock %}" href="{% if request.user.role == 'sales' %}/crm/sales/dashboard/{% else %}{% url 'teams_dashboard' %}{% endif %}">
+    <a class="sidebar-link {% block nav_dash %}{% endblock %}" href="{% if request.user.role == 'sales' %}/crm/sales/dashboard/{% elif request.user.role == 'procurement' %}/crm/procurement/dashboard/{% else %}{% url 'teams_dashboard' %}{% endif %}">
       <i class="bi bi-grid-1x2"></i> Dashboard
     </a>
 
-    {% if request.user.role != 'sales' %}
+    {% if request.user.role != 'sales' and request.user.role != 'procurement' %}
     <div class="nav-group-label">Retail CRM</div>
     <a class="sidebar-link {% block nav_pipeline %}{% endblock %}" href="{% url 'pipeline' %}">
       <i class="bi bi-kanban"></i> Lead Pipeline
@@ -156,6 +156,16 @@
     <div class="nav-group-label">Inspector</div>
     <a class="sidebar-link {% block nav_inspector %}{% endblock %}" href="{% url 'inspector_dashboard' %}">
       <i class="bi bi-clipboard2-check"></i> My Jobs
+    </a>
+    {% endif %}
+
+    {% if request.user.role == 'procurement' %}
+    <div class="nav-group-label">Procurement</div>
+    <a class="sidebar-link {% block nav_proc_queue %}{% endblock %}" href="/crm/procurement/queue/">
+      <i class="bi bi-box-seam"></i> Handover Queue
+    </a>
+    <a class="sidebar-link {% block nav_proc_completed %}{% endblock %}" href="/crm/procurement/completed/">
+      <i class="bi bi-check2-circle"></i> Completed Handovers
     </a>
     {% endif %}
   </nav>

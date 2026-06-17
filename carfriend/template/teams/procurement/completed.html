@@ -1,0 +1,29 @@
+{% extends 'teams/base.html' %}
+{% block title %}Completed Handovers · CarFriend Teams{% endblock %}
+{% block page_title %}Completed Handovers{% endblock %}
+{% block nav_proc_completed %}active{% endblock %}
+{% block extra_css %}
+  .tbl-wrap{overflow-x:auto}
+{% endblock %}
+{% block content %}
+  <div class="cf-card">
+    <div class="cf-card-title"><i class="bi bi-check2-circle"></i> Completed handovers</div>
+    <div class="tbl-wrap">
+      <table class="cf-table">
+        <thead><tr><th>Seller</th><th>Dealer</th><th>Car</th><th>Deal Amount</th><th>Handover Date</th><th></th></tr></thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td>{{ r.seller }}</td>
+            <td>{{ r.dealer }}</td>
+            <td style="font-weight:600">{{ r.car }} · {{ r.deal.vehicle.plate_number }}</td>
+            <td>₹{{ r.deal.final_price }}</td>
+            <td>{{ r.h.stock_out_at|date:"d M Y" }}</td>
+            <td><a class="btn-cf-ghost" href="/crm/procurement/handover/{{ r.deal.id }}/">View</a></td>
+          </tr>
+          {% empty %}<tr><td colspan="6" style="text-align:center;color:var(--txt3);padding:24px">No completed handovers yet.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

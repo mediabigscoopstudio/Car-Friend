@@ -1,0 +1,44 @@
+{% extends 'teams/base.html' %}
+{% block title %}Procurement Dashboard · CarFriend Teams{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block nav_dash %}active{% endblock %}
+{% block extra_css %}
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+  @media(max-width:880px){.stat-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:480px){.stat-grid{grid-template-columns:1fr}}
+  .qa{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .tbl-wrap{overflow-x:auto}
+{% endblock %}
+{% block content %}
+  <div class="stat-grid">
+    <div class="stat-mini"><span class="val">{{ stats.pending }}</span><span class="lbl">Pending Handovers</span></div>
+    <div class="stat-mini"><span class="val">{{ stats.completed_today }}</span><span class="lbl">Completed Today</span></div>
+    <div class="stat-mini"><span class="val">{{ stats.completed_month }}</span><span class="lbl">Completed This Month</span></div>
+    <div class="stat-mini"><span class="val">{{ stats.avg_hours }}{% if stats.avg_hours != '—' %}h{% endif %}</span><span class="lbl">Avg Handover Time</span></div>
+  </div>
+
+  <div class="qa">
+    <a class="btn-cf" href="/crm/procurement/queue/"><i class="bi bi-box-seam"></i> View Handover Queue</a>
+  </div>
+
+  <div class="cf-card">
+    <div class="cf-card-title"><i class="bi bi-box-seam"></i> Ready for handover</div>
+    <div class="tbl-wrap">
+      <table class="cf-table">
+        <thead><tr><th>Seller</th><th>Dealer</th><th>Car</th><th>Deal Amount</th><th>Payment Confirmed</th><th></th></tr></thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td>{{ r.seller }}</td>
+            <td>{{ r.dealer }}</td>
+            <td style="font-weight:600">{{ r.car }} · {{ r.plate }}</td>
+            <td>₹{{ r.deal.final_price }}</td>
+            <td>{% if r.confirmed_at %}{{ r.confirmed_at|date:"d M Y" }}{% else %}—{% endif %}</td>
+            <td><a class="btn-cf-ghost" href="/crm/procurement/handover/{{ r.deal.id }}/">Start Handover</a></td>
+          </tr>
+          {% empty %}<tr><td colspan="6" style="text-align:center;color:var(--txt3);padding:24px">No cars waiting for handover.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
