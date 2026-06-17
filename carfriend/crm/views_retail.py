@@ -244,8 +244,10 @@ def retail_task_create(request):
 
     if request.method == "POST":
         title = (request.POST.get("title") or "").strip()
-        assignee = User.objects.filter(id=request.POST.get("assigned_to"),
-                                       role__in=[Role.SALES, Role.PROCUREMENT]).first()
+        assignee_id = request.POST.get("assigned_to") or None
+        assignee = (User.objects.filter(id=assignee_id,
+                                        role__in=[Role.SALES, Role.PROCUREMENT]).first()
+                    if assignee_id else None)
         if not title or not assignee:
             messages.error(request, "Title and a valid assignee are required.")
             return redirect("/crm/retail/tasks/create/")
@@ -256,12 +258,15 @@ def retail_task_create(request):
         # vehicle (Lead.vehicle is OneToOne), so when an OCB is chosen we
         # auto-resolve the lead from it and ignore the manual lead field. Only
         # when no OCB is selected do we use the optional Related Lead dropdown.
-        related_ocb = OCBListing.objects.filter(id=request.POST.get("related_ocb"),
-                                                assigned_to=request.user).first()
+        # Guard empty strings — an int id lookup on "" raises ValueError.
+        ocb_id = request.POST.get("related_ocb") or None
+        related_ocb = (OCBListing.objects.filter(id=ocb_id, assigned_to=request.user).first()
+                       if ocb_id else None)
         if related_ocb:
             related_lead = Lead.objects.filter(vehicle=related_ocb.vehicle).first()
         else:
-            related_lead = Lead.objects.filter(id=request.POST.get("related_lead")).first()
+            lead_id = request.POST.get("related_lead") or None
+            related_lead = Lead.objects.filter(id=lead_id).first() if lead_id else None
         task = Task.objects.create(
             title=title,
             description=(request.POST.get("description") or "").strip(),
