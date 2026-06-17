@@ -54,7 +54,7 @@
         <label class="cf-label">Dealer</label>
         <select class="cf-field" name="dealer_id" required>
           <option value="">Select dealer…</option>
-          {% for d in dealers %}<option value="{{ d.id }}">{{ d.get_full_name|default:d.username }}</option>{% endfor %}
+          {% for d in dealers %}<option value="{{ d.id }}">{{ d.label }}</option>{% endfor %}
         </select>
         <label class="cf-label">Offered Price (₹)</label>
         <input class="cf-field" type="number" name="price" min="1" required>

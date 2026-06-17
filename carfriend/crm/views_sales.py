@@ -85,7 +85,26 @@ def sales_ocb_detail(request, ocb_id):
     offers = ocb.offers.select_related("dealer").filter(submitted_by=request.user)
     thread = ocb.messages.select_related("sender").all()
     instructions = ocb.messages.filter(message__startswith="Instructions for Sales:").first()
-    dealers = User.objects.filter(role=Role.DEALER, is_suspended=False).order_by("username")
+    # Full dealership identity in the dropdown so dealers are distinguishable:
+    # "<Dealership Name> — <City> (<Contact Person>)".
+    dealer_users = (User.objects.filter(role=Role.DEALER, is_suspended=False)
+                    .select_related("dealer_profile").order_by("username"))
+    dealers = []
+    for d in dealer_users:
+        prof = getattr(d, "dealer_profile", None)
+        contact = d.get_full_name() or d.username
+        if prof and prof.dealership_name:
+            label = prof.dealership_name
+            if prof.city:
+                label += f" — {prof.city}"
+            if contact:
+                label += f" ({contact})"
+        else:
+            # No DealerProfile/dealership name — keep options distinguishable.
+            label = contact
+            if prof and prof.city:
+                label += f" — {prof.city}"
+        dealers.append({"id": d.id, "label": label})
     return render(request, "teams/sales/ocb_detail.html", {
         "ocb": ocb, "car": _car(ocb.vehicle), "offers": offers, "thread": thread,
         "dealers": dealers, "instructions": instructions,
