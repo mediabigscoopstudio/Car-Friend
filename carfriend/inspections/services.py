@@ -1,5 +1,6 @@
 import datetime
 import io
+import logging
 import os
 import subprocess
 import tempfile
@@ -7,46 +8,113 @@ import tempfile
 from django.conf import settings
 from django.core.files.base import ContentFile
 
+logger = logging.getLogger(__name__)
+
+# Inspection media is standardised on light, web + Flutter-playable formats:
+# photos → WebP, video → MP4 (H.264 + AAC), engine audio → M4A (AAC).
+WEBP_QUALITY = 80
+WEBP_MAX_EDGE = 1920       # cap longest edge to keep files light
+VIDEO_CRF = 28             # reasonable size/quality balance
+VIDEO_MAX_HEIGHT = 720     # downscale only; never upscale
+
 
 def convert_to_webp(media, raw_file):
-    """Convert uploaded image to WebP and save to media.webp_file (save=False)."""
+    """Convert an uploaded inspection photo to WebP → media.webp_file (save=False).
+
+    Resizes down so the longest edge is <= WEBP_MAX_EDGE. If a masked image
+    already exists (license-plate pipeline), that processed image is the source
+    of truth and gets converted instead of the raw upload.
+    """
     from PIL import Image
-    raw_file.seek(0)
-    img = Image.open(raw_file).convert("RGB")
+
+    source = media.masked_file if media.masked_file else raw_file
+    if hasattr(source, "seek"):
+        source.seek(0)
+    img = Image.open(source).convert("RGB")
+    if max(img.size) > WEBP_MAX_EDGE:
+        img.thumbnail((WEBP_MAX_EDGE, WEBP_MAX_EDGE), Image.LANCZOS)
     buf = io.BytesIO()
-    img.save(buf, format="WEBP", quality=85, method=4)
+    img.save(buf, format="WEBP", quality=WEBP_QUALITY, method=4)
     name = f"photo_{media.pk}_{(media.slot or 'img').replace(' ', '_').lower()}.webp"
     media.webp_file.save(name, ContentFile(buf.getvalue()), save=False)
 
 
-def convert_to_mp4(media, raw_file):
-    """Convert uploaded video to MP4 H.264+AAC via ffmpeg, save to media.mp4_file (save=False)."""
+def _ffmpeg_to_temp(raw_file, args, out_suffix, label, pk):
+    """Run ffmpeg on a temp copy of raw_file. Returns output bytes or None.
+
+    None means conversion did not run — caller MUST NOT fall back to the raw
+    upload silently. A clear log line is emitted so missing ffmpeg is obvious.
+    """
     raw_file.seek(0)
-    suffix = os.path.splitext(getattr(raw_file, "name", ".mp4"))[1] or ".mp4"
-    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp_in:
+    in_suffix = os.path.splitext(getattr(raw_file, "name", ""))[1] or ".bin"
+    with tempfile.NamedTemporaryFile(suffix=in_suffix, delete=False) as tmp_in:
         for chunk in raw_file.chunks():
             tmp_in.write(chunk)
         tmp_in_path = tmp_in.name
-
-    tmp_out_path = tmp_in_path + "_cf.mp4"
+    tmp_out_path = tmp_in_path + "_cf" + out_suffix
     try:
         result = subprocess.run(
-            ["ffmpeg", "-y", "-i", tmp_in_path,
-             "-c:v", "libx264", "-preset", "fast", "-crf", "23",
-             "-c:a", "aac", "-b:a", "128k",
-             "-movflags", "+faststart",
-             tmp_out_path],
-            capture_output=True, timeout=180,
+            ["ffmpeg", "-y", "-i", tmp_in_path, *args, tmp_out_path],
+            capture_output=True, timeout=240,
         )
-        if result.returncode == 0:
+        if result.returncode == 0 and os.path.exists(tmp_out_path):
             with open(tmp_out_path, "rb") as f:
-                media.mp4_file.save(f"video_{media.pk}.mp4", ContentFile(f.read()), save=False)
-    except (subprocess.TimeoutExpired, FileNotFoundError):
-        pass  # ffmpeg not available — skip conversion
+                return f.read()
+        logger.error(
+            "ffmpeg %s transcode failed for media %s (rc=%s): %s",
+            label, pk, result.returncode, result.stderr[-800:].decode("utf-8", "replace"),
+        )
+        return None
+    except FileNotFoundError:
+        logger.error(
+            "ffmpeg is NOT installed — cannot transcode inspection %s for media %s. "
+            "Install ffmpeg on the VPS (e.g. `apt install ffmpeg`).", label, pk,
+        )
+        return None
+    except subprocess.TimeoutExpired:
+        logger.error("ffmpeg %s transcode timed out for media %s", label, pk)
+        return None
     finally:
         os.unlink(tmp_in_path)
         if os.path.exists(tmp_out_path):
             os.unlink(tmp_out_path)
+
+
+def convert_to_mp4(media, raw_file):
+    """Transcode an uploaded video to MP4 (H.264 + AAC) → media.mp4_file (save=False).
+
+    Returns True on success, False if ffmpeg is unavailable or the transcode
+    failed — the caller should reject the upload rather than store the raw file.
+    """
+    data = _ffmpeg_to_temp(
+        raw_file,
+        ["-vf", f"scale=-2:'min({VIDEO_MAX_HEIGHT},ih)'",
+         "-c:v", "libx264", "-preset", "fast", "-crf", str(VIDEO_CRF),
+         "-c:a", "aac", "-b:a", "128k",
+         "-movflags", "+faststart"],
+        ".mp4", "video", media.pk,
+    )
+    if data is None:
+        return False
+    media.mp4_file.save(f"video_{media.pk}.mp4", ContentFile(data), save=False)
+    return True
+
+
+def convert_audio(media, raw_file):
+    """Transcode uploaded engine audio to M4A (AAC) → media.file (save=False).
+
+    Returns True on success. On failure the raw upload (often already an mp3)
+    is left in place as a playable fallback; the failure is logged.
+    """
+    data = _ffmpeg_to_temp(
+        raw_file,
+        ["-vn", "-c:a", "aac", "-b:a", "128k"],
+        ".m4a", "audio", media.pk,
+    )
+    if data is None:
+        return False
+    media.file.save(f"audio_{media.pk}.m4a", ContentFile(data), save=False)
+    return True
 
 
 def mask_plate_and_watermark(media):

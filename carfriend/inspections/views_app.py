@@ -11,7 +11,7 @@ from accounts.decorators import inspector_required
 from core.models import log
 from notifications.services import notify
 from .models import InspectionVisit, InspectionReport, InspectionMedia
-from .schema import CHECKPOINT_SCHEMA, PHOTO_SLOTS
+from .schema import CHECKPOINT_SCHEMA
 
 
 def insp_login(request):
@@ -92,20 +92,19 @@ def insp_form(request, id, section="summary"):
         "saved_data": r.checkpoints.get(section, {}),
     }
     if schema.get("kind") == "media":
-        existing = {}
+        photos, videos, audios = [], [], []
         for m in r.media.filter(kind=InspectionMedia.Kind.PHOTO):
-            if m.slot:
-                img = m.webp_file or m.masked_file or m.file
-                existing[m.slot] = {"id": m.id, "url": img.url if img else ""}
-        video_obj = r.media.filter(kind=InspectionMedia.Kind.VIDEO).first()
-        audio_obj = r.media.filter(kind=InspectionMedia.Kind.AUDIO).first()
-        ctx.update({
-            "photo_slots": PHOTO_SLOTS,
-            "existing_media": existing,
-            "video_url": (video_obj.mp4_file.url if video_obj and video_obj.mp4_file else
-                          (video_obj.file.url if video_obj and video_obj.file else "")),
-            "audio_url": (audio_obj.file.url if audio_obj and audio_obj.file else ""),
-        })
+            img = m.webp_file or m.masked_file or m.file
+            if img:
+                photos.append({"id": m.id, "url": img.url})
+        for m in r.media.filter(kind=InspectionMedia.Kind.VIDEO):
+            vid = m.mp4_file or m.file
+            if vid:
+                videos.append({"id": m.id, "url": vid.url})
+        for m in r.media.filter(kind=InspectionMedia.Kind.AUDIO):
+            if m.file:
+                audios.append({"id": m.id, "url": m.file.url})
+        ctx.update({"photos": photos, "videos": videos, "audios": audios})
     return render(request, "inspection/section.html", ctx)
 
 
@@ -123,24 +122,47 @@ def insp_upload_media(request, id):
     section = request.POST.get("section", "photos")
     media = InspectionMedia(report=r, kind=kind, slot=slot, section=section)
     media.file.save(f.name, f, save=True)
-    img_url = ""
-    if kind == "photo":
-        from .services import convert_to_webp
-        try:
-            f.seek(0)
-            convert_to_webp(media, f)
-            media.save(update_fields=["webp_file"])
-            img_url = media.webp_file.url if media.webp_file else media.file.url
-        except Exception:
-            img_url = media.file.url if media.file else ""
-    elif kind == "video":
+    url = ""
+    if kind == "video":
+        # Reject the upload if it can't be transcoded — never serve the raw file.
         from .services import convert_to_mp4
+        if not convert_to_mp4(media, f):
+            media.delete()
+            return JsonResponse(
+                {"ok": False,
+                 "error": "Video conversion failed — ffmpeg must be installed on the server."},
+                status=500,
+            )
+        media.save(update_fields=["mp4_file"])
+        url = media.mp4_file.url
+    elif kind == "audio":
+        from .services import convert_audio
         try:
-            convert_to_mp4(media, f)
-            media.save(update_fields=["mp4_file"])
+            if convert_audio(media, f):
+                media.save(update_fields=["file"])
         except Exception:
             pass
-    return JsonResponse({"ok": True, "id": media.id, "url": img_url})
+        url = media.file.url if media.file else ""
+    else:  # photo
+        from .services import convert_to_webp
+        try:
+            convert_to_webp(media, f)
+            media.save(update_fields=["webp_file"])
+        except Exception:
+            pass
+        img = media.webp_file or media.masked_file or media.file
+        url = img.url if img else ""
+    return JsonResponse({"ok": True, "id": media.id, "url": url, "kind": kind})
+
+
+@inspector_required
+@require_POST
+def insp_delete_media(request, id):
+    m = get_object_or_404(InspectionMedia, id=id, report__visit__inspector=request.user)
+    if not m.report.editable:
+        return JsonResponse({"locked": True}, status=409)
+    m.delete()
+    return JsonResponse({"ok": True})
 
 
 @inspector_required

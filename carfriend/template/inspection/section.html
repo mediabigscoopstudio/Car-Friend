@@ -165,12 +165,23 @@
 
 <!-- Header -->
 <div class="sf-header">
-  <a href="/visit/{{ r.visit.id }}" class="back">←</a>
-  <div style="flex:1;min-width:0">
-    <div class="sf-title">{{ schema.label }}</div>
-    <div class="sf-sub">{{ r.visit.vehicle.display_name }}</div>
+  <a href="/visit/{{ r.visit.id }}" class="sf-back" aria-label="Back">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+  </a>
+  <div class="sf-titlestack">
+    <div class="sf-eyebrow">Car details</div>
+    <div class="sf-carname">{{ r.visit.vehicle|short_car_name }}</div>
+    <div class="sf-subline">Inspection #{{ r.id }} · {{ r.visit.vehicle.plate_number }}</div>
   </div>
-  <div class="sf-prog">{{ current_idx|add:1 }}/{{ sections|length }}</div>
+  <div class="sf-progress">
+    <div class="sf-step-label">Step {{ current_idx|add:1 }} of {{ sections|length }}</div>
+    <div class="sf-segments">
+      {% for s in sections %}
+      <span class="sf-seg {% if forloop.counter0 <= current_idx %}done{% endif %}"></span>
+      {% endfor %}
+    </div>
+  </div>
 </div>
 
 <!-- Section tabs -->
@@ -187,76 +198,84 @@
 {% if schema.kind == "media" %}
 
 <div class="media-tabs-strip">
-  <button class="mtab active" onclick="showPanel('photos',this)">Photos ({{ photo_slots|length }})</button>
-  <button class="mtab" onclick="showPanel('video',this)">Video</button>
-  <button class="mtab" onclick="showPanel('audio',this)">Engine Audio</button>
+  <button class="mtab active" onclick="showPanel('photos',this)">Photos ({{ photos|length }})</button>
+  <button class="mtab" onclick="showPanel('video',this)">Video ({{ videos|length }})</button>
+  <button class="mtab" onclick="showPanel('audio',this)">Engine Audio ({{ audios|length }})</button>
 </div>
 
+<!-- PHOTOS -->
 <div id="mpanel-photos" class="mpanel active">
-  <div class="photo-upload-grid">
-    {% for slot in photo_slots %}
-    {% with slot_data=existing_media|dictkey:slot %}
-    <div class="pu-slot" data-slot="{{ slot }}">
-      <div class="pu-inner {% if slot_data %}has-image{% endif %}" onclick="triggerPhotoUpload('{{ slot|escapejs }}')">
-        {% if slot_data %}
-          <img src="{{ slot_data.url }}" alt="{{ slot }}" id="thumb-{{ forloop.counter }}">
-        {% else %}
-          <div class="pu-empty-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            <span>Tap</span>
-          </div>
-        {% endif %}
-        <div class="pu-uploading" id="pu-busy-{{ forloop.counter }}" style="display:none">…</div>
-      </div>
-      <div class="pu-label">{{ slot }}</div>
-      <input type="file" accept="image/*" class="pu-input" data-slot="{{ slot }}" data-idx="{{ forloop.counter }}" style="display:none" onchange="uploadPhoto(this)">
+  {% if photos %}
+  <div class="media-grid">
+    {% for p in photos %}
+    <div class="media-thumb" data-id="{{ p.id }}">
+      <img src="{{ p.url }}" alt="Inspection photo" loading="lazy" onclick="viewMedia('{{ p.url|escapejs }}')">
+      <button type="button" class="media-del" onclick="deleteMedia(event,{{ p.id }})" aria-label="Delete photo">×</button>
     </div>
-    {% endwith %}
+    {% endfor %}
+    <button type="button" class="media-add-tile" onclick="document.getElementById('photo-input').click()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>Add</span>
+    </button>
+  </div>
+  {% else %}
+  <button type="button" class="media-dropzone" onclick="document.getElementById('photo-input').click()">
+    <div class="mdz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+    <div class="mdz-title">+ Add Photos</div>
+    <div class="mdz-sub">JPG · PNG · HEIC — stored as WebP</div>
+  </button>
+  {% endif %}
+  <input type="file" id="photo-input" accept="image/*" multiple style="display:none" onchange="uploadMedia(this,'photo')">
+  <div class="media-pad"></div>
+</div>
+
+<!-- VIDEO -->
+<div id="mpanel-video" class="mpanel">
+  {% if videos %}
+  <div class="media-grid media-grid-wide">
+    {% for vid in videos %}
+    <div class="media-thumb media-thumb-av" data-id="{{ vid.id }}">
+      <video src="{{ vid.url }}" controls preload="metadata"></video>
+      <button type="button" class="media-del" onclick="deleteMedia(event,{{ vid.id }})" aria-label="Delete video">×</button>
+    </div>
+    {% endfor %}
+    <button type="button" class="media-add-tile" onclick="document.getElementById('video-input').click()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>Add</span>
+    </button>
+  </div>
+  {% else %}
+  <button type="button" class="media-dropzone" onclick="document.getElementById('video-input').click()">
+    <div class="mdz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>
+    <div class="mdz-title">+ Add Video</div>
+    <div class="mdz-sub">Transcoded to MP4 · H.264 + AAC</div>
+  </button>
+  {% endif %}
+  <input type="file" id="video-input" accept="video/*" style="display:none" onchange="uploadMedia(this,'video')">
+  <div class="media-pad"></div>
+</div>
+
+<!-- ENGINE AUDIO -->
+<div id="mpanel-audio" class="mpanel">
+  {% if audios %}
+  <div class="audio-list">
+    {% for a in audios %}
+    <div class="audio-row" data-id="{{ a.id }}">
+      <audio src="{{ a.url }}" controls preload="metadata"></audio>
+      <button type="button" class="media-del" onclick="deleteMedia(event,{{ a.id }})" aria-label="Delete audio">×</button>
+    </div>
     {% endfor %}
   </div>
-  <div style="height:100px"></div>
-</div>
-
-<div id="mpanel-video" class="mpanel">
-  {% if video_url %}
-  <div class="media-preview">
-    <video src="{{ video_url }}" controls></video>
-    <div class="media-preview-lbl"><span>Video uploaded</span><button onclick="clearMedia('video')" style="background:none;border:none;color:var(--app-red);cursor:pointer;font-size:11px">Remove</button></div>
-  </div>
+  <button type="button" class="media-add-inline" onclick="document.getElementById('audio-input').click()">+ Add more</button>
   {% else %}
-  <div class="media-upload-zone" onclick="document.getElementById('video-input').click()">
-    <div class="muz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>
-    <div class="muz-title">Upload Vehicle Video</div>
-    <div class="muz-sub">MP4, MOV, AVI, WebM · max 500 MB</div>
-  </div>
-  <div id="video-preview-wrap" style="display:none" class="media-preview">
-    <video id="video-preview" controls></video>
-    <div class="media-preview-lbl"><span id="video-status">Uploading…</span></div>
-  </div>
-  <input type="file" id="video-input" accept="video/*" style="display:none" onchange="uploadVideo(this)">
+  <button type="button" class="media-dropzone" onclick="document.getElementById('audio-input').click()">
+    <div class="mdz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2a3 3 0 013 3v7a3 3 0 01-6 0V5a3 3 0 013-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v3M8 22h8"/></svg></div>
+    <div class="mdz-title">+ Add Audio</div>
+    <div class="mdz-sub">Engine sound — stored as M4A / AAC</div>
+  </button>
   {% endif %}
-  <div style="height:100px"></div>
-</div>
-
-<div id="mpanel-audio" class="mpanel">
-  {% if audio_url %}
-  <div class="media-preview">
-    <audio src="{{ audio_url }}" controls style="padding:12px"></audio>
-    <div class="media-preview-lbl"><span>Engine audio uploaded</span><button onclick="clearMedia('audio')" style="background:none;border:none;color:var(--app-red);cursor:pointer;font-size:11px">Remove</button></div>
-  </div>
-  {% else %}
-  <div class="media-upload-zone" onclick="document.getElementById('audio-input').click()">
-    <div class="muz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2a3 3 0 013 3v7a3 3 0 01-6 0V5a3 3 0 013-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v3M8 22h8"/></svg></div>
-    <div class="muz-title">Upload Engine Audio</div>
-    <div class="muz-sub">MP3, M4A, WAV, OGG</div>
-  </div>
-  <div id="audio-preview-wrap" style="display:none" class="media-preview">
-    <audio id="audio-preview" controls style="width:100%;padding:12px"></audio>
-    <div class="media-preview-lbl"><span id="audio-status">Uploading…</span></div>
-  </div>
-  <input type="file" id="audio-input" accept="audio/*" style="display:none" onchange="uploadAudio(this)">
-  {% endif %}
-  <div style="height:100px"></div>
+  <input type="file" id="audio-input" accept="audio/*" style="display:none" onchange="uploadMedia(this,'audio')">
+  <div class="media-pad"></div>
 </div>
 
 <div class="section-actions">
@@ -491,60 +510,51 @@ function showPanel(id, btn) {
   if (btn) btn.classList.add('active');
 }
 
-function triggerPhotoUpload(slot) {
-  const inp = document.querySelector(`.pu-input[data-slot="${CSS.escape(slot)}"]`);
-  if (inp) inp.click();
+let mediaBusy = false;
+function setMediaBusy(on, msg) {
+  mediaBusy = on;
+  let o = document.getElementById('media-busy');
+  if (on) {
+    if (!o) { o = document.createElement('div'); o.id = 'media-busy'; o.className = 'media-busy'; document.body.appendChild(o); }
+    o.textContent = msg || 'Processing…';
+  } else if (o) { o.remove(); }
 }
 
-async function uploadPhoto(inp) {
-  const slot = inp.dataset.slot;
-  const idx  = inp.dataset.idx;
-  const file = inp.files[0];
-  if (!file) return;
-  const slotEl = inp.closest('.pu-slot');
-  const inner  = slotEl.querySelector('.pu-inner');
-  const busy   = document.getElementById('pu-busy-' + idx);
-  if (busy) busy.style.display = 'flex';
+async function uploadMedia(input, kind) {
+  const files = Array.from(input.files || []);
+  if (!files.length || mediaBusy) { input.value = ''; return; }
+  setMediaBusy(true, kind === 'photo' ? 'Converting to WebP…' : (kind === 'video' ? 'Transcoding video…' : 'Converting audio…'));
+  let err = '';
+  for (const file of files) {
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('file', file);
+    fd.append('kind', kind);
+    fd.append('section', 'photos');
+    try {
+      const res  = await fetch('/upload/' + REPORT_ID, {method:'POST', body:fd});
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) { err = data.error || 'Upload failed.'; break; }
+    } catch(e) { err = 'Network error during upload.'; break; }
+  }
+  input.value = '';
+  setMediaBusy(false);
+  if (err) { alert(err); return; }
+  window.location.reload();
+}
+
+async function deleteMedia(ev, id) {
+  ev.stopPropagation();
+  if (!confirm('Remove this file?')) return;
   const fd = new FormData();
   fd.append('csrfmiddlewaretoken', CSRF);
-  fd.append('file', file);
-  fd.append('kind', 'photo');
-  fd.append('slot', slot);
-  fd.append('section', 'photos');
   try {
-    const res  = await fetch('/upload/' + REPORT_ID, {method:'POST', body:fd});
-    const data = await res.json();
-    if (data.ok && data.url) {
-      let img = inner.querySelector('img');
-      if (!img) { inner.innerHTML = ''; img = document.createElement('img'); inner.appendChild(img); }
-      img.src = data.url;
-      inner.classList.add('has-image');
-    }
+    const res = await fetch('/media/' + id + '/delete', {method:'POST', body:fd});
+    if (res.ok) window.location.reload();
   } catch(e) {}
-  if (busy) busy.style.display = 'none';
 }
 
-async function uploadVideo(inp) {
-  const file = inp.files[0]; if (!file) return;
-  const wrap = document.getElementById('video-preview-wrap');
-  const vid  = document.getElementById('video-preview');
-  const stat = document.getElementById('video-status');
-  vid.src = URL.createObjectURL(file); wrap.style.display = 'block'; stat.textContent = 'Uploading…';
-  const fd = new FormData();
-  fd.append('csrfmiddlewaretoken', CSRF); fd.append('file', file); fd.append('kind', 'video'); fd.append('slot', 'engine_video'); fd.append('section', 'photos');
-  try { const res = await fetch('/upload/' + REPORT_ID, {method:'POST', body:fd}); const data = await res.json(); stat.textContent = data.ok ? 'Upload complete ✓' : 'Error'; } catch(e) { stat.textContent = 'Failed'; }
-}
-
-async function uploadAudio(inp) {
-  const file = inp.files[0]; if (!file) return;
-  const wrap = document.getElementById('audio-preview-wrap');
-  const aud  = document.getElementById('audio-preview');
-  const stat = document.getElementById('audio-status');
-  aud.src = URL.createObjectURL(file); wrap.style.display = 'block'; stat.textContent = 'Uploading…';
-  const fd = new FormData();
-  fd.append('csrfmiddlewaretoken', CSRF); fd.append('file', file); fd.append('kind', 'audio'); fd.append('slot', 'engine_audio'); fd.append('section', 'photos');
-  try { const res = await fetch('/upload/' + REPORT_ID, {method:'POST', body:fd}); const data = await res.json(); stat.textContent = data.ok ? 'Upload complete ✓' : 'Failed'; } catch(e) { stat.textContent = 'Failed'; }
-}
+function viewMedia(url) { window.open(url, '_blank'); }
 {% endif %}
 </script>
 

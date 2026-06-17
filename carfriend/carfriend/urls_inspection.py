@@ -13,6 +13,7 @@ urlpatterns = [
     path("inspection/<int:id>/<str:section>", v.insp_form, name="insp_form"),
     path("save/<int:id>", v.insp_save, name="insp_save"),
     path("upload/<int:id>", v.insp_upload_media, name="insp_upload_media"),
+    path("media/<int:id>/delete", v.insp_delete_media, name="insp_delete_media"),
     path("report/<int:id>", v.insp_report, name="insp_report"),
     path("submit/<int:id>", v.insp_submit, name="insp_submit"),
     path("alerts", v.insp_alerts, name="insp_alerts"),
