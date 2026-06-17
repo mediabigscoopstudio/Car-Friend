@@ -121,3 +121,19 @@ class TaskNote(models.Model):
 
     def __str__(self):
         return f"note by {self.author} on task {self.task_id}"
+
+
+class LeadNote(models.Model):
+    """A call note / activity-log entry logged by the Retail Associate on a lead."""
+
+    lead       = models.ForeignKey("crm.Lead", on_delete=models.CASCADE, related_name="notes")
+    author     = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                                    related_name="lead_notes")
+    note       = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"note by {self.author} on lead {self.lead_id}"

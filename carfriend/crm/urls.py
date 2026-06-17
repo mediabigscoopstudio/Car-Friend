@@ -70,6 +70,7 @@ urlpatterns = [
     # Lead pipeline
     path('pipeline/',                                views.pipeline,          name='pipeline'),
     path('pipeline/<int:lead_id>/',                  views.lead_detail,       name='lead_detail'),
+    path('pipeline/<int:lead_id>/note/',             views.lead_add_note,     name='lead_add_note'),
     path('pipeline/<int:lead_id>/move/',             views.lead_move,         name='lead_move'),
     path('pipeline/<int:lead_id>/assign-inspector/', views.assign_inspector,  name='assign_inspector'),
 

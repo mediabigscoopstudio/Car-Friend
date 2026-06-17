@@ -74,14 +74,39 @@
       </form>
     </div>
 
-    {# Retail Associate: create an OCB straight from this lead (negotiation / auction stage) #}
-    {% if request.user.role == 'retail' and lead.stage == 'negotiation' or request.user.role == 'retail' and lead.stage == 'auction_created' %}
-    <!-- Create OCB (Retail) -->
+    {# Retail Associate: OCB section — show existing OCB(s), else offer to create #}
+    {% if request.user.role == 'retail' %}
+    {% if ocb_rows or lead.stage == 'negotiation' or lead.stage == 'auction_created' %}
     <div class="cf-card">
       <div class="cf-card-title"><i class="bi bi-people"></i> One Click Buy (OCB)</div>
-      <p style="font-size:13px;color:var(--txt2);margin:0 0 12px">This lead is ready for an OCB. Create one to set a client price, assign a Sales Associate and collect dealer offers.</p>
-      <a class="btn-cf" href="/crm/retail/ocb/create/?lead={{ lead.id }}"><i class="bi bi-plus-circle"></i> Create OCB from this lead</a>
+
+      {% for r in ocb_rows %}
+      <div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+          <div>
+            {% if r.ocb.status == 'open' %}<span style="font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px;background:var(--gs);color:var(--g1)">Open</span>
+            {% elif r.ocb.status == 'accepted' %}<span style="font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px;background:#E7F3EA;color:var(--g1)">Closed</span>
+            {% elif r.ocb.status == 'rejected' %}<span style="font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px;background:#FCE8E8;color:#B42318">Cancelled</span>
+            {% else %}<span style="font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px;background:#FFF1DD;color:#B26A00">In Progress</span>{% endif %}
+            <span style="font-weight:700;margin-left:8px">₹{{ r.ocb.ocb_price }}</span>
+          </div>
+          <a class="btn-cf-ghost" href="/crm/retail/ocb/{{ r.ocb.id }}/" style="padding:5px 12px;font-size:12px">View OCB</a>
+        </div>
+        <div style="font-size:12px;color:var(--txt2);margin-top:7px">
+          Sales: {{ r.sales }} · {{ r.offers }} dealer offer{{ r.offers|pluralize }}
+          {% if r.winner %}<br><span style="color:var(--g1);font-weight:600"><i class="bi bi-trophy"></i> Winner: {{ r.winner.dealer.get_full_name|default:r.winner.dealer.username }} — ₹{{ r.winner.price }}</span>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+
+      {% if can_create_more %}
+        {% if lead.stage == 'negotiation' or lead.stage == 'auction_created' %}
+        {% if not ocb_rows %}<p style="font-size:13px;color:var(--txt2);margin:0 0 12px">This lead is ready for an OCB. Create one to set a client price, assign a Sales Associate and collect dealer offers.</p>{% endif %}
+        <a class="btn-cf" href="/crm/retail/ocb/create/?lead={{ lead.id }}"><i class="bi bi-plus-circle"></i> Create OCB from this lead</a>
+        {% endif %}
+      {% endif %}
     </div>
+    {% endif %}
     {% endif %}
 
     <!-- Assign Inspector -->
@@ -148,6 +173,31 @@
 
   <!-- Right: seller info -->
   <div class="col-12 col-lg-4">
+
+    {# Retail Associate: call notes / activity log #}
+    {% if request.user.role == 'retail' %}
+    <div class="cf-card">
+      <div class="cf-card-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span><i class="bi bi-telephone"></i> Call Notes</span>
+        <a onclick="document.getElementById('noteForm').classList.toggle('open')" style="color:var(--g1);font-size:12px;font-weight:600;cursor:pointer;text-decoration:none">+ Add Note</a>
+      </div>
+      <form id="noteForm" method="post" action="/pipeline/{{ lead.id }}/note/" style="display:none;margin-bottom:12px">
+        {% csrf_token %}
+        <textarea class="cf-field" name="note" rows="3" placeholder="Summary after your call…" required></textarea>
+        <button class="btn-cf" type="submit" style="padding:6px 14px;font-size:12px"><i class="bi bi-save"></i> Save Note</button>
+      </form>
+      <style>#noteForm.open{display:block !important}</style>
+      {% for n in lead_notes %}
+      <div style="border-bottom:1px solid var(--line);padding:8px 0">
+        <div style="font-size:13px;color:var(--txt)">{{ n.note }}</div>
+        <div style="font-size:11px;color:var(--txt3);margin-top:3px">{{ n.author.get_full_name|default:n.author.username }} · {{ n.created_at|date:"d M, g:i A" }}</div>
+      </div>
+      {% empty %}
+      <div style="font-size:12px;color:var(--txt3)">No notes yet. Add a summary after your call.</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
     <div class="cf-card">
       <div class="cf-card-title"><i class="bi bi-person"></i> Seller</div>
       <div style="display:flex;flex-direction:column;gap:10px">

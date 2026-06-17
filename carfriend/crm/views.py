@@ -8,7 +8,8 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from accounts.models import User, DealerProfile
 from vehicles.models import Vehicle
-from crm.models import Lead, Bid
+from crm.models import Lead, Bid, LeadNote
+from auctions.models import OCBListing
 from inspections.models import InspectionVisit
 
 
@@ -91,6 +92,28 @@ def lead_detail(request, lead_id):
     inspectors = User.objects.filter(role=User.ROLE_INSPECTOR, is_active=True)
     inspection_visit = getattr(lead, 'inspection_visit', None)
     bids = Bid.objects.filter(vehicle=lead.vehicle).order_by('-amount')[:10]
+
+    # OCB(s) for this lead — linked via the vehicle (Lead.vehicle is OneToOne;
+    # OCBListing has no direct lead FK).
+    ocb_rows = []
+    if lead.vehicle:
+        ocbs = (OCBListing.objects.filter(vehicle=lead.vehicle)
+                .select_related('sales_associate').prefetch_related('offers__dealer')
+                .order_by('-created_at'))
+        for o in ocbs:
+            offers = list(o.offers.all())
+            winner = next((of for of in offers if of.is_selected), None)
+            ocb_rows.append({
+                'ocb': o,
+                'offers': len(offers),
+                'sales': (o.sales_associate.get_full_name() or o.sales_associate.username)
+                         if o.sales_associate else '—',
+                'winner': winner,
+            })
+    # Allow creating another OCB only when none exist or all existing are closed/cancelled.
+    can_create_more = (not ocb_rows) or all(
+        r['ocb'].status in ('accepted', 'rejected') for r in ocb_rows)
+
     ctx = {
         'lead':             lead,
         'vehicle':          lead.vehicle,
@@ -99,8 +122,26 @@ def lead_detail(request, lead_id):
         'inspection_visit': inspection_visit,
         'bids':             bids,
         'stage_choices':    Lead.STAGE_CHOICES,
+        'ocb_rows':         ocb_rows,
+        'can_create_more':  can_create_more,
+        'lead_notes':       lead.notes.select_related('author').all(),
     }
     return render(request, 'teams/lead_detail.html', ctx)
+
+
+@login_required(login_url='/auth/login/')
+def lead_add_note(request, lead_id):
+    """Retail Associate logs a call note on a lead. POST only."""
+    if request.method != 'POST':
+        return redirect(f'/pipeline/{lead_id}/')
+    if not (request.user.is_retail or request.user.is_superuser):
+        return redirect('/')
+    lead = get_object_or_404(Lead, id=lead_id)
+    text = (request.POST.get('note') or '').strip()
+    if text:
+        LeadNote.objects.create(lead=lead, author=request.user, note=text)
+        messages.success(request, 'Note added.')
+    return redirect(f'/pipeline/{lead.id}/')
 
 
 @login_required(login_url='/auth/login/')
