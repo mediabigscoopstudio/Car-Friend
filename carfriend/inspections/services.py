@@ -95,10 +95,33 @@ def _ffmpeg_to_temp(raw_file, args, out_suffix, label, pk):
 
 
 def is_web_ready_video(upload):
-    """True if the upload is already an MP4 — no transcode needed, store as-is."""
+    """True if the upload is already a browser-playable MP4 → store as-is.
+
+    Detects MP4 WITHOUT invoking ffmpeg/ffprobe, robust to bad/missing names
+    and odd mime types:
+      1. filename ends in .mp4 (case-insensitive — the upload name is lowered)
+      2. content-type contains "mp4" (e.g. video/mp4)
+      3. magic bytes — ISO base-media files have an 'ftyp' box at bytes 4..8;
+         any major brand other than QuickTime ('qt  ') is an MP4-family file
+         that browsers play (isom/mp41/mp42/iso2/avc1/dash/M4V…).
+    Sniffing failures fall through to False (we then transcode, now non-fatal).
+    """
     name = (getattr(upload, "name", "") or "").lower()
     ctype = (getattr(upload, "content_type", "") or "").lower()
-    return name.endswith(".mp4") or ctype in ("video/mp4",)
+    if name.endswith(".mp4") or "mp4" in ctype:
+        return True
+    try:
+        upload.seek(0)
+        head = upload.read(16)
+        upload.seek(0)
+        if len(head) >= 12 and head[4:8] == b"ftyp" and head[8:12] != b"qt  ":
+            return True
+    except Exception:
+        try:
+            upload.seek(0)
+        except Exception:
+            pass
+    return False
 
 
 def is_web_ready_audio(upload):

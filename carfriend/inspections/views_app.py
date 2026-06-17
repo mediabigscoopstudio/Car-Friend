@@ -133,11 +133,17 @@ def insp_upload_media(request, id):
         convert_to_webp(media, f)            # logs loudly + returns False on error; raw kept
     elif kind == "video":
         from .services import convert_to_mp4, is_web_ready_video
-        if is_web_ready_video(f):
-            pass                             # already MP4 → store as-is, no ffmpeg needed
-        elif not convert_to_mp4(media, f):   # other format + ffmpeg missing/failed → keep raw
+        # Whole branch is non-fatal: a video upload must NEVER crash the request.
+        try:
+            if is_web_ready_video(f):
+                logger.info("Video for report %s is already MP4 — stored as-is, no ffmpeg.", r.id)
+            elif not convert_to_mp4(media, f):   # other format + ffmpeg missing/failed
+                media.needs_transcode = True
+                logger.warning("TODO transcode: stored raw VIDEO for report %s (ffmpeg unavailable/failed).", r.id)
+        except Exception:
+            # Capture the REAL error in the server log, then keep the raw upload.
             media.needs_transcode = True
-            logger.warning("TODO transcode: stored raw VIDEO for report %s (ffmpeg unavailable).", r.id)
+            logger.exception("Video processing error for report %s — storing raw upload as-is.", r.id)
     elif kind == "audio":
         from .services import convert_audio, is_web_ready_audio
         if is_web_ready_audio(f):
