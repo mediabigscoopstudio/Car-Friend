@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
                 ("note", models.TextField()),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("author", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="lead_notes", to=settings.AUTH_USER_MODEL)),
-                ("lead", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="notes", to="crm.lead")),
+                ("lead", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="call_notes", to="crm.lead")),
             ],
             options={"ordering": ["-created_at"]},
         ),

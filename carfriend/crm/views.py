@@ -124,7 +124,7 @@ def lead_detail(request, lead_id):
         'stage_choices':    Lead.STAGE_CHOICES,
         'ocb_rows':         ocb_rows,
         'can_create_more':  can_create_more,
-        'lead_notes':       lead.notes.select_related('author').all(),
+        'lead_notes':       lead.call_notes.select_related('author').all(),
     }
     return render(request, 'teams/lead_detail.html', ctx)
 

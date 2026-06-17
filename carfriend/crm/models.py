@@ -126,7 +126,7 @@ class TaskNote(models.Model):
 class LeadNote(models.Model):
     """A call note / activity-log entry logged by the Retail Associate on a lead."""
 
-    lead       = models.ForeignKey("crm.Lead", on_delete=models.CASCADE, related_name="notes")
+    lead       = models.ForeignKey("crm.Lead", on_delete=models.CASCADE, related_name="call_notes")
     author     = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
                                     related_name="lead_notes")
     note       = models.TextField()
