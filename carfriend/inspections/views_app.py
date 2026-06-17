@@ -1,5 +1,7 @@
 import json
 import logging
+import os
+import uuid
 
 from django.contrib.auth import authenticate, login
 from django.http import JsonResponse
@@ -123,28 +125,35 @@ def insp_upload_media(request, id):
     kind = request.POST.get("kind", "photo")
     slot = request.POST.get("slot", "")
     section = request.POST.get("section", "photos")
+    # Short, safe storage name — the raw upload name can be huge/unsafe and
+    # tripped SuspiciousFileOperation. uuid + original extension only.
+    ext = os.path.splitext(f.name)[1].lower()
+    safe_name = f"{uuid.uuid4().hex}{ext}"
     media = InspectionMedia(report=r, kind=kind, slot=slot, section=section)
-    # Always persist the raw upload FIRST (to storage, not yet committed) so the
-    # inspector's file is never lost even if conversion/transcode fails.
-    media.file.save(f.name, f, save=False)
 
-    if kind == "photo":
+    if kind == "video":
+        # ALWAYS transcode video to a light streamable mp4 (even already-mp4 —
+        # a 400 MB mp4 still needs compressing). Synchronous (approach A): the
+        # request waits for ffmpeg, so gunicorn --timeout must be raised.
+        # Non-fatal: any failure keeps the raw upload + needs_transcode=True.
+        from .services import convert_to_mp4
+        transcoded = False
+        try:
+            transcoded = convert_to_mp4(media, f)
+        except Exception:
+            logger.exception("Video transcode crashed for report %s.", r.id)
+        if not transcoded:
+            media.file.save(safe_name, f, save=False)   # keep raw, retry later
+            media.needs_transcode = True
+            logger.warning("TODO transcode: stored raw VIDEO for report %s (ffmpeg unavailable/failed).", r.id)
+        # On success we store ONLY the light mp4 — the raw 400 MB original is
+        # never written (saves space; nothing to delete afterwards).
+    elif kind == "photo":
+        media.file.save(safe_name, f, save=False)
         from .services import convert_to_webp
         convert_to_webp(media, f)            # logs loudly + returns False on error; raw kept
-    elif kind == "video":
-        from .services import convert_to_mp4, is_web_ready_video
-        # Whole branch is non-fatal: a video upload must NEVER crash the request.
-        try:
-            if is_web_ready_video(f):
-                logger.info("Video for report %s is already MP4 — stored as-is, no ffmpeg.", r.id)
-            elif not convert_to_mp4(media, f):   # other format + ffmpeg missing/failed
-                media.needs_transcode = True
-                logger.warning("TODO transcode: stored raw VIDEO for report %s (ffmpeg unavailable/failed).", r.id)
-        except Exception:
-            # Capture the REAL error in the server log, then keep the raw upload.
-            media.needs_transcode = True
-            logger.exception("Video processing error for report %s — storing raw upload as-is.", r.id)
     elif kind == "audio":
+        media.file.save(safe_name, f, save=False)
         from .services import convert_audio, is_web_ready_audio
         if is_web_ready_audio(f):
             pass                             # already mp3/m4a/aac → store as-is

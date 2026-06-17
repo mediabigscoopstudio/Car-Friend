@@ -4,6 +4,7 @@ import logging
 import os
 import subprocess
 import tempfile
+import uuid
 
 from django.conf import settings
 from django.core.files.base import ContentFile
@@ -14,8 +15,9 @@ logger = logging.getLogger(__name__)
 # photos → WebP, video → MP4 (H.264 + AAC), engine audio → M4A (AAC).
 WEBP_QUALITY = 80
 WEBP_MAX_EDGE = 1920       # cap longest edge to keep files light
-VIDEO_CRF = 28             # reasonable size/quality balance
-VIDEO_MAX_HEIGHT = 720     # downscale only; never upscale
+VIDEO_CRF = 28             # H.264 quality/size balance (raise to 30-32 for smaller)
+VIDEO_MAX_WIDTH = 1280     # cap width (~720p), keep aspect ratio, downscale only
+VIDEO_TIMEOUT = 600        # up to 10 min — a 400 MB source transcode is slow
 
 
 def convert_to_webp(media, raw_file):
@@ -53,30 +55,39 @@ def convert_to_webp(media, raw_file):
         return False
 
 
-def _ffmpeg_to_temp(raw_file, args, out_suffix, label, pk):
-    """Run ffmpeg on a temp copy of raw_file. Returns output bytes or None.
+def _ffmpeg_to_temp(raw_file, args, out_suffix, label, pk, timeout=240):
+    """Run ffmpeg on raw_file and return the output bytes, or None on failure.
 
-    None means conversion did not run — caller MUST NOT fall back to the raw
-    upload silently. A clear log line is emitted so missing ffmpeg is obvious.
+    Large uploads (FILE_UPLOAD_MAX_MEMORY_SIZE is small) are spooled to a temp
+    file on disk by Django; when so, we feed that path to ffmpeg directly
+    instead of copying hundreds of MB again. None means the transcode did not
+    run/failed — the caller keeps the raw upload (it never crashes the request).
     """
-    raw_file.seek(0)
-    in_suffix = os.path.splitext(getattr(raw_file, "name", ""))[1] or ".bin"
-    with tempfile.NamedTemporaryFile(suffix=in_suffix, delete=False) as tmp_in:
-        for chunk in raw_file.chunks():
-            tmp_in.write(chunk)
-        tmp_in_path = tmp_in.name
-    tmp_out_path = tmp_in_path + "_cf" + out_suffix
+    own_input = False  # True when we created the temp input and must delete it
+    in_path = getattr(raw_file, "temporary_file_path", None)
+    if callable(in_path):
+        in_path = raw_file.temporary_file_path()
+    else:
+        raw_file.seek(0)
+        in_suffix = os.path.splitext(getattr(raw_file, "name", ""))[1] or ".bin"
+        with tempfile.NamedTemporaryFile(suffix=in_suffix, delete=False) as tmp_in:
+            for chunk in raw_file.chunks():
+                tmp_in.write(chunk)
+            in_path = tmp_in.name
+        own_input = True
+
+    out_path = in_path + "_cf" + out_suffix
     try:
         result = subprocess.run(
-            ["ffmpeg", "-y", "-i", tmp_in_path, *args, tmp_out_path],
-            capture_output=True, timeout=240,
+            ["ffmpeg", "-y", "-i", in_path, *args, out_path],
+            capture_output=True, timeout=timeout,
         )
-        if result.returncode == 0 and os.path.exists(tmp_out_path):
-            with open(tmp_out_path, "rb") as f:
+        if result.returncode == 0 and os.path.exists(out_path):
+            with open(out_path, "rb") as f:
                 return f.read()
         logger.error(
             "ffmpeg %s transcode failed for media %s (rc=%s): %s",
-            label, pk, result.returncode, result.stderr[-800:].decode("utf-8", "replace"),
+            label, pk, result.returncode, result.stderr[-1200:].decode("utf-8", "replace"),
         )
         return None
     except FileNotFoundError:
@@ -86,42 +97,13 @@ def _ffmpeg_to_temp(raw_file, args, out_suffix, label, pk):
         )
         return None
     except subprocess.TimeoutExpired:
-        logger.error("ffmpeg %s transcode timed out for media %s", label, pk)
+        logger.error("ffmpeg %s transcode timed out (%ss) for media %s", label, timeout, pk)
         return None
     finally:
-        os.unlink(tmp_in_path)
-        if os.path.exists(tmp_out_path):
-            os.unlink(tmp_out_path)
-
-
-def is_web_ready_video(upload):
-    """True if the upload is already a browser-playable MP4 → store as-is.
-
-    Detects MP4 WITHOUT invoking ffmpeg/ffprobe, robust to bad/missing names
-    and odd mime types:
-      1. filename ends in .mp4 (case-insensitive — the upload name is lowered)
-      2. content-type contains "mp4" (e.g. video/mp4)
-      3. magic bytes — ISO base-media files have an 'ftyp' box at bytes 4..8;
-         any major brand other than QuickTime ('qt  ') is an MP4-family file
-         that browsers play (isom/mp41/mp42/iso2/avc1/dash/M4V…).
-    Sniffing failures fall through to False (we then transcode, now non-fatal).
-    """
-    name = (getattr(upload, "name", "") or "").lower()
-    ctype = (getattr(upload, "content_type", "") or "").lower()
-    if name.endswith(".mp4") or "mp4" in ctype:
-        return True
-    try:
-        upload.seek(0)
-        head = upload.read(16)
-        upload.seek(0)
-        if len(head) >= 12 and head[4:8] == b"ftyp" and head[8:12] != b"qt  ":
-            return True
-    except Exception:
-        try:
-            upload.seek(0)
-        except Exception:
-            pass
-    return False
+        if os.path.exists(out_path):
+            os.unlink(out_path)
+        if own_input and os.path.exists(in_path):
+            os.unlink(in_path)
 
 
 def is_web_ready_audio(upload):
@@ -134,22 +116,24 @@ def is_web_ready_audio(upload):
 
 
 def convert_to_mp4(media, raw_file):
-    """Transcode an uploaded video to MP4 (H.264 + AAC) → media.mp4_file (save=False).
+    """Compress ANY uploaded video to a light, streamable MP4 (H.264 + AAC,
+    ~720p, faststart) → media.mp4_file (save=False).
 
-    Returns True on success, False if ffmpeg is unavailable or the transcode
-    failed — the caller should reject the upload rather than store the raw file.
+    Runs even when the source is already MP4 — a 400 MB mp4 still needs
+    compressing. Returns True on success; False if ffmpeg is unavailable or the
+    transcode failed (caller keeps the raw upload, never crashes).
     """
     data = _ffmpeg_to_temp(
         raw_file,
-        ["-vf", f"scale=-2:'min({VIDEO_MAX_HEIGHT},ih)'",
-         "-c:v", "libx264", "-preset", "fast", "-crf", str(VIDEO_CRF),
-         "-c:a", "aac", "-b:a", "128k",
+        ["-vcodec", "libx264", "-crf", str(VIDEO_CRF), "-preset", "veryfast",
+         "-vf", f"scale='min({VIDEO_MAX_WIDTH},iw)':-2",
+         "-acodec", "aac", "-b:a", "128k",
          "-movflags", "+faststart"],
-        ".mp4", "video", media.pk,
+        ".mp4", "video", media.pk, timeout=VIDEO_TIMEOUT,
     )
     if data is None:
         return False
-    media.mp4_file.save(f"video_{media.pk}.mp4", ContentFile(data), save=False)
+    media.mp4_file.save(f"video_{uuid.uuid4().hex}.mp4", ContentFile(data), save=False)
     return True
 
 
@@ -166,7 +150,7 @@ def convert_audio(media, raw_file):
     )
     if data is None:
         return False
-    media.file.save(f"audio_{media.pk}.m4a", ContentFile(data), save=False)
+    media.file.save(f"audio_{uuid.uuid4().hex}.m4a", ContentFile(data), save=False)
     return True
 
 

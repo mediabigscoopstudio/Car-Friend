@@ -195,12 +195,13 @@ STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# Inspection media (video/audio) can be tens of MB. Raise Django's upload caps
-# well above the 2.5 MB defaults so large files spool to disk instead of being
-# rejected. NOTE: Nginx `client_max_body_size` must be raised to match (e.g.
-# `client_max_body_size 200M;`) or large uploads 413 before reaching Django.
-DATA_UPLOAD_MAX_MEMORY_SIZE = 200 * 1024 * 1024   # 200 MB
-FILE_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024    # spool to a temp file past 25 MB
+# Inspection videos can be up to 400 MB raw (compressed server-side after).
+# Accept them, and spool anything over 5 MB to a temp file on disk so a 400 MB
+# upload never loads into RAM. NOTE: Nginx `client_max_body_size` must be raised
+# to match (e.g. `client_max_body_size 450M;`) and gunicorn `--timeout` bumped
+# (e.g. 600) or large uploads 413 / the worker is killed mid-transcode.
+DATA_UPLOAD_MAX_MEMORY_SIZE = 419430400           # 400 MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880             # 5 MB → spool to disk past this
 
 CARFRIEND_LOGO_PATH = BASE_DIR / "static" / "images" / "carfriend-plate-logo.png"
 
