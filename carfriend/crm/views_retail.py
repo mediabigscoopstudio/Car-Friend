@@ -147,7 +147,7 @@ def retail_ocb_detail(request, ocb_id):
     guard = _require_retail(request)
     if guard:
         return guard
-    ocb = get_object_or_404(OCBListing.objects.select_related("vehicle"),
+    ocb = get_object_or_404(OCBListing.objects.select_related("vehicle", "sales_associate"),
                             id=ocb_id, assigned_to=request.user)
 
     # Message thread post (same URL)
@@ -157,13 +157,30 @@ def retail_ocb_detail(request, ocb_id):
             OCBMessage.objects.create(ocb_listing=ocb, sender=request.user, message=text)
         return redirect(f"/crm/retail/ocb/{ocb.id}/")
 
+    # Assign / change the Sales Associate this OCB belongs to (scopes their board).
+    if request.method == "POST" and request.POST.get("action") == "assign_sales":
+        sales_user = User.objects.filter(id=request.POST.get("sales_id"), role=Role.SALES).first()
+        ocb.sales_associate = sales_user
+        ocb.save(update_fields=["sales_associate"])
+        if sales_user:
+            OCBMessage.objects.create(
+                ocb_listing=ocb, sender=request.user,
+                message=f"Assigned to {sales_user.get_full_name() or sales_user.username} to collect offers.")
+            notify(sales_user, "task_assigned", title="OCB assigned to you",
+                   body=f"{_car(ocb.vehicle)} — collect dealer offers.", url="/crm/sales/ocb/")
+            messages.success(request, "Sales Associate assigned.")
+        else:
+            messages.success(request, "Sales Associate cleared.")
+        return redirect(f"/crm/retail/ocb/{ocb.id}/")
+
     offers = ocb.offers.select_related("dealer", "submitted_by").all()
     thread = ocb.messages.select_related("sender").all()
-    sales_names = sorted({(o.submitted_by.get_full_name() or o.submitted_by.username)
-                          for o in offers if o.submitted_by})
+    sales_users = User.objects.filter(role=Role.SALES, is_suspended=False).order_by("username")
+    current = ocb.sales_associate
     return render(request, "teams/retail/ocb_detail.html", {
         "ocb": ocb, "car": _car(ocb.vehicle), "offers": offers, "thread": thread,
-        "sales_names": ", ".join(sales_names) or "—",
+        "sales_users": sales_users, "current_sales": current,
+        "sales_names": (current.get_full_name() or current.username) if current else "—",
     })
 
 

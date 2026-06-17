@@ -145,9 +145,11 @@
     <a class="sidebar-link {% block nav_dealers %}{% endblock %}" href="{% url 'dealers' %}">
       <i class="bi bi-building"></i> Dealer Network
     </a>
+    {% if request.user.role == 'admin' %}
     <a class="sidebar-link {% block nav_deals %}{% endblock %}" href="{% url 'deals' %}">
       <i class="bi bi-hammer"></i> Deals
     </a>
+    {% endif %}
     {% endif %}
 
     {% if request.user.role == 'inspector' or request.user.role == 'admin' %}
