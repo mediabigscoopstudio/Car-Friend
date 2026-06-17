@@ -2,416 +2,530 @@
 {% load static cf %}
 
 {% block title %}{{ schema.label }} · Inspection{% endblock %}
+{% block screen_class %}is-form{% endblock %}
 
 {% block extra_head %}
 <style>
-/* ── SECTION FORM OVERRIDES ── */
-.sf-wrap { padding: 0 16px; }
+/* ============================================================
+   INSPECTION FORM — self-contained structure + styling.
+   All sizing lives here (and explicit width/height on every SVG)
+   so the page is correct even if the external stylesheet is stale.
+   ============================================================ */
+.insp-frame {
+  --g:  #22c55e;
+  --g2: #4ade80;
+  max-width: 920px;
+  margin: 0 auto;
+  background: #0a0d0a;
+  position: relative;
+}
+.insp-frame *, .insp-frame *::before, .insp-frame *::after { box-sizing: border-box; }
+.insp-frame svg { display: block; }
 
-/* Group card */
-.grp-card {
-  background: var(--app-card);
-  border: 1px solid var(--app-line);
-  border-radius: 14px;
-  margin-bottom: 12px;
-  overflow: hidden;
+/* ── STICKY HEADER ── */
+.insp-head {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: linear-gradient(180deg, #0f140f, #0a0d0a);
+  border-bottom: .5px solid rgba(255,255,255,.08);
+  padding: 18px 20px;
 }
-.grp-head {
-  padding: 9px 14px;
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--app-green);
-  background: rgba(11,125,36,.06);
-  border-bottom: 1px solid var(--app-line);
-}
-
-/* Compact 2-col field grid */
-.field-grid-2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1px;
-  background: var(--app-line);
-}
-.field-item {
-  background: var(--app-card);
-  padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.field-item label {
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  color: var(--app-txt2);
-  line-height: 1;
-}
-.field-item input {
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid var(--app-line);
-  color: var(--app-txt);
-  font-size: 13px;
-  font-family: var(--font-b);
-  padding: 3px 0 5px;
-  width: 100%;
-  outline: none;
-}
-.field-item input:focus {
-  border-color: var(--app-green);
-}
-.field-item input::placeholder {
-  color: rgba(255,255,255,.18);
-  font-size: 12px;
-}
-
-/* Part card improvements */
-.part-v3 {
-  background: var(--app-card);
-  border: 1px solid var(--app-line);
-  border-radius: 12px;
-  margin-bottom: 8px;
-  overflow: hidden;
-}
-.part-v3-hd {
-  padding: 10px 14px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--app-txt);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--app-line);
-}
-.part-v3-body {
-  padding: 8px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.part-v3-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 36px;
-}
-.sub-lbl {
-  font-size: 11px;
-  color: var(--app-txt2);
-  width: 90px;
+.insp-head-row { display: flex; align-items: flex-start; gap: 14px; }
+.insp-back {
+  width: 36px; height: 36px;
   flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.06);
+  border: .5px solid rgba(255,255,255,.1);
+  border-radius: 10px;
+  color: #e8ecf4;
 }
-.toggle-btns {
-  display: flex;
-  gap: 5px;
+.insp-back svg { width: 18px; height: 18px; }
+.insp-back:active { background: rgba(255,255,255,.12); }
+.insp-title { flex: 1; min-width: 0; }
+.insp-eyebrow {
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .09em;
+  color: var(--g2);
 }
-.tbtn {
-  padding: 5px 14px;
-  border-radius: 20px;
-  border: 1px solid var(--app-line);
-  background: transparent;
-  color: var(--app-txt2);
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all .1s;
+.insp-carname {
+  font-size: 20px; font-weight: 600; color: #fff;
+  letter-spacing: -.01em; line-height: 1.2; margin-top: 3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.insp-subline { font-size: 13px; color: rgba(255,255,255,.45); margin-top: 3px; }
+.insp-progress {
+  flex-shrink: 0;
+  display: flex; flex-direction: column; align-items: flex-end;
+  gap: 7px; padding-top: 2px;
+}
+.insp-step { font-size: 11px; color: rgba(255,255,255,.45); white-space: nowrap; }
+.insp-segs { display: flex; gap: 3px; }
+.insp-seg { width: 18px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.12); }
+.insp-seg.on { background: var(--g); }
+
+/* ── TABS ── */
+.insp-tabs { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 16px; }
+.insp-tab {
+  padding: 7px 15px; border-radius: 8px;
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
+  background: rgba(255,255,255,.05);
+  border: .5px solid rgba(255,255,255,.1);
+  color: rgba(255,255,255,.55);
   white-space: nowrap;
 }
-.tbtn:active { transform: scale(.96); }
-.tbtn.sel-ok    { background: rgba(11,125,36,.25); color: #4ade80; border-color: rgba(11,125,36,.5); }
-.tbtn.sel-issue { background: rgba(220,38,38,.2);  color: #f87171; border-color: rgba(220,38,38,.5); }
-.note-inp {
-  flex: 1;
-  min-width: 0;
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid var(--app-line);
-  color: var(--app-txt);
-  font-size: 12px;
-  padding: 3px 0;
-  outline: none;
-}
-.note-inp:focus { border-color: var(--app-green); }
-.measure-inp {
-  width: 72px;
-  background: var(--app-card2);
-  border: 1px solid var(--app-line);
-  border-radius: 8px;
-  color: var(--app-txt);
-  font-size: 14px;
-  font-weight: 600;
-  padding: 5px 8px;
-  text-align: right;
-  outline: none;
-}
-.measure-inp:focus { border-color: var(--app-green); }
-.unit-lbl { font-size: 11px; color: var(--app-txt2); flex-shrink: 0; }
+.insp-tab.active { background: var(--g); color: #052e16; border-color: var(--g); }
+.insp-tab.done   { color: var(--g2); border-color: rgba(34,197,94,.4); }
 
-/* Desktop: 3 columns for summary */
+/* ── BODY ── */
+.insp-body { padding: 24px 28px 124px; }
+.insp-redo {
+  background: rgba(217,119,6,.15); border: .5px solid rgba(217,119,6,.4);
+  border-radius: 10px; padding: 10px 14px; margin-bottom: 16px;
+  font-size: 13px; font-weight: 600; color: #f59e0b;
+}
+
+/* ── SECTION CARD ── */
+.insp-card {
+  background: rgba(255,255,255,.02);
+  border: .5px solid rgba(255,255,255,.07);
+  border-radius: 14px;
+  padding: 22px;
+  margin-bottom: 16px;
+}
+.insp-card-hd {
+  display: flex; align-items: center; gap: 9px; margin-bottom: 18px;
+  font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--g2);
+}
+.insp-card-ic { flex-shrink: 0; color: var(--g2); }
+.insp-card-ic svg { width: 16px; height: 16px; }
+.insp-unit {
+  margin-left: auto; font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .04em;
+  color: rgba(255,255,255,.5);
+  background: rgba(255,255,255,.05); border-radius: 6px; padding: 3px 8px;
+}
+
+/* ── FIELD GRID ── */
+.insp-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+.insp-field-wrap { display: flex; flex-direction: column; min-width: 0; }
+.insp-field-wrap label {
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
+  color: rgba(255,255,255,.5); margin-bottom: 7px;
+}
+.insp-input {
+  background: rgba(255,255,255,.04);
+  border: .5px solid rgba(255,255,255,.1);
+  border-radius: 9px; padding: 11px 13px;
+  font-size: 14px; color: #fff; font-family: inherit; width: 100%; outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.insp-input::placeholder { color: rgba(255,255,255,.4); }
+.insp-input:focus { border-color: var(--g); box-shadow: 0 0 0 3px rgba(34,197,94,.15); }
+
+/* ── PARTS ── */
+.insp-part-body { display: flex; flex-direction: column; gap: 10px; }
+.insp-part-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.insp-sub { font-size: 12px; color: rgba(255,255,255,.6); min-width: 92px; flex-shrink: 0; }
+.toggle-btns { display: flex; gap: 6px; }
+.tbtn {
+  padding: 7px 14px; border-radius: 8px;
+  border: .5px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.04);
+  color: rgba(255,255,255,.6);
+  font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  transition: transform .1s;
+}
+.tbtn:active { transform: scale(.96); }
+.tbtn.sel-ok    { background: rgba(34,197,94,.2); color: var(--g2);  border-color: rgba(34,197,94,.5); }
+.tbtn.sel-issue { background: rgba(220,38,38,.2); color: #f87171;    border-color: rgba(220,38,38,.5); }
+.note-inp {
+  flex: 1; min-width: 130px;
+  background: rgba(255,255,255,.04); border: .5px solid rgba(255,255,255,.1);
+  border-radius: 8px; padding: 8px 11px; font-size: 13px; color: #fff;
+  font-family: inherit; outline: none; transition: border-color .15s, box-shadow .15s;
+}
+.note-inp::placeholder { color: rgba(255,255,255,.4); }
+.note-inp:focus { border-color: var(--g); box-shadow: 0 0 0 3px rgba(34,197,94,.15); }
+.measure-inp {
+  width: 120px;
+  background: rgba(255,255,255,.04); border: .5px solid rgba(255,255,255,.1);
+  border-radius: 8px; padding: 9px 12px; font-size: 15px; font-weight: 600;
+  color: #fff; text-align: right; outline: none; font-family: inherit;
+  transition: border-color .15s, box-shadow .15s;
+}
+.measure-inp:focus { border-color: var(--g); box-shadow: 0 0 0 3px rgba(34,197,94,.15); }
+.unit-lbl { font-size: 12px; color: rgba(255,255,255,.5); }
+
+/* ── STICKY FOOTER ── */
+.insp-foot {
+  position: fixed; bottom: 68px; left: 0; right: 0; z-index: 40;
+  background: rgba(10,13,10,.96);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  border-top: .5px solid rgba(255,255,255,.08);
+  padding: 12px 16px;
+}
+.insp-foot-inner { max-width: 920px; margin: 0 auto; display: flex; gap: 10px; }
+.insp-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 13px 22px; border-radius: 10px;
+  font-size: 14px; font-weight: 600; cursor: pointer; border: none;
+  font-family: inherit; text-decoration: none; transition: transform .1s, opacity .15s;
+}
+.insp-btn svg { width: 16px; height: 16px; }
+.insp-btn:active { transform: scale(.98); }
+.insp-btn-secondary {
+  background: rgba(255,255,255,.06); border: .5px solid rgba(255,255,255,.12);
+  color: #fff; flex-shrink: 0;
+}
+.insp-btn-primary { background: var(--g); color: #052e16; flex: 1; }
+
+/* ── MEDIA (self-contained) ── */
+.media-tabs-strip { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 18px; }
+.mtab {
+  padding: 7px 15px; border-radius: 8px; border: .5px solid rgba(255,255,255,.1);
+  background: rgba(255,255,255,.05); color: rgba(255,255,255,.55);
+  font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.mtab.active { background: var(--g); color: #052e16; border-color: var(--g); }
+.mpanel { display: none; }
+.mpanel.active { display: block; }
+.media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.media-grid-wide { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.media-thumb {
+  position: relative; aspect-ratio: 1 / 1; border-radius: 10px; overflow: hidden;
+  background: rgba(255,255,255,.04); border: .5px solid rgba(255,255,255,.08);
+}
+.media-thumb img, .media-thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.media-thumb img { cursor: pointer; }
+.media-thumb-av { aspect-ratio: 16 / 10; }
+.media-thumb-av video { object-fit: contain; background: #000; }
+.media-del {
+  position: absolute; top: 5px; right: 5px; width: 24px; height: 24px;
+  border: none; border-radius: 50%; background: rgba(0,0,0,.6); color: #fff;
+  font-size: 16px; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.media-del:active { background: #dc2626; }
+.media-add-tile {
+  aspect-ratio: 1 / 1; border: 1.5px dashed rgba(255,255,255,.12); border-radius: 10px;
+  background: rgba(255,255,255,.03); color: rgba(255,255,255,.55);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer;
+}
+.media-add-tile svg { width: 22px; height: 22px; }
+.media-add-tile span { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+.media-add-tile:hover { border-color: var(--g); color: var(--g2); }
+.media-dropzone {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  width: 100%; padding: 44px 20px;
+  border: 2px dashed rgba(255,255,255,.12); border-radius: 16px;
+  background: rgba(255,255,255,.02); color: rgba(255,255,255,.55); cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.media-dropzone:hover { border-color: var(--g); background: rgba(34,197,94,.05); }
+.mdz-icon { color: var(--g2); margin-bottom: 6px; }
+.mdz-icon svg { width: 34px; height: 34px; }
+.mdz-title { font-size: 15px; font-weight: 600; color: #fff; }
+.mdz-sub { font-size: 12px; color: rgba(255,255,255,.5); }
+.audio-list { display: flex; flex-direction: column; gap: 8px; }
+.audio-row {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,.04); border: .5px solid rgba(255,255,255,.08);
+  border-radius: 10px; padding: 8px 10px;
+}
+.audio-row audio { flex: 1; min-width: 0; height: 36px; }
+.audio-row .media-del { position: static; flex-shrink: 0; }
+.media-add-inline {
+  display: inline-block; margin-top: 10px; padding: 9px 16px;
+  border: 1px dashed rgba(255,255,255,.12); border-radius: 10px;
+  background: rgba(255,255,255,.03); color: var(--g2); font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.media-busy {
+  position: fixed; inset: 0; background: rgba(0,0,0,.55);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 14px; font-weight: 600; z-index: 200;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 560px) {
+  .insp-head { padding: 16px; }
+  .insp-head-row { flex-wrap: wrap; }
+  .insp-progress { flex-basis: 100%; align-items: flex-start; margin-top: 12px; padding-left: 50px; }
+  .insp-body { padding: 18px 16px 128px; }
+  .insp-card { padding: 18px 16px; }
+  .insp-fields { grid-template-columns: 1fr; }
+}
 @media (min-width: 768px) {
-  .field-grid-2 { grid-template-columns: 1fr 1fr 1fr; }
+  .insp-frame {
+    border-left: .5px solid rgba(255,255,255,.08);
+    border-right: .5px solid rgba(255,255,255,.08);
+  }
+}
+@media (min-width: 1024px) {
+  .screen.is-form { max-width: none; }
+  .insp-frame {
+    margin: 24px auto; max-width: 920px;
+    border: .5px solid rgba(255,255,255,.08); border-radius: 16px;
+  }
+  .insp-head { border-radius: 16px 16px 0 0; }
+  .insp-foot { bottom: 0; left: 220px; }
 }
 </style>
 {% endblock %}
 
 {% block content %}
+<div class="insp-frame">
 
-{% if r.redo_count %}
-<div class="redo-banner">⚠ Redo #{{ r.redo_count }} — please revise and resubmit.</div>
-{% endif %}
-
-<!-- Header -->
-<div class="sf-header">
-  <a href="/visit/{{ r.visit.id }}" class="sf-back" aria-label="Back">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-         stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-  </a>
-  <div class="sf-titlestack">
-    <div class="sf-eyebrow">Car details</div>
-    <div class="sf-carname">{{ r.visit.vehicle|short_car_name }}</div>
-    <div class="sf-subline">Inspection #{{ r.id }} · {{ r.visit.vehicle.plate_number }}</div>
-  </div>
-  <div class="sf-progress">
-    <div class="sf-step-label">Step {{ current_idx|add:1 }} of {{ sections|length }}</div>
-    <div class="sf-segments">
+  <!-- ── STICKY HEADER ── -->
+  <header class="insp-head">
+    <div class="insp-head-row">
+      <a href="/visit/{{ r.visit.id }}" class="insp-back" aria-label="Back">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </a>
+      <div class="insp-title">
+        <div class="insp-eyebrow">Car details</div>
+        <div class="insp-carname">{{ r.visit.vehicle|short_car_name }}</div>
+        <div class="insp-subline">Inspection #{{ r.id }} · {{ r.visit.vehicle.plate_number }}</div>
+      </div>
+      <div class="insp-progress">
+        <div class="insp-step">Step {{ current_idx|add:1 }} of {{ sections|length }}</div>
+        <div class="insp-segs">
+          {% for s in sections %}
+          <span class="insp-seg {% if forloop.counter0 <= current_idx %}on{% endif %}"></span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <nav class="insp-tabs">
       {% for s in sections %}
-      <span class="sf-seg {% if forloop.counter0 <= current_idx %}done{% endif %}"></span>
+      <a href="/inspection/{{ r.id }}/{{ s }}"
+         class="insp-tab {% if s == section %}active{% elif s != 'photos' and r.checkpoints|dictkey:s %}done{% endif %}">{{ s|capfirst }}</a>
       {% endfor %}
-    </div>
-  </div>
-</div>
+    </nav>
+  </header>
 
-<!-- Section tabs -->
-<div class="section-tabs">
-  {% for s in sections %}
-  <a href="/inspection/{{ r.id }}/{{ s }}"
-     class="stab {% if s == section %}active{% elif s != 'photos' and r.checkpoints|dictkey:s %}done{% endif %}">
-    {{ s|capfirst }}
-  </a>
-  {% endfor %}
-</div>
+  <!-- ── BODY ── -->
+  <div class="insp-body">
 
-<!-- ── MEDIA SECTION ── -->
-{% if schema.kind == "media" %}
-
-<div class="media-tabs-strip">
-  <button class="mtab active" onclick="showPanel('photos',this)">Photos ({{ photos|length }})</button>
-  <button class="mtab" onclick="showPanel('video',this)">Video ({{ videos|length }})</button>
-  <button class="mtab" onclick="showPanel('audio',this)">Engine Audio ({{ audios|length }})</button>
-</div>
-
-<!-- PHOTOS -->
-<div id="mpanel-photos" class="mpanel active">
-  {% if photos %}
-  <div class="media-grid">
-    {% for p in photos %}
-    <div class="media-thumb" data-id="{{ p.id }}">
-      <img src="{{ p.url }}" alt="Inspection photo" loading="lazy" onclick="viewMedia('{{ p.url|escapejs }}')">
-      <button type="button" class="media-del" onclick="deleteMedia(event,{{ p.id }})" aria-label="Delete photo">×</button>
-    </div>
-    {% endfor %}
-    <button type="button" class="media-add-tile" onclick="document.getElementById('photo-input').click()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      <span>Add</span>
-    </button>
-  </div>
-  {% else %}
-  <button type="button" class="media-dropzone" onclick="document.getElementById('photo-input').click()">
-    <div class="mdz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
-    <div class="mdz-title">+ Add Photos</div>
-    <div class="mdz-sub">JPG · PNG · HEIC — stored as WebP</div>
-  </button>
-  {% endif %}
-  <input type="file" id="photo-input" accept="image/*" multiple style="display:none" onchange="uploadMedia(this,'photo')">
-  <div class="media-pad"></div>
-</div>
-
-<!-- VIDEO -->
-<div id="mpanel-video" class="mpanel">
-  {% if videos %}
-  <div class="media-grid media-grid-wide">
-    {% for vid in videos %}
-    <div class="media-thumb media-thumb-av" data-id="{{ vid.id }}">
-      <video src="{{ vid.url }}" controls preload="metadata"></video>
-      <button type="button" class="media-del" onclick="deleteMedia(event,{{ vid.id }})" aria-label="Delete video">×</button>
-    </div>
-    {% endfor %}
-    <button type="button" class="media-add-tile" onclick="document.getElementById('video-input').click()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      <span>Add</span>
-    </button>
-  </div>
-  {% else %}
-  <button type="button" class="media-dropzone" onclick="document.getElementById('video-input').click()">
-    <div class="mdz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>
-    <div class="mdz-title">+ Add Video</div>
-    <div class="mdz-sub">Transcoded to MP4 · H.264 + AAC</div>
-  </button>
-  {% endif %}
-  <input type="file" id="video-input" accept="video/*" style="display:none" onchange="uploadMedia(this,'video')">
-  <div class="media-pad"></div>
-</div>
-
-<!-- ENGINE AUDIO -->
-<div id="mpanel-audio" class="mpanel">
-  {% if audios %}
-  <div class="audio-list">
-    {% for a in audios %}
-    <div class="audio-row" data-id="{{ a.id }}">
-      <audio src="{{ a.url }}" controls preload="metadata"></audio>
-      <button type="button" class="media-del" onclick="deleteMedia(event,{{ a.id }})" aria-label="Delete audio">×</button>
-    </div>
-    {% endfor %}
-  </div>
-  <button type="button" class="media-add-inline" onclick="document.getElementById('audio-input').click()">+ Add more</button>
-  {% else %}
-  <button type="button" class="media-dropzone" onclick="document.getElementById('audio-input').click()">
-    <div class="mdz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2a3 3 0 013 3v7a3 3 0 01-6 0V5a3 3 0 013-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v3M8 22h8"/></svg></div>
-    <div class="mdz-title">+ Add Audio</div>
-    <div class="mdz-sub">Engine sound — stored as M4A / AAC</div>
-  </button>
-  {% endif %}
-  <input type="file" id="audio-input" accept="audio/*" style="display:none" onchange="uploadMedia(this,'audio')">
-  <div class="media-pad"></div>
-</div>
-
-<div class="section-actions">
-  <a href="/report/{{ r.id }}" class="btn btn-primary">Preview Report →</a>
-</div>
-
-<!-- ── SUMMARY SECTION ── -->
-{% elif section == "summary" %}
-
-<form id="insp-form" autocomplete="off">
-  {% csrf_token %}
-  <div class="sf-wrap">
-    {% if schema.groups %}
-      {% for group in schema.groups %}
-      <div class="grp-card">
-        <div class="grp-head">{{ group.label }}</div>
-        <div class="field-grid-2">
-          {% for field in group.fields %}
-          <div class="field-item">
-            <label>{{ field|humanize }}</label>
-            <input type="text" data-key="{{ field }}" class="insp-field"
-                   value="{{ saved_data|dictkey:field }}"
-                   placeholder="—">
-          </div>
-          {% endfor %}
-        </div>
-      </div>
-      {% endfor %}
-    {% else %}
-      <div class="grp-card">
-        <div class="field-grid-2">
-          {% for field in schema.fields %}
-          <div class="field-item">
-            <label>{{ field|humanize }}</label>
-            <input type="text" data-key="{{ field }}" class="insp-field"
-                   value="{{ saved_data|dictkey:field }}"
-                   placeholder="—">
-          </div>
-          {% endfor %}
-        </div>
-      </div>
+    {% if r.redo_count %}
+    <div class="insp-redo">⚠ Redo #{{ r.redo_count }} — please revise and resubmit.</div>
     {% endif %}
-  </div>
-  <div style="height:88px"></div>
-</form>
 
-<div id="save-indicator" class="save-indicator">Saved ✓</div>
-<div class="section-actions">
-  <button type="button" id="btn-save" class="btn btn-secondary" style="width:auto;padding:13px 22px;flex-shrink:0">Save</button>
-  {% if is_last %}
-  <button type="button" class="btn btn-primary" onclick="saveAndGo('/report/{{ r.id }}')">Preview Report →</button>
-  {% else %}
-  <button type="button" class="btn btn-primary" onclick="saveAndGo('/inspection/{{ r.id }}/{{ next_section }}')">Next: {{ next_section|capfirst }} →</button>
-  {% endif %}
-</div>
+    {% if schema.kind == "media" %}
+    <!-- ════ MEDIA ════ -->
+    <div class="media-tabs-strip">
+      <button class="mtab active" onclick="showPanel('photos',this)">Photos ({{ photos|length }})</button>
+      <button class="mtab" onclick="showPanel('video',this)">Video ({{ videos|length }})</button>
+      <button class="mtab" onclick="showPanel('audio',this)">Engine Audio ({{ audios|length }})</button>
+    </div>
 
-<!-- ── PARTS SECTIONS ── -->
-{% else %}
-
-<form id="insp-form" autocomplete="off">
-  {% csrf_token %}
-  <div class="sf-wrap">
-    {% for part in schema.parts %}
-    <div class="part-v3">
-      <div class="part-v3-hd">
-        <span>{{ part.label }}</span>
-        {% if part.kind == "measure" %}<span style="font-size:10px;color:var(--app-txt2);font-weight:500">{{ part.unit }}</span>{% endif %}
-        {% if part.kind == "count" %}<span style="font-size:10px;color:var(--app-txt2);font-weight:500">count</span>{% endif %}
+    <div id="mpanel-photos" class="mpanel active">
+      {% if photos %}
+      <div class="media-grid">
+        {% for p in photos %}
+        <div class="media-thumb" data-id="{{ p.id }}">
+          <img src="{{ p.url }}" alt="Inspection photo" loading="lazy" onclick="viewMedia('{{ p.url|escapejs }}')">
+          <button type="button" class="media-del" onclick="deleteMedia(event,{{ p.id }})" aria-label="Delete photo">×</button>
+        </div>
+        {% endfor %}
+        <button type="button" class="media-add-tile" onclick="document.getElementById('photo-input').click()">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>Add</span>
+        </button>
       </div>
-      <div class="part-v3-body">
+      {% else %}
+      <button type="button" class="media-dropzone" onclick="document.getElementById('photo-input').click()">
+        <div class="mdz-icon"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+        <div class="mdz-title">+ Add Photos</div>
+        <div class="mdz-sub">JPG · PNG · HEIC — stored as WebP</div>
+      </button>
+      {% endif %}
+      <input type="file" id="photo-input" accept="image/*" multiple style="display:none" onchange="uploadMedia(this,'photo')">
+    </div>
 
-        {% if part.kind == "ok" %}
-          {% if part.subparts %}
-            {% for sub in part.subparts %}
-            <div class="part-v3-row">
-              <span class="sub-lbl">{{ sub }}</span>
-              <div class="toggle-btns">
-                <button type="button" class="tbtn {% if saved_data|dictkey:part.key|dictkey:sub|dictkey:'status' == 'ok' %}sel-ok{% endif %}"
-                        data-part="{{ part.key }}" data-sub="{{ sub }}" data-val="ok">✓ OK</button>
-                <button type="button" class="tbtn {% if saved_data|dictkey:part.key|dictkey:sub|dictkey:'status' == 'issue' %}sel-issue{% endif %}"
-                        data-part="{{ part.key }}" data-sub="{{ sub }}" data-val="issue">✗ Issue</button>
-              </div>
-              <input type="text" class="note-inp" placeholder="note…"
-                     data-part="{{ part.key }}" data-sub="{{ sub }}" data-field="condition"
-                     value="{{ saved_data|dictkey:part.key|dictkey:sub|dictkey:'condition' }}">
+    <div id="mpanel-video" class="mpanel">
+      {% if videos %}
+      <div class="media-grid media-grid-wide">
+        {% for vid in videos %}
+        <div class="media-thumb media-thumb-av" data-id="{{ vid.id }}">
+          <video src="{{ vid.url }}" controls preload="metadata"></video>
+          <button type="button" class="media-del" onclick="deleteMedia(event,{{ vid.id }})" aria-label="Delete video">×</button>
+        </div>
+        {% endfor %}
+        <button type="button" class="media-add-tile" onclick="document.getElementById('video-input').click()">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>Add</span>
+        </button>
+      </div>
+      {% else %}
+      <button type="button" class="media-dropzone" onclick="document.getElementById('video-input').click()">
+        <div class="mdz-icon"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>
+        <div class="mdz-title">+ Add Video</div>
+        <div class="mdz-sub">Transcoded to MP4 · H.264 + AAC</div>
+      </button>
+      {% endif %}
+      <input type="file" id="video-input" accept="video/*" style="display:none" onchange="uploadMedia(this,'video')">
+    </div>
+
+    <div id="mpanel-audio" class="mpanel">
+      {% if audios %}
+      <div class="audio-list">
+        {% for a in audios %}
+        <div class="audio-row" data-id="{{ a.id }}">
+          <audio src="{{ a.url }}" controls preload="metadata"></audio>
+          <button type="button" class="media-del" onclick="deleteMedia(event,{{ a.id }})" aria-label="Delete audio">×</button>
+        </div>
+        {% endfor %}
+      </div>
+      <button type="button" class="media-add-inline" onclick="document.getElementById('audio-input').click()">+ Add more</button>
+      {% else %}
+      <button type="button" class="media-dropzone" onclick="document.getElementById('audio-input').click()">
+        <div class="mdz-icon"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2a3 3 0 013 3v7a3 3 0 01-6 0V5a3 3 0 013-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v3M8 22h8"/></svg></div>
+        <div class="mdz-title">+ Add Audio</div>
+        <div class="mdz-sub">Engine sound — stored as M4A / AAC</div>
+      </button>
+      {% endif %}
+      <input type="file" id="audio-input" accept="audio/*" style="display:none" onchange="uploadMedia(this,'audio')">
+    </div>
+
+    {% elif section == "summary" %}
+    <!-- ════ SUMMARY ════ -->
+    <form id="insp-form" autocomplete="off">
+      {% csrf_token %}
+      {% if schema.groups %}
+        {% for group in schema.groups %}
+        <section class="insp-card">
+          <div class="insp-card-hd">
+            <span class="insp-card-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M9 12l2 2 4-4"/></svg></span>
+            {{ group.label }}
+          </div>
+          <div class="insp-fields">
+            {% for field in group.fields %}
+            <div class="insp-field-wrap">
+              <label>{{ field|humanize }}</label>
+              <input type="text" data-key="{{ field }}" class="insp-input"
+                     value="{{ saved_data|dictkey:field }}" placeholder="">
             </div>
             {% endfor %}
-          {% else %}
-            <div class="part-v3-row">
-              <div class="toggle-btns">
-                <button type="button" class="tbtn {% if saved_data|dictkey:part.key|dictkey:'_'|dictkey:'status' == 'ok' %}sel-ok{% endif %}"
-                        data-part="{{ part.key }}" data-sub="_" data-val="ok">✓ OK</button>
-                <button type="button" class="tbtn {% if saved_data|dictkey:part.key|dictkey:'_'|dictkey:'status' == 'issue' %}sel-issue{% endif %}"
-                        data-part="{{ part.key }}" data-sub="_" data-val="issue">✗ Issue</button>
+          </div>
+        </section>
+        {% endfor %}
+      {% else %}
+        <section class="insp-card">
+          <div class="insp-card-hd">
+            <span class="insp-card-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M9 12l2 2 4-4"/></svg></span>
+            {{ schema.label }}
+          </div>
+          <div class="insp-fields">
+            {% for field in schema.fields %}
+            <div class="insp-field-wrap">
+              <label>{{ field|humanize }}</label>
+              <input type="text" data-key="{{ field }}" class="insp-input"
+                     value="{{ saved_data|dictkey:field }}" placeholder="">
+            </div>
+            {% endfor %}
+          </div>
+        </section>
+      {% endif %}
+    </form>
+
+    {% else %}
+    <!-- ════ PARTS ════ -->
+    <form id="insp-form" autocomplete="off">
+      {% csrf_token %}
+      {% for part in schema.parts %}
+      <section class="insp-card">
+        <div class="insp-card-hd">
+          <span class="insp-card-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M9 12l2 2 4-4"/></svg></span>
+          {{ part.label }}
+          {% if part.kind == "measure" %}<span class="insp-unit">{{ part.unit }}</span>{% endif %}
+          {% if part.kind == "count" %}<span class="insp-unit">count</span>{% endif %}
+        </div>
+        <div class="insp-part-body">
+
+          {% if part.kind == "ok" %}
+            {% if part.subparts %}
+              {% for sub in part.subparts %}
+              <div class="insp-part-row">
+                <span class="insp-sub">{{ sub }}</span>
+                <div class="toggle-btns">
+                  <button type="button" class="tbtn {% if saved_data|dictkey:part.key|dictkey:sub|dictkey:'status' == 'ok' %}sel-ok{% endif %}"
+                          data-part="{{ part.key }}" data-sub="{{ sub }}" data-val="ok">✓ OK</button>
+                  <button type="button" class="tbtn {% if saved_data|dictkey:part.key|dictkey:sub|dictkey:'status' == 'issue' %}sel-issue{% endif %}"
+                          data-part="{{ part.key }}" data-sub="{{ sub }}" data-val="issue">✗ Issue</button>
+                </div>
+                <input type="text" class="note-inp" placeholder="Add note…"
+                       data-part="{{ part.key }}" data-sub="{{ sub }}" data-field="condition"
+                       value="{{ saved_data|dictkey:part.key|dictkey:sub|dictkey:'condition' }}">
               </div>
-              <input type="text" class="note-inp" placeholder="condition note…"
-                     data-part="{{ part.key }}" data-sub="_" data-field="condition"
-                     value="{{ saved_data|dictkey:part.key|dictkey:'_'|dictkey:'condition' }}">
+              {% endfor %}
+            {% else %}
+              <div class="insp-part-row">
+                <div class="toggle-btns">
+                  <button type="button" class="tbtn {% if saved_data|dictkey:part.key|dictkey:'_'|dictkey:'status' == 'ok' %}sel-ok{% endif %}"
+                          data-part="{{ part.key }}" data-sub="_" data-val="ok">✓ OK</button>
+                  <button type="button" class="tbtn {% if saved_data|dictkey:part.key|dictkey:'_'|dictkey:'status' == 'issue' %}sel-issue{% endif %}"
+                          data-part="{{ part.key }}" data-sub="_" data-val="issue">✗ Issue</button>
+                </div>
+                <input type="text" class="note-inp" placeholder="Condition note…"
+                       data-part="{{ part.key }}" data-sub="_" data-field="condition"
+                       value="{{ saved_data|dictkey:part.key|dictkey:'_'|dictkey:'condition' }}">
+              </div>
+            {% endif %}
+
+          {% elif part.kind == "measure" %}
+            <div class="insp-part-row">
+              <input type="number" step="0.1" class="measure-inp" placeholder="0"
+                     data-part="{{ part.key }}" data-sub="_" data-field="value"
+                     value="{{ saved_data|dictkey:part.key|dictkey:'_'|dictkey:'value' }}">
+              <span class="unit-lbl">{{ part.unit }}</span>
+            </div>
+
+          {% elif part.kind == "count" %}
+            <div class="insp-part-row">
+              <input type="number" min="0" class="measure-inp" placeholder="0"
+                     data-part="{{ part.key }}" data-sub="_" data-field="value"
+                     value="{{ saved_data|dictkey:part.key|dictkey:'_'|dictkey:'value' }}">
+              <span class="unit-lbl">count</span>
             </div>
           {% endif %}
 
-        {% elif part.kind == "measure" %}
-          <div class="part-v3-row">
-            <input type="number" step="0.1" class="measure-inp" placeholder="0"
-                   data-part="{{ part.key }}" data-sub="_" data-field="value"
-                   value="{{ saved_data|dictkey:part.key|dictkey:'_'|dictkey:'value' }}">
-            <span class="unit-lbl">{{ part.unit }}</span>
-          </div>
+        </div>
+      </section>
+      {% endfor %}
+    </form>
+    {% endif %}
 
-        {% elif part.kind == "count" %}
-          <div class="part-v3-row">
-            <input type="number" min="0" class="measure-inp" placeholder="0"
-                   data-part="{{ part.key }}" data-sub="_" data-field="value"
-                   value="{{ saved_data|dictkey:part.key|dictkey:'_'|dictkey:'value' }}">
-            <span class="unit-lbl">count</span>
-          </div>
-        {% endif %}
-
-      </div>
-    </div>
-    {% endfor %}
   </div>
-  <div style="height:88px"></div>
-</form>
 
-<div id="save-indicator" class="save-indicator">Saved ✓</div>
-<div class="section-actions">
-  <button type="button" id="btn-save" class="btn btn-secondary" style="width:auto;padding:13px 22px;flex-shrink:0">Save</button>
-  {% if is_last %}
-  <button type="button" class="btn btn-primary" onclick="saveAndGo('/report/{{ r.id }}')">Preview Report →</button>
-  {% else %}
-  <button type="button" class="btn btn-primary" onclick="saveAndGo('/inspection/{{ r.id }}/{{ next_section }}')">Next: {{ next_section|capfirst }} →</button>
-  {% endif %}
+  <!-- ── STICKY FOOTER ── -->
+  <footer class="insp-foot">
+    <div class="insp-foot-inner">
+      {% if schema.kind == "media" %}
+      <a href="/report/{{ r.id }}" class="insp-btn insp-btn-primary">Preview Report
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      {% else %}
+      <button type="button" id="btn-save" class="insp-btn insp-btn-secondary">Save</button>
+      {% if is_last %}
+      <button type="button" class="insp-btn insp-btn-primary" onclick="saveAndGo('/report/{{ r.id }}')">Preview Report
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      {% else %}
+      <button type="button" class="insp-btn insp-btn-primary" onclick="saveAndGo('/inspection/{{ r.id }}/{{ next_section }}')">Next: {{ next_section|capfirst }}
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      {% endif %}
+      {% endif %}
+    </div>
+  </footer>
+
 </div>
 
-{% endif %}
+{% if schema.kind != "media" %}<div id="save-indicator" class="save-indicator">Saved ✓</div>{% endif %}
 
 <!-- ── JS ── -->
 <script>
