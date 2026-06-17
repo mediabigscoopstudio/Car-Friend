@@ -5,19 +5,35 @@
 {% block extra_css %}
   .top-actions{display:flex;justify-content:flex-end;margin-bottom:14px}
   .board{display:flex;gap:14px;overflow-x:auto;padding-bottom:20px;align-items:flex-start}
-  .col{flex:0 0 260px;background:var(--mist);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .col{flex:0 0 264px;background:var(--mist);border:1px solid var(--line);border-radius:12px;padding:12px}
   .col-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
   .col-h .t{font-family:'Poppins',sans-serif;font-size:13px;font-weight:700;color:var(--txt)}
   .col-h .c{font-size:12px;font-weight:700;color:var(--g1);background:#fff;border:1px solid var(--line);border-radius:999px;padding:2px 9px}
-  .tk{display:block;background:#fff;border:1px solid var(--line);border-radius:10px;padding:11px 12px;margin-bottom:8px;text-decoration:none;color:inherit}
-  .tk:hover{border-color:var(--g1)}
-  .tk .ti{font-weight:600;color:var(--txt);font-size:13px}
-  .tk .who{font-size:12px;color:var(--txt2);margin-top:3px}
-  .tk .row{display:flex;gap:6px;align-items:center;margin-top:7px;flex-wrap:wrap}
-  .pr{font-size:10px;font-weight:700;border-radius:999px;padding:2px 8px}
-  .pr-low{background:#EEF1F5;color:#51637B}.pr-medium{background:#FFF1DD;color:#B26A00}.pr-high{background:#FCE8E8;color:#B42318}
-  .due{font-size:11px;color:var(--txt2)} .due.over{color:#B42318;font-weight:700}
-  .tag{font-size:10px;background:var(--gs);color:var(--g1);border-radius:6px;padding:2px 7px}
+
+  /* task card */
+  .tk{display:block;background:#fff;border:1px solid var(--line);border-left:3px solid var(--line);
+      border-radius:10px;padding:11px 13px;margin-bottom:8px;text-decoration:none;color:inherit;transition:box-shadow .15s}
+  .tk:hover{box-shadow:0 2px 8px rgba(14,17,14,.07)}
+  .tk-high{border-left-color:#A32D2D}
+  .tk-medium{border-left-color:#BA7517}
+  .tk-low{border-left-color:#888780}
+  .tk .ti{font-size:15px;font-weight:500;color:var(--txt);line-height:1.3}
+
+  .tk .meta{display:flex;align-items:center;gap:14px;margin-top:8px;font-size:13px;color:var(--txt2);flex-wrap:wrap}
+  .tk .who{display:inline-flex;align-items:center;gap:6px}
+  .av{width:20px;height:20px;border-radius:50%;background:#2563EB;color:#fff;font-size:11px;font-weight:600;
+      display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+  .tk .due{display:inline-flex;align-items:center;gap:4px}
+  .tk .due.over{color:#A32D2D;font-weight:600}
+
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:3px 9px;border-radius:8px;line-height:1.4}
+  .chip i{font-size:11px}
+  .chip-pr-high{background:#FCE8E8;color:#A32D2D}
+  .chip-pr-medium{background:#FBEFD9;color:#BA7517}
+  .chip-pr-low{background:#EEEEEC;color:#888780}
+  .chip-out{background:var(--mist);border:.5px solid var(--line);color:var(--txt2)}
+
   .none{font-size:12px;color:var(--txt3);text-align:center;padding:14px 0}
 {% endblock %}
 {% block content %}
@@ -27,14 +43,19 @@
     <div class="col">
       <div class="col-h"><span class="t">{{ col.label }}</span><span class="c">{{ col.count }}</span></div>
       {% for t in col.tasks %}
-      <a class="tk" href="/crm/retail/tasks/{{ t.id }}/">
+      <a class="tk tk-{{ t.priority }}" href="/crm/retail/tasks/{{ t.id }}/">
         <div class="ti">{{ t.title }}</div>
-        <div class="who"><i class="bi bi-person"></i> {{ t.assigned_to.get_full_name|default:t.assigned_to.username }}</div>
-        <div class="row">
-          <span class="pr pr-{{ t.priority }}">{{ t.get_priority_display }}</span>
-          {% if t.due_date %}<span class="due {% if t.is_overdue %}over{% endif %}"><i class="bi bi-calendar"></i> {{ t.due_date|date:"d M" }}</span>{% endif %}
-          {% if t.related_lead %}<span class="tag">Lead</span>{% endif %}
-          {% if t.related_ocb %}<span class="tag">OCB</span>{% endif %}
+        <div class="meta">
+          <span class="who">
+            <span class="av">{{ t.assigned_to.first_name|default:t.assigned_to.username|first|upper }}</span>
+            {{ t.assigned_to.first_name|default:t.assigned_to.username }}
+          </span>
+          {% if t.due_date %}<span class="due {% if t.is_overdue %}over{% endif %}"><i class="bi bi-calendar3"></i> {{ t.due_date|date:"d M" }}</span>{% endif %}
+        </div>
+        <div class="chips">
+          <span class="chip chip-pr-{{ t.priority }}"><i class="bi bi-flag-fill"></i> {{ t.get_priority_display }}</span>
+          {% if t.related_lead %}<span class="chip chip-out"><i class="bi bi-person-badge"></i> Lead #{{ t.related_lead.id }}</span>{% endif %}
+          {% if t.related_ocb %}<span class="chip chip-out"><i class="bi bi-hammer"></i> OCB · {{ t.related_ocb.vehicle.model|default:t.related_ocb.vehicle.make }}</span>{% endif %}
         </div>
       </a>
       {% empty %}<div class="none">No tasks</div>{% endfor %}
