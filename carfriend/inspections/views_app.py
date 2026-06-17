@@ -1,4 +1,5 @@
 import json
+import logging
 
 from django.contrib.auth import authenticate, login
 from django.http import JsonResponse
@@ -12,6 +13,8 @@ from core.models import log
 from notifications.services import notify
 from .models import InspectionVisit, InspectionReport, InspectionMedia
 from .schema import CHECKPOINT_SCHEMA
+
+logger = logging.getLogger(__name__)
 
 
 def insp_login(request):
@@ -121,38 +124,37 @@ def insp_upload_media(request, id):
     slot = request.POST.get("slot", "")
     section = request.POST.get("section", "photos")
     media = InspectionMedia(report=r, kind=kind, slot=slot, section=section)
-    media.file.save(f.name, f, save=True)
-    url = ""
-    if kind == "video":
-        # Reject the upload if it can't be transcoded — never serve the raw file.
+    # Always persist the raw upload FIRST (to storage, not yet committed) so the
+    # inspector's file is never lost even if conversion/transcode fails.
+    media.file.save(f.name, f, save=False)
+
+    if kind == "photo":
+        from .services import convert_to_webp
+        convert_to_webp(media, f)            # logs loudly + returns False on error; raw kept
+    elif kind == "video":
         from .services import convert_to_mp4
-        if not convert_to_mp4(media, f):
-            media.delete()
-            return JsonResponse(
-                {"ok": False,
-                 "error": "Video conversion failed — ffmpeg must be installed on the server."},
-                status=500,
-            )
-        media.save(update_fields=["mp4_file"])
-        url = media.mp4_file.url
+        if not convert_to_mp4(media, f):     # ffmpeg missing/failed → keep raw, transcode later
+            media.needs_transcode = True
+            logger.warning("TODO transcode: stored raw VIDEO for report %s (ffmpeg unavailable).", r.id)
     elif kind == "audio":
         from .services import convert_audio
-        try:
-            if convert_audio(media, f):
-                media.save(update_fields=["file"])
-        except Exception:
-            pass
-        url = media.file.url if media.file else ""
-    else:  # photo
-        from .services import convert_to_webp
-        try:
-            convert_to_webp(media, f)
-            media.save(update_fields=["webp_file"])
-        except Exception:
-            pass
+        if not convert_audio(media, f):
+            media.needs_transcode = True
+            logger.warning("TODO transcode: stored raw AUDIO for report %s (ffmpeg unavailable).", r.id)
+
+    # Single commit: the record is never written without its file(s) on disk.
+    media.save()
+
+    if kind == "photo":
         img = media.webp_file or media.masked_file or media.file
         url = img.url if img else ""
-    return JsonResponse({"ok": True, "id": media.id, "url": url, "kind": kind})
+    elif kind == "video":
+        vid = media.mp4_file or media.file
+        url = vid.url if vid else ""
+    else:
+        url = media.file.url if media.file else ""
+    return JsonResponse({"ok": True, "id": media.id, "url": url,
+                         "kind": kind, "needs_transcode": media.needs_transcode})
 
 
 @inspector_required

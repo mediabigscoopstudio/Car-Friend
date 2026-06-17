@@ -24,19 +24,33 @@ def convert_to_webp(media, raw_file):
     Resizes down so the longest edge is <= WEBP_MAX_EDGE. If a masked image
     already exists (license-plate pipeline), that processed image is the source
     of truth and gets converted instead of the raw upload.
-    """
-    from PIL import Image
 
-    source = media.masked_file if media.masked_file else raw_file
-    if hasattr(source, "seek"):
-        source.seek(0)
-    img = Image.open(source).convert("RGB")
-    if max(img.size) > WEBP_MAX_EDGE:
-        img.thumbnail((WEBP_MAX_EDGE, WEBP_MAX_EDGE), Image.LANCZOS)
-    buf = io.BytesIO()
-    img.save(buf, format="WEBP", quality=WEBP_QUALITY, method=4)
-    name = f"photo_{media.pk}_{(media.slot or 'img').replace(' ', '_').lower()}.webp"
-    media.webp_file.save(name, ContentFile(buf.getvalue()), save=False)
+    Returns True on success. On ANY failure it logs the full traceback loudly
+    and returns False — the caller keeps the raw upload so nothing is lost and
+    the request never crashes. The WebP file is written to storage here (before
+    the DB record is committed by the caller).
+    """
+    try:
+        from PIL import Image
+
+        source = media.masked_file if media.masked_file else raw_file
+        if hasattr(source, "seek"):
+            source.seek(0)
+        img = Image.open(source).convert("RGB")
+        if max(img.size) > WEBP_MAX_EDGE:
+            img.thumbnail((WEBP_MAX_EDGE, WEBP_MAX_EDGE), Image.LANCZOS)
+        buf = io.BytesIO()
+        img.save(buf, format="WEBP", quality=WEBP_QUALITY, method=4)
+        slot = (media.slot or "img").replace(" ", "_").lower()
+        media.webp_file.save(f"photo_{slot}.webp", ContentFile(buf.getvalue()), save=False)
+        return True
+    except Exception:
+        logger.exception(
+            "WebP conversion FAILED for inspection photo (report=%s slot=%s) — "
+            "keeping the raw upload. Check Pillow/libwebp is installed.",
+            getattr(getattr(media, "report", None), "id", "?"), getattr(media, "slot", ""),
+        )
+        return False
 
 
 def _ffmpeg_to_temp(raw_file, args, out_suffix, label, pk):

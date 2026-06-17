@@ -112,6 +112,7 @@ class InspectionMedia(models.Model):
     mp4_file     = models.FileField(upload_to="inspections/media/mp4/", blank=True, null=True)
     masked_file  = models.ImageField(upload_to="inspections/media/masked/", blank=True, null=True)
     plate_masked = models.BooleanField(default=False)
+    needs_transcode = models.BooleanField(default=False)
     gps_lat      = models.FloatField(null=True, blank=True)
     gps_lng      = models.FloatField(null=True, blank=True)
     captured_at  = models.DateTimeField(null=True, blank=True)
