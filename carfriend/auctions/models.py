@@ -4,7 +4,7 @@ from django.db import models
 from django.utils import timezone
 from vehicles.models import Vehicle
 
-REACTIVATION_CAP = 10
+REACTIVATION_CAP = 5
 AUCTION_MINUTES = 30
 
 

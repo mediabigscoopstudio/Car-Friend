@@ -23,7 +23,7 @@ def auction_reactivate(request, id):
     log(request.user, "auction.reactivate", a, request, count=a.reactivation_count)
     notify(
         a.vehicle.seller, "auction_start",
-        title=f"Re-auction live: {a.vehicle.title}",
+        title=f"Re-auction live: {a.vehicle.display_name}",
         body="Your car is back in a live 30-minute auction.",
     )
     return redirect("/auctions_overview")

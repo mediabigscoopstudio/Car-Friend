@@ -16,7 +16,18 @@
   .au-cd.ended { color:var(--text-2); font-weight:500; }
   .au-end-sub { font-size:11px; color:var(--text-2); margin-top:2px; white-space:nowrap; }
   .au-nobid { color:var(--text-2); }
-  .btn-view { background:var(--green); color:#fff; border:none; }
+  .au-ico {
+    width:34px; height:34px; padding:0; flex-shrink:0;
+    display:inline-flex; align-items:center; justify-content:center;
+    border:1px solid var(--line); border-radius:8px;
+    background:var(--surface); color:var(--text-2); cursor:pointer;
+    transition:border-color .15s, color .15s, background .15s;
+  }
+  .au-ico svg { width:17px; height:17px; }
+  .au-ico:hover { border-color:var(--green); color:var(--green); }
+  .au-ico.au-danger:hover { border-color:var(--red,#dc2626); color:var(--red,#dc2626); }
+  .au-ico.au-primary { border-color:var(--green); color:var(--green); }
+  .au-ico.au-primary:hover { background:var(--green); color:#fff; }
 </style>
 
 <div class="table-wrap au-scroll">
@@ -51,17 +62,30 @@
         </td>
 
         <!-- Re-activations -->
-        <td>{{ a.reactivation_count }}/10</td>
+        <td>{{ a.reactivation_count }}/5</td>
 
-        <!-- Actions -->
-        <td style="display:flex;gap:6px;flex-wrap:wrap">
-          <a href="/auction/{{ a.id }}" class="btn btn-sm btn-view">View Auction</a>
-          {% if a.status == 'live' %}
-          <form method="post" action="/auction_pause/{{ a.id }}">{% csrf_token %}<button class="btn btn-danger btn-sm">Pause</button></form>
-          {% endif %}
-          {% if a.status == 'closed' or a.status == 'completed' %}
-          <form method="post" action="/auction_reactivate/{{ a.id }}">{% csrf_token %}<button class="btn btn-primary btn-sm">Re-activate</button></form>
-          {% endif %}
+        <!-- Actions (icons) -->
+        <td>
+          <div style="display:flex;gap:6px">
+            <a href="/auction/{{ a.id }}" class="au-ico" title="View auction" aria-label="View auction">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </a>
+            {% if a.reactivation_count < 5 %}
+              {% if a.status == 'live' %}
+              <form method="post" action="/auction_pause/{{ a.id }}" style="display:inline">{% csrf_token %}
+                <button class="au-ico au-danger" title="Pause auction" aria-label="Pause auction">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+                </button>
+              </form>
+              {% else %}
+              <form method="post" action="/auction_reactivate/{{ a.id }}" style="display:inline">{% csrf_token %}
+                <button class="au-ico au-primary" title="Re-run auction" aria-label="Re-run auction">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                </button>
+              </form>
+              {% endif %}
+            {% endif %}
+          </div>
         </td>
       </tr>
       {% empty %}
