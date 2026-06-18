@@ -301,7 +301,7 @@ def insp_submit(request, id):
     from accounts.models import User
     for adm in User.objects.filter(role="admin"):
         notify(adm, "insp_assigned",
-               title=f"Inspection submitted: {r.visit.vehicle.title}",
+               title=f"Inspection submitted: {r.visit.vehicle.display_name}",
                body=f"Score {r.score}/100 · awaiting decision")
     return render(request, "inspection/success.html", {"active_tab": "home", "r": r})
 
