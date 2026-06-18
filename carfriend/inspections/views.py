@@ -1,4 +1,5 @@
 import datetime
+from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 
@@ -127,7 +128,10 @@ def inspection_review(request, id):
 
 
 @admin_required
+@transaction.atomic
 def inspection_decide(request, id):
+    # Atomic: if ANY step fails (e.g. building a notification), the whole
+    # decision rolls back — no orphaned auction / half-applied status changes.
     if request.method != "POST":
         return redirect(f"/inspection_review/{id}")
     r = get_object_or_404(InspectionReport, id=id)
@@ -156,10 +160,10 @@ def inspection_decide(request, id):
         )
         log(request.user, "inspection.approve", r, request, duration=duration, auction=a.id)
         notify(v.inspector, "insp_decision",
-               title=f"Approved: {v.vehicle.title}",
+               title=f"Approved: {v.vehicle.display_name}",
                body=f"Auction is live for {duration} min.")
         notify(v.vehicle.seller, "auction_start",
-               title=f"Auction live: {v.vehicle.title}",
+               title=f"Auction live: {v.vehicle.display_name}",
                body=f"Live for {duration} minutes.")
         return redirect(f"/auction/{a.id}")
 
@@ -173,7 +177,7 @@ def inspection_decide(request, id):
         v.save()
         log(request.user, "inspection.redo", r, request, note=r.decision_note)
         notify(v.inspector, "insp_decision",
-               title=f"Redo requested: {v.vehicle.title}",
+               title=f"Redo requested: {v.vehicle.display_name}",
                body=r.decision_note or "Please revise and resubmit your report.")
         return redirect("/inspection_queue")
 
@@ -186,7 +190,7 @@ def inspection_decide(request, id):
         v.save()
         log(request.user, "inspection.remove", r, request)
         notify(v.inspector, "insp_decision",
-               title=f"Report removed: {v.vehicle.title}",
+               title=f"Report removed: {v.vehicle.display_name}",
                body=r.decision_note or "This report was removed.")
         return redirect("/inspection_queue")
 
