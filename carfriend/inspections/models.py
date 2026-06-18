@@ -124,3 +124,19 @@ class InspectionMedia(models.Model):
         return self.webp_file or self.masked_file or (self.file if self.kind == self.Kind.PHOTO else None)
 
     def __str__(self): return f"{self.get_kind_display()} · {self.slot or self.section}"
+
+
+class CheckpointPhoto(models.Model):
+    """Multiple condition photos per checkpoint. Checkpoints are stored as JSON
+    on InspectionReport (Pattern B), so a checkpoint is identified by section +
+    checkpoint_key (the part key, e.g. section='exterior', key='bonnet')."""
+    report         = models.ForeignKey(InspectionReport, on_delete=models.CASCADE, related_name="checkpoint_photos")
+    section        = models.CharField(max_length=40)
+    checkpoint_key = models.CharField(max_length=120)
+    image          = models.ImageField(upload_to="inspections/media/checkpoints/webp/", max_length=255)
+    uploaded_at    = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["uploaded_at"]
+
+    def __str__(self): return f"CheckpointPhoto({self.section}/{self.checkpoint_key})"

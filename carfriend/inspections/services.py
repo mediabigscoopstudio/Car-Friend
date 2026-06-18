@@ -20,22 +20,16 @@ VIDEO_MAX_WIDTH = 1280     # cap width (~720p), keep aspect ratio, downscale onl
 VIDEO_TIMEOUT = 600        # up to 10 min — a 400 MB source transcode is slow
 
 
-def convert_to_webp(media, raw_file):
-    """Convert an uploaded inspection photo to WebP → media.webp_file (save=False).
+def image_to_webp_bytes(source):
+    """Core WebP conversion shared by inspection photos AND checkpoint photos.
 
-    Resizes down so the longest edge is <= WEBP_MAX_EDGE. If a masked image
-    already exists (license-plate pipeline), that processed image is the source
-    of truth and gets converted instead of the raw upload.
-
-    Returns True on success. On ANY failure it logs the full traceback loudly
-    and returns False — the caller keeps the raw upload so nothing is lost and
-    the request never crashes. The WebP file is written to storage here (before
-    the DB record is committed by the caller).
+    Returns WebP bytes (RGB, longest edge <= WEBP_MAX_EDGE, quality
+    WEBP_QUALITY) or None on any failure (logged loudly — caller keeps raw).
+    `source` may be an uploaded file or an existing FieldFile.
     """
     try:
         from PIL import Image
 
-        source = media.masked_file if media.masked_file else raw_file
         if hasattr(source, "seek"):
             source.seek(0)
         img = Image.open(source).convert("RGB")
@@ -43,16 +37,27 @@ def convert_to_webp(media, raw_file):
             img.thumbnail((WEBP_MAX_EDGE, WEBP_MAX_EDGE), Image.LANCZOS)
         buf = io.BytesIO()
         img.save(buf, format="WEBP", quality=WEBP_QUALITY, method=4)
-        slot = (media.slot or "img").replace(" ", "_").lower()
-        media.webp_file.save(f"photo_{slot}.webp", ContentFile(buf.getvalue()), save=False)
-        return True
+        return buf.getvalue()
     except Exception:
-        logger.exception(
-            "WebP conversion FAILED for inspection photo (report=%s slot=%s) — "
-            "keeping the raw upload. Check Pillow/libwebp is installed.",
-            getattr(getattr(media, "report", None), "id", "?"), getattr(media, "slot", ""),
-        )
+        logger.exception("WebP conversion FAILED — check Pillow/libwebp is installed.")
+        return None
+
+
+def convert_to_webp(media, raw_file):
+    """Convert an uploaded inspection photo to WebP → media.webp_file (save=False).
+
+    If a masked image already exists (license-plate pipeline), that processed
+    image is converted instead of the raw upload. Returns True on success;
+    False on failure (caller keeps the raw upload, request never crashes). The
+    WebP file is written to storage here, before the DB record is committed.
+    """
+    source = media.masked_file if media.masked_file else raw_file
+    data = image_to_webp_bytes(source)
+    if data is None:
         return False
+    slot = (media.slot or "img").replace(" ", "_").lower()
+    media.webp_file.save(f"photo_{slot}.webp", ContentFile(data), save=False)
+    return True
 
 
 def _ffmpeg_to_temp(raw_file, args, out_suffix, label, pk, timeout=240):

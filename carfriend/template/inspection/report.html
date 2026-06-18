@@ -73,6 +73,30 @@
 </div>
 {% endif %}
 
+<!-- Condition photos per checkpoint -->
+{% if checkpoint_photo_groups %}
+<div class="card">
+  <div class="card-hd">
+    <h2>Condition Photos</h2>
+    <span class="badge">{{ checkpoint_photo_groups|length }}</span>
+  </div>
+  <div class="card-body" style="display:flex;flex-direction:column;gap:14px">
+    {% for grp in checkpoint_photo_groups %}
+    <div>
+      <div style="font-size:12px;font-weight:600;color:var(--app-txt2);margin-bottom:6px">
+        {{ grp.section }} · {{ grp.label }}
+      </div>
+      <div class="photo-grid">
+        {% for url in grp.urls %}
+        <a class="photo-cell" href="{{ url }}" target="_blank"><img src="{{ url }}" alt="{{ grp.label }}"></a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 <!-- Dents -->
 {% if dents %}
 <div class="card">

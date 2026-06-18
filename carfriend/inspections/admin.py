@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import InspectionVisit, InspectionReport, DentMarker, InspectionMedia
+from .models import InspectionVisit, InspectionReport, DentMarker, InspectionMedia, CheckpointPhoto
 
 
 class MediaInline(admin.TabularInline):
@@ -25,6 +25,13 @@ class MediaAdmin(admin.ModelAdmin):
     list_display  = ("id", "report", "kind", "slot", "needs_transcode", "transcoded", "created_at")
     list_filter   = ("kind", "needs_transcode", "transcoded")
     search_fields = ("slot", "section")
+
+
+@admin.register(CheckpointPhoto)
+class CheckpointPhotoAdmin(admin.ModelAdmin):
+    list_display  = ("id", "report", "section", "checkpoint_key", "uploaded_at")
+    list_filter   = ("section",)
+    search_fields = ("checkpoint_key",)
 
 
 admin.site.register(DentMarker)

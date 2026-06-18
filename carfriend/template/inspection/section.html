@@ -163,6 +163,34 @@
 .measure-inp:focus { border-color: var(--g); box-shadow: 0 0 0 3px rgba(34,197,94,.15); }
 .unit-lbl { font-size: 12px; color: rgba(255,255,255,.5); }
 
+/* ── CHECKPOINT CONDITION PHOTOS (compact, per part) ── */
+.cp-row {
+  margin-top: 12px; padding-top: 12px;
+  border-top: .5px solid rgba(255,255,255,.06);
+}
+.cp-photos { display: flex; flex-wrap: wrap; gap: 6px; }
+.cp-thumb {
+  position: relative; width: 64px; height: 64px; flex-shrink: 0;
+  border-radius: 8px; overflow: hidden;
+  border: .5px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04);
+}
+.cp-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: pointer; }
+.cp-del {
+  position: absolute; top: 2px; right: 2px; width: 18px; height: 18px;
+  border: none; border-radius: 50%; background: rgba(0,0,0,.65); color: #fff;
+  font-size: 12px; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.cp-del:active { background: #dc2626; }
+.cp-add {
+  width: 64px; height: 64px; flex-shrink: 0;
+  border: 1px dashed rgba(255,255,255,.18); border-radius: 8px;
+  background: rgba(255,255,255,.03); color: var(--g2);
+  font-size: 10px; font-weight: 600; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+}
+.cp-add:hover { border-color: var(--g); }
+
 /* ── STICKY FOOTER ── */
 .insp-foot {
   position: fixed; bottom: 68px; left: 0; right: 0; z-index: 40;
@@ -497,9 +525,26 @@
           {% endif %}
 
         </div>
+
+        <!-- Condition photos for this checkpoint (multiple, WebP) -->
+        <div class="cp-row">
+          <div class="cp-photos" data-key="{{ part.key }}">
+            {% for ph in checkpoint_photos|dictkey:part.key %}
+            <div class="cp-thumb" data-id="{{ ph.id }}">
+              <img src="{{ ph.url }}" alt="" loading="lazy" onclick="viewMedia('{{ ph.url|escapejs }}')">
+              <button type="button" class="cp-del" onclick="deleteCheckpointPhoto(event,{{ ph.id }})" aria-label="Delete photo">×</button>
+            </div>
+            {% endfor %}
+            <button type="button" class="cp-add" onclick="cpPick('{{ part.key|escapejs }}')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Photo
+            </button>
+          </div>
+        </div>
       </section>
       {% endfor %}
     </form>
+    <input type="file" id="cp-input" accept="image/*" capture="environment" multiple style="display:none" onchange="cpUpload(this)">
     {% endif %}
 
   </div>
@@ -614,6 +659,68 @@ async function saveAndGo(url) {
 }
 
 setInterval(saveData, 30000);
+
+// ── Checkpoint condition photos (multiple per part, WebP, no page reload so
+//    unsaved OK/Issue + note state is preserved) ──
+function viewMedia(url) { window.open(url, '_blank'); }
+function cpEsc(s) { return (window.CSS && CSS.escape) ? CSS.escape(s) : String(s).replace(/"/g, '\\"'); }
+
+let _cpKey = null;
+function cpPick(key) {
+  _cpKey = key;
+  const inp = document.getElementById('cp-input');
+  inp.value = '';
+  inp.click();
+}
+
+async function cpUpload(input) {
+  const files = Array.from(input.files || []);
+  const key = _cpKey;
+  if (!files.length || !key) { input.value = ''; return; }
+  const container = document.querySelector('.cp-photos[data-key="' + cpEsc(key) + '"]');
+  const addBtn = container ? container.querySelector('.cp-add') : null;
+  if (addBtn) addBtn.disabled = true;
+  for (const file of files) {
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('file', file);
+    fd.append('section', '{{ section }}');
+    fd.append('checkpoint_key', key);
+    try {
+      const res = await fetch('/checkpoint/' + REPORT_ID + '/photo', {method:'POST', body:fd});
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok && data.url && container) {
+        const div = document.createElement('div');
+        div.className = 'cp-thumb';
+        div.dataset.id = data.id;
+        const img = document.createElement('img');
+        img.src = data.url; img.loading = 'lazy';
+        img.addEventListener('click', () => viewMedia(data.url));
+        const del = document.createElement('button');
+        del.type = 'button'; del.className = 'cp-del'; del.textContent = '×';
+        del.addEventListener('click', (e) => deleteCheckpointPhoto(e, data.id));
+        div.appendChild(img); div.appendChild(del);
+        container.insertBefore(div, addBtn);
+      }
+    } catch (e) {}
+  }
+  if (addBtn) addBtn.disabled = false;
+  input.value = '';
+}
+
+async function deleteCheckpointPhoto(ev, pid) {
+  ev.stopPropagation();
+  if (!confirm('Remove this photo?')) return;
+  const fd = new FormData();
+  fd.append('csrfmiddlewaretoken', CSRF);
+  try {
+    const res = await fetch('/checkpoint-photo/' + pid + '/delete', {method:'POST', body:fd});
+    if (res.ok) {
+      const el = document.querySelector('.cp-thumb[data-id="' + pid + '"]');
+      if (el) el.remove();
+    }
+  } catch (e) {}
+}
 {% endif %}
 
 {% if schema.kind == "media" %}

@@ -4,6 +4,7 @@ import os
 import uuid
 
 from django.contrib.auth import authenticate, login
+from django.core.files.base import ContentFile
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
@@ -13,7 +14,7 @@ from django.views.decorators.http import require_POST
 from accounts.decorators import inspector_required
 from core.models import log
 from notifications.services import notify
-from .models import InspectionVisit, InspectionReport, InspectionMedia
+from .models import InspectionVisit, InspectionReport, InspectionMedia, CheckpointPhoto
 from .schema import CHECKPOINT_SCHEMA
 
 logger = logging.getLogger(__name__)
@@ -110,7 +111,57 @@ def insp_form(request, id, section="summary"):
             if m.file:
                 audios.append({"id": m.id, "url": m.file.url})
         ctx.update({"photos": photos, "videos": videos, "audios": audios})
+    elif schema.get("parts"):
+        # Condition photos per checkpoint (section + part key), for this section.
+        cp = {}
+        for ph in r.checkpoint_photos.filter(section=section):
+            cp.setdefault(ph.checkpoint_key, []).append({"id": ph.id, "url": ph.image.url})
+        ctx["checkpoint_photos"] = cp
     return render(request, "inspection/section.html", ctx)
+
+
+@inspector_required
+@require_POST
+def insp_checkpoint_photo(request, id):
+    """Upload one condition photo for a checkpoint (section + checkpoint_key),
+    converted to WebP like the rest of the inspection media."""
+    r = get_object_or_404(InspectionReport, id=id, visit__inspector=request.user)
+    if not r.editable:
+        return JsonResponse({"locked": True}, status=409)
+    f = request.FILES.get("file")
+    if not f:
+        return JsonResponse({"error": "no file"}, status=400)
+    section = request.POST.get("section", "")
+    key = request.POST.get("checkpoint_key", "")
+    # Validate the checkpoint belongs to this inspection's schema.
+    schema = CHECKPOINT_SCHEMA.get(section)
+    valid_keys = {p["key"] for p in schema.get("parts", [])} if schema else set()
+    if not key or key not in valid_keys:
+        return JsonResponse({"error": "bad checkpoint"}, status=400)
+
+    from .services import image_to_webp_bytes
+    photo = CheckpointPhoto(report=r, section=section, checkpoint_key=key)
+    data = image_to_webp_bytes(f)
+    if data is not None:
+        photo.image.save(f"{uuid.uuid4().hex}.webp", ContentFile(data), save=False)
+    else:
+        # Conversion failed (rare) — keep the raw image so nothing is lost.
+        ext = os.path.splitext(f.name)[1].lower() or ".jpg"
+        photo.image.save(f"{uuid.uuid4().hex}{ext}", f, save=False)
+    photo.save()
+    return JsonResponse({"ok": True, "id": photo.id, "url": photo.image.url})
+
+
+@inspector_required
+@require_POST
+def insp_checkpoint_photo_delete(request, photo_id):
+    photo = get_object_or_404(
+        CheckpointPhoto, id=photo_id, report__visit__inspector=request.user
+    )
+    if not photo.report.editable:
+        return JsonResponse({"locked": True}, status=409)
+    photo.delete()
+    return JsonResponse({"ok": True})
 
 
 @inspector_required
@@ -199,12 +250,27 @@ def insp_report(request, id):
     r = get_object_or_404(InspectionReport, id=id, visit__inspector=request.user)
     r.compute_score()
     r.save(update_fields=["score", "condition_grade"])
+    # Condition photos grouped by checkpoint (in schema order), for the report.
+    by_key = {}
+    for ph in r.checkpoint_photos.all():
+        by_key.setdefault((ph.section, ph.checkpoint_key), []).append(ph.image.url)
+    checkpoint_photo_groups = []
+    for sec_key, sec in CHECKPOINT_SCHEMA.items():
+        for part in sec.get("parts", []):
+            urls = by_key.get((sec_key, part["key"]))
+            if urls:
+                checkpoint_photo_groups.append({
+                    "section": sec.get("label", sec_key),
+                    "label": part["label"],
+                    "urls": urls,
+                })
     return render(request, "inspection/report.html", {
         "active_tab": "visits",
         "r": r,
         "media": r.media.all(),
         "dents": r.dents.all(),
         "schema": CHECKPOINT_SCHEMA,
+        "checkpoint_photo_groups": checkpoint_photo_groups,
     })
 
 
