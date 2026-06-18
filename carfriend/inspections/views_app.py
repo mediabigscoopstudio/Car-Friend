@@ -293,6 +293,27 @@ def insp_submit(request, id):
     r.visit.save()
     r.visit.vehicle.condition_grade = r.condition_grade
     r.visit.vehicle.save(update_fields=["condition_grade"])
+    # Challan snapshot from Surepass (synchronous, 15s timeout). Fully isolated:
+    # a challan API failure must NEVER break submission — store status=failed.
+    try:
+        from www.services import fetch_challans
+        v = r.visit.vehicle
+        res = fetch_challans(v.plate_number, chassis=v.chassis_number, engine=v.engine_number)
+        r.challan_data = res["challans"]
+        r.challan_count = res["total_challans"]
+        r.challan_total_pending = res["total_pending_amount"]
+        r.challan_fetch_status = res["status"]
+        r.challan_fetched_at = timezone.now()
+        r.save(update_fields=["challan_data", "challan_count", "challan_total_pending",
+                              "challan_fetch_status", "challan_fetched_at"])
+    except Exception:
+        logger.exception("Challan fetch failed during submit for report %s", r.id)
+        try:
+            r.challan_fetch_status = "failed"
+            r.challan_fetched_at = timezone.now()
+            r.save(update_fields=["challan_fetch_status", "challan_fetched_at"])
+        except Exception:
+            pass
     try:
         generate_report_pdf(r)
     except Exception:

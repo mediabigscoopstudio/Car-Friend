@@ -56,6 +56,12 @@ class InspectionReport(models.Model):
                                          on_delete=models.SET_NULL, related_name="inspection_decisions")
     pdf              = models.FileField(upload_to="inspections/reports/", blank=True, null=True)
     submitted_at     = models.DateTimeField(null=True, blank=True)
+    # Challan / traffic-violation snapshot, fetched from Surepass at submit time.
+    challan_data          = models.JSONField(null=True, blank=True)   # normalized list of challans
+    challan_total_pending = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    challan_count         = models.IntegerField(default=0)
+    challan_fetched_at    = models.DateTimeField(null=True, blank=True)
+    challan_fetch_status  = models.CharField(max_length=10, blank=True, default="")  # ok / failed / no_data
     created_at       = models.DateTimeField(auto_now_add=True)
     updated_at       = models.DateTimeField(auto_now=True)
 

@@ -124,6 +124,42 @@
     {% endfor %}
   </table>
 
+  <!-- CHALLAN / TRAFFIC VIOLATIONS -->
+  <div class="sec">
+    <div class="sec-hd">Challan / Traffic Violations</div>
+    {% if r.challan_count > 0 %}
+      {% if r.challan_total_pending and r.challan_total_pending > 0 %}
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:7px 10px;margin:6px 0;color:#b91c1c;font-size:10.5px;font-weight:700">
+        &#9888; Pending challans: {{ r.challan_count }} · Total due: &#8377;{{ r.challan_total_pending|floatformat:0 }}
+      </div>
+      {% else %}
+      <div style="background:#ecfdf3;border:1px solid #bbf7d0;border-radius:6px;padding:7px 10px;margin:6px 0;color:#15803d;font-size:10.5px;font-weight:700">
+        {{ r.challan_count }} challan(s) on record · all settled
+      </div>
+      {% endif %}
+      <table class="chk">
+        <thead><tr><th style="width:22%">Challan No.</th><th style="width:16%">Date</th><th>Offence</th><th style="width:14%">Amount</th><th style="width:13%">Status</th></tr></thead>
+        <tbody>
+          {% for c in r.challan_data %}
+          <tr>
+            <td>{{ c.challan_number|default:"—" }}</td>
+            <td>{{ c.offense_date|default:"—" }}</td>
+            <td>{{ c.offence_description|default:"—" }}{% if c.location %} <span class="muted">· {{ c.location }}</span>{% endif %}</td>
+            <td class="val">&#8377;{{ c.amount|floatformat:0 }}</td>
+            <td>{% if c.payment_status == 'paid' %}<span class="pill ok">Paid</span>{% else %}<span class="pill is">Pending</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% elif r.challan_fetch_status == 'ok' or r.challan_fetch_status == 'no_data' %}
+      <div class="notchk" style="color:#15803d">No pending challans found.</div>
+    {% elif r.challan_fetch_status == 'failed' %}
+      <div class="notchk">Challan data unavailable.</div>
+    {% else %}
+      <div class="notchk">Challan information not available for this listing.</div>
+    {% endif %}
+  </div>
+
   <!-- CHECKPOINT SECTIONS -->
   {% for sec in sections %}
   <div class="sec">

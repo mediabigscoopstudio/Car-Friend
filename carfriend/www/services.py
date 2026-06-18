@@ -260,7 +260,7 @@ DIGILOCKER_INIT_ENDPOINT = "/api/v1/digilocker/initialize"
 DIGILOCKER_AADHAAR_ENDPOINT = "/api/v1/digilocker/download-aadhaar"
 
 
-def _call_surepass(path, payload=None, tag="kyc", method="POST"):
+def _call_surepass(path, payload=None, tag="kyc", method="POST", timeout=None):
     """Generic Surepass call. Returns (status_code, parsed_json_dict).
 
     Raises a SurepassError subclass on any failure. TEMP-logs status + body.
@@ -270,6 +270,7 @@ def _call_surepass(path, payload=None, tag="kyc", method="POST"):
         logger.error("SUREPASS_TOKEN is not set; %s unavailable.", tag)
         raise SurepassConfigError("Verification is not configured.")
 
+    timeout = timeout or TIMEOUT_SECONDS
     url = SUREPASS_BASE + path
     data = json.dumps(payload).encode("utf-8") if payload is not None else None
     req = urllib.request.Request(
@@ -281,7 +282,7 @@ def _call_surepass(path, payload=None, tag="kyc", method="POST"):
         },
     )
     try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as resp:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             status = getattr(resp, "status", None) or resp.getcode()
             raw = resp.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
@@ -297,7 +298,7 @@ def _call_surepass(path, payload=None, tag="kyc", method="POST"):
             raise SurepassNotFound("No matching record found.") from None
         raise SurepassError("Verification failed. Please try again.") from None
     except (socket.timeout, TimeoutError):
-        logger.warning("[TEMP %s] status=timeout after %ss", tag, TIMEOUT_SECONDS)
+        logger.warning("[TEMP %s] status=timeout after %ss", tag, timeout)
         raise SurepassTimeout("Verification timed out.") from None
     except urllib.error.URLError as exc:
         logger.warning("[TEMP %s] status=urlerror body=%s", tag, exc.reason)
@@ -374,3 +375,136 @@ def digilocker_fetch_aadhaar(client_id):
     name = data.get("full_name") or data.get("name") or ""
     aadhaar = data.get("aadhaar_number") or data.get("aadhaar") or data.get("masked_aadhaar") or ""
     return {"name": str(name).strip(), "aadhaar_masked": mask_aadhaar(aadhaar), "ref": str(client_id)}
+
+
+# ── Challan / traffic violations (Surepass) ──────────────────────────────────
+# Reuses the same auth/client (_call_surepass, SUREPASS_TOKEN, SUREPASS_BASE).
+# Surepass challan endpoint path + response field names must be confirmed from
+# console.surepass.app; the parser below is defensive (tries the common field
+# names) and the [TEMP challan] log prints the raw body once so the mapping can
+# be verified/adjusted against the live response, then the logging removed.
+CHALLAN_ENDPOINT = "/api/v1/challan/challan"
+CHALLAN_TIMEOUT = 15  # challan lookups are slower than RC
+
+
+def _money(raw):
+    """Best-effort numeric parse of an amount that may be '₹500', '500.00', 500."""
+    if raw is None:
+        return 0.0
+    if isinstance(raw, (int, float)):
+        return float(raw)
+    digits = "".join(c for c in str(raw) if c.isdigit() or c == ".")
+    try:
+        return float(digits) if digits else 0.0
+    except ValueError:
+        return 0.0
+
+
+def _challan_date(raw):
+    """Return an ISO date if parseable, else the original string (challans often
+    carry a date+time stamp). Never raises."""
+    s = (str(raw) if raw is not None else "").strip()
+    if not s:
+        return ""
+    iso = _iso_date(s.split(" ")[0].split("T")[0])
+    return iso or s
+
+
+def _join_offences(offences):
+    """Offences may be a list of dicts/strings or a plain string."""
+    if not offences:
+        return ""
+    if isinstance(offences, str):
+        return offences.strip()
+    names = []
+    for o in offences if isinstance(offences, (list, tuple)) else [offences]:
+        if isinstance(o, dict):
+            names.append(str(o.get("offense_name") or o.get("offence_name")
+                             or o.get("name") or o.get("description") or "").strip())
+        else:
+            names.append(str(o).strip())
+    return ", ".join(n for n in names if n)
+
+
+def _normalize_challans(body):
+    """Map a raw Surepass challan response → the normalized result structure."""
+    data = (body or {}).get("data") or {}
+    raw_list = (data.get("challans") or data.get("challan_details")
+                or data.get("challan") or data.get("pending_challans") or [])
+    if isinstance(raw_list, dict):
+        raw_list = raw_list.get("challans") or raw_list.get("data") or []
+
+    challans, total_pending = [], 0.0
+    for c in raw_list or []:
+        if not isinstance(c, dict):
+            continue
+        amount = _money(c.get("amount") or c.get("fine_amount")
+                        or c.get("challan_amount") or c.get("penalty"))
+        status_raw = str(c.get("challan_status") or c.get("status")
+                         or c.get("payment_status") or "").strip().lower()
+        is_paid = status_raw in ("paid", "disposed", "cash", "settled", "closed", "completed")
+        offence = (c.get("offence_description") or c.get("offense_description")
+                   or _join_offences(c.get("offenses") or c.get("offences"))
+                   or c.get("offence") or c.get("offense") or c.get("violation") or "")
+        challans.append({
+            "challan_number": str(c.get("challan_number") or c.get("challan_no")
+                                  or c.get("number") or "").strip(),
+            "offense_date": _challan_date(c.get("challan_date") or c.get("offense_date")
+                                          or c.get("date") or c.get("challan_date_time")),
+            "amount": amount,
+            "payment_status": "paid" if is_paid else "pending",
+            "offence_description": str(offence).strip(),
+            "location": str(c.get("location") or c.get("state")
+                            or c.get("area") or c.get("rto") or "").strip(),
+        })
+        if not is_paid:
+            total_pending += amount
+
+    return {
+        "status": "ok",
+        "challans": challans,
+        "total_challans": len(challans),
+        "total_pending_amount": round(total_pending, 2),
+        "has_pending": any(ch["payment_status"] == "pending" for ch in challans),
+    }
+
+
+def fetch_challans(rc_number, chassis="", engine=""):
+    """Fetch traffic challans for a vehicle RC via Surepass. NEVER raises.
+
+    Returns a normalized dict:
+      {status: "ok"|"no_data"|"failed", challans: [...], total_challans: int,
+       total_pending_amount: float, has_pending: bool}
+    Each challan: {challan_number, offense_date, amount, payment_status,
+                   offence_description, location}.
+    """
+    empty = {"status": "failed", "challans": [], "total_challans": 0,
+             "total_pending_amount": 0.0, "has_pending": False}
+    rc = (rc_number or "").strip().upper().replace(" ", "")
+    if not rc:
+        return empty
+
+    payload = {"id_number": rc}
+    # Some Surepass challan plans require the last 5 of chassis + engine.
+    if chassis:
+        payload["chassis"] = str(chassis).strip()[-5:]
+    if engine:
+        payload["engine"] = str(engine).strip()[-5:]
+
+    try:
+        _status, body = _call_surepass(CHALLAN_ENDPOINT, payload, tag="challan",
+                                       method="POST", timeout=CHALLAN_TIMEOUT)
+    except SurepassNotFound:
+        return {**empty, "status": "no_data"}
+    except SurepassError as exc:
+        logger.warning("Challan lookup failed for rc=%s: %s", rc, exc)
+        return {**empty, "status": "failed"}
+    except Exception:
+        logger.exception("Challan lookup crashed for rc=%s", rc)
+        return {**empty, "status": "failed"}
+
+    try:
+        return _normalize_challans(body)
+    except Exception:
+        logger.exception("Challan normalize crashed for rc=%s", rc)
+        return {**empty, "status": "failed"}

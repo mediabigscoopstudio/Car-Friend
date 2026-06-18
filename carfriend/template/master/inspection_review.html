@@ -370,6 +370,9 @@
   </div>
   {% endif %}
 
+  <!-- Challan / traffic violations -->
+  {% include "inspection/_challan_block.html" %}
+
   <!-- Section overview -->
   {% with non_summary=sections_data|slice:"1:" %}
   {% if non_summary %}
