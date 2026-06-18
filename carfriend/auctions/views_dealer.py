@@ -62,17 +62,36 @@ def dealer_auction(a):
     }
 
 
+def _vehicle_report(vehicle):
+    return (InspectionReport.objects
+            .filter(visit__vehicle=vehicle)
+            .order_by("-submitted_at").first())
+
+
+def _photo_urls(report):
+    """Dealer-safe photo URLs (masked/plate-hidden preferred), in upload order."""
+    urls = []
+    if report:
+        for m in report.media.filter(kind="photo").order_by("id"):
+            img = m.masked_file or m.webp_file or m.file
+            if img:
+                urls.append(img.url)
+    return urls
+
+
 def dealer_inspection(report):
     """Redacted inspection data: condition only — never seller/PII."""
     if not report:
         return None
     sections = build_report_data(report).get("sections", [])   # statuses + notes (+ checkpoint photos)
-    photos = []
-    for m in report.media.filter(kind="photo"):
-        img = m.masked_file or m.webp_file or m.file            # masked (plate-hidden) preferred
-        if img:
-            photos.append(img.url)
-    return {"grade": report.condition_grade, "sections": sections, "photos": photos, "report": report}
+    photos = _photo_urls(report)
+    return {
+        "grade": report.condition_grade,
+        "sections": sections,
+        "photos": photos,
+        "hero": photos[0] if photos else None,   # primary/cover image
+        "report": report,
+    }
 
 
 # ── views ────────────────────────────────────────────────────────────────────
@@ -82,8 +101,14 @@ def dealer_auction_list(request):
     guard = _bounce_non_dealer(request)
     if guard:
         return guard
+    cards = []
+    for a in _live_auctions():
+        card = dealer_auction(a)
+        photos = _photo_urls(_vehicle_report(a.vehicle))
+        card["cover"] = photos[0] if photos else None
+        cards.append(card)
     return render(request, "auctions/dealer_list.html", {
-        "auctions": [dealer_auction(a) for a in _live_auctions()],
+        "auctions": cards,
         "can_bid":  dealer_can_bid(request.user),
     })
 

@@ -1,5 +1,6 @@
 asgiref==3.11.1
 channels==4.3.2
+daphne==4.2.1
 Django==5.2.15
 django-hosts==7.0.0
 djangorestframework==3.17.1
