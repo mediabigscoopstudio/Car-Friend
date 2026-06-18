@@ -20,4 +20,11 @@ class ReportAdmin(admin.ModelAdmin):
     inlines      = [MediaInline]
 
 
+@admin.register(InspectionMedia)
+class MediaAdmin(admin.ModelAdmin):
+    list_display  = ("id", "report", "kind", "slot", "needs_transcode", "transcoded", "created_at")
+    list_filter   = ("kind", "needs_transcode", "transcoded")
+    search_fields = ("slot", "section")
+
+
 admin.site.register(DentMarker)

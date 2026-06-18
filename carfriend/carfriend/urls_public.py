@@ -5,6 +5,7 @@ from django.urls import include, path
 
 urlpatterns = [
     path("django-admin/", admin.site.urls),
+    path("admin/", admin.site.urls),  # alias — admin reachable at /admin/ and /django-admin/
     # allauth — Google OAuth + built-in account management
     path("accounts/", include("allauth.urls")),
     # CarFriend auth — login, register, dashboards
