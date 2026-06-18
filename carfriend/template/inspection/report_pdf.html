@@ -158,7 +158,7 @@
           {% if part.photos %}
           <tr class="thumbs">
             <td colspan="4">
-              {% for ph in part.photos %}<span class="thumb"><img src="{{ ph.image.path }}"></span>{% endfor %}
+              {% for ph in part.photos %}<span class="thumb"><img src="file://{{ ph.image.path }}"></span>{% endfor %}
             </td>
           </tr>
           {% endif %}
@@ -181,7 +181,7 @@
     {% if photos %}
     <div class="gallery">
       {% for p in photos %}
-      <span class="gthumb"><img src="{{ p.file.path }}"><div class="cap">{{ p.slot }}</div></span>
+      <span class="gthumb"><img src="file://{{ p.file.path }}"><div class="cap">{{ p.slot }}</div></span>
       {% endfor %}
     </div>
     {% else %}

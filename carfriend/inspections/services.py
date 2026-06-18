@@ -330,7 +330,9 @@ def generate_report_pdf(report):
         "report_no": f"{report.visit.vehicle.id:08d}/{report.id}",
         **data,
     })
-    pdf_bytes = HTML(string=html, base_url=".").write_pdf()
+    # Absolute base_url so weasyprint resolves local files; images use explicit
+    # file:// paths so they embed regardless.
+    pdf_bytes = HTML(string=html, base_url=str(settings.MEDIA_ROOT)).write_pdf()
     report.pdf.save(f"report_{report.id}.pdf", ContentFile(pdf_bytes), save=True)
     return report.pdf
 
