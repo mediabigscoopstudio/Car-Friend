@@ -1,0 +1,107 @@
+{% extends "www/base.html" %}
+{% block title %}Live Auctions — CarFriend{% endblock %}
+
+{% block extra_css %}
+.au-wrap { max-width: 1100px; margin: 0 auto; padding: 32px 16px 80px; }
+.au-h { font-size: 24px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+.au-sub { color: #64748b; font-size: 14px; margin-bottom: 22px; }
+.au-notice { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: 12px; padding: 14px 18px; font-size: 14px; margin-bottom: 22px; display:flex; gap:10px; align-items:center; }
+.au-notice a { color: #92400e; font-weight: 700; }
+.au-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.au-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.au-card-top { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+.au-name { font-size: 17px; font-weight: 700; color: #0f172a; line-height:1.25; }
+.au-spec { font-size: 12.5px; color: #64748b; margin-top: 4px; }
+.au-grade { font-size: 12px; font-weight: 800; padding: 3px 10px; border-radius: 999px; flex-shrink:0; }
+.g-A,.g-B { background:#dcfce7; color:#15803d; } .g-C { background:#fef9c3; color:#a16207; } .g-D { background:#fee2e2; color:#b91c1c; } .g- { background:#f1f5f9; color:#64748b; }
+.au-bidrow { display:flex; justify-content:space-between; align-items:flex-end; border-top:1px solid #f1f5f9; padding-top:12px; }
+.au-hb-lbl { font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:#94a3b8; }
+.au-hb { font-size:20px; font-weight:800; color:#0f172a; }
+.au-nobid { font-size:15px; font-weight:600; color:#94a3b8; }
+.au-reserve { font-size:12px; color:#64748b; }
+.au-timer-row { display:flex; justify-content:space-between; align-items:center; }
+.au-timer { font-weight:700; color:#0f172a; font-variant-numeric:tabular-nums; }
+.au-timer.ended { color:#94a3b8; }
+.au-live { font-size:11px; font-weight:800; color:#dc2626; }
+.au-live .dot { display:inline-block;width:7px;height:7px;border-radius:50%;background:#dc2626;margin-right:5px;animation:aupulse 1.2s infinite; }
+@keyframes aupulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+.au-btn { display:block; text-align:center; background:#0B7D24; color:#fff; border:none; border-radius:9px; padding:11px; font-weight:700; font-size:14px; text-decoration:none; }
+.au-btn:hover { background:#015310; color:#fff; }
+.au-empty { text-align:center; color:#64748b; padding:60px 20px; font-size:15px; }
+{% endblock %}
+
+{% block content %}
+<div class="au-wrap">
+  <div class="au-h">Live Auctions</div>
+  <div class="au-sub">Certified, inspected cars — 30-minute live auctions.</div>
+
+  {% if not can_bid %}
+  <div class="au-notice">
+    <span>⚠</span>
+    <div>You can browse auctions, but <strong>complete dealer verification to place bids</strong>.
+      <a href="/auth/dealer/onboard/">Complete verification →</a></div>
+  </div>
+  {% endif %}
+
+  {% if auctions %}
+  <div class="au-grid">
+    {% for a in auctions %}
+    <div class="au-card">
+      <div class="au-card-top">
+        <div>
+          <div class="au-name">{{ a.vehicle.name }}</div>
+          <div class="au-spec">
+            {{ a.vehicle.year }}{% if a.vehicle.fuel %} · {{ a.vehicle.fuel }}{% endif %}{% if a.vehicle.transmission %} · {{ a.vehicle.transmission }}{% endif %}{% if a.vehicle.km %} · {{ a.vehicle.km }} km{% endif %}{% if a.vehicle.city %} · {{ a.vehicle.city }}{% endif %}
+          </div>
+        </div>
+        {% if a.vehicle.grade %}<span class="au-grade g-{{ a.vehicle.grade }}">{{ a.vehicle.grade }}</span>{% endif %}
+      </div>
+
+      <div class="au-bidrow">
+        <div>
+          <div class="au-hb-lbl">Highest Bid</div>
+          {% if a.highest %}<div class="au-hb"><span class="au-inr" data-v="{{ a.highest }}"></span></div>{% else %}<div class="au-nobid">No bids yet</div>{% endif %}
+        </div>
+        <div class="au-reserve">Reserve <span class="au-inr" data-v="{{ a.reserve }}"></span></div>
+      </div>
+
+      <div class="au-timer-row">
+        <span class="au-live"><span class="dot"></span>LIVE</span>
+        <span class="au-timer" data-end="{{ a.end_ts }}">—</span>
+      </div>
+
+      <a class="au-btn" href="/auctions/{{ a.id }}/">View &amp; Bid →</a>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="au-empty">No live auctions right now. Check back soon.</div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  document.querySelectorAll('.au-inr').forEach(function (el) {
+    var n = parseInt(el.dataset.v, 10);
+    el.textContent = isNaN(n) ? '—' : '₹' + n.toLocaleString('en-IN');
+  });
+  var timers = Array.prototype.slice.call(document.querySelectorAll('.au-timer'));
+  function fmt(s) {
+    var h = Math.floor(s/3600); s-=h*3600; var m = Math.floor(s/60); var ss = s-m*60;
+    if (h>0) return h+'h '+m+'m'; if (m>0) return m+'m '+ss+'s'; return ss+'s';
+  }
+  function tick() {
+    var now = Math.floor(Date.now()/1000);
+    timers.forEach(function (el) {
+      var end = parseInt(el.dataset.end,10), left = end-now;
+      if (isNaN(end)) { el.textContent='—'; return; }
+      if (left<=0) { el.textContent='Ended'; el.classList.add('ended'); }
+      else el.textContent = fmt(left);
+    });
+  }
+  tick(); setInterval(tick, 1000);
+})();
+</script>
+{% endblock %}

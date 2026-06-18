@@ -326,10 +326,19 @@ def dealer_dashboard(request):
     if not request.user.is_dealer:
         return redirect(get_dashboard_url(request.user))
     latest = latest_dealer_verification(request.user)
+    from django.utils import timezone
+    from auctions.models import Auction, Bid
+    now = timezone.now()
+    live_count = Auction.objects.filter(status="live", start_at__lte=now, end_at__gt=now).count()
+    my_active_bids = (Bid.objects.filter(dealer=request.user, is_voided=False,
+                                         auction__status="live", auction__end_at__gt=now)
+                      .values("auction").distinct().count())
     return render(request, "www/dashboard/dealer.html", {
         "verification_status": latest.status if latest else None,  # None/pending/approved/rejected
         "reject_reason": latest.reject_reason if latest else "",
         "can_bid": dealer_can_bid(request.user),
+        "live_count": live_count,
+        "my_active_bids": my_active_bids,
     })
 
 

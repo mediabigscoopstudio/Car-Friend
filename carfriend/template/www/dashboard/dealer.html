@@ -78,8 +78,8 @@
       <div class="col-6 col-md-3">
         <div class="stat-card">
           <div class="lbl">Active Bids</div>
-          <div class="val">0</div>
-          <div class="sub">Bids placed this week</div>
+          <div class="val">{{ my_active_bids|default:0 }}</div>
+          <div class="sub">Live auctions you're bidding in</div>
         </div>
       </div>
       <div class="col-6 col-md-3">
@@ -99,7 +99,7 @@
       <div class="col-6 col-md-3">
         <div class="stat-card">
           <div class="lbl">Live Now</div>
-          <div class="val">—</div>
+          <div class="val">{{ live_count|default:0 }}</div>
           <div class="sub">Auctions running</div>
         </div>
       </div>
@@ -114,8 +114,12 @@
           </h5>
           <div class="empty-state">
             <div class="icon">⚡</div>
-            <p>Complete your dealer KYC to start bidding on live auctions.<br>Once verified, you'll see all active auctions here.</p>
-            <a href="/auctions/" class="btn-dash" style="font-size:13px;padding:9px 20px;">Browse All Auctions →</a>
+            {% if live_count %}
+            <p><strong>{{ live_count }}</strong> live auction{{ live_count|pluralize }} running right now.</p>
+            {% else %}
+            <p>No live auctions at the moment. New auctions open as inspected cars are approved.</p>
+            {% endif %}
+            <a href="/auctions/" class="btn-dash" style="font-size:13px;padding:9px 20px;">Browse Live Auctions →</a>
           </div>
         </div>
         <div class="section-card">
