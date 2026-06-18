@@ -5,30 +5,62 @@
 {% block content %}
 {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
 <div class="section-header"><h2>All Auctions</h2></div>
-<div class="table-wrap">
+
+<style>
+  .au-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .au-scroll table { min-width:880px; }
+  .au-veh-name { font-weight:600; color:var(--text); }
+  .au-veh-sub { font-size:12px; color:var(--text-2); margin-top:2px; }
+  .au-mono { font-family:var(--mono); white-space:nowrap; }
+  .au-cd { font-weight:600; color:var(--text); white-space:nowrap; }
+  .au-cd.ended { color:var(--text-2); font-weight:500; }
+  .au-end-sub { font-size:11px; color:var(--text-2); margin-top:2px; white-space:nowrap; }
+  .au-nobid { color:var(--text-2); }
+  .btn-view { background:var(--green); color:#fff; border:none; }
+</style>
+
+<div class="table-wrap au-scroll">
   <table>
-    <thead><tr><th>Vehicle</th><th>Status</th><th>Reserve</th><th>Highest Bid</th><th>Ends At</th><th>Re-activations</th><th>Actions</th></tr></thead>
+    <thead><tr>
+      <th>Vehicle</th><th>Bid Asked</th><th>Reserve</th><th>Highest Bid</th>
+      <th>Time Left</th><th>Re-activations</th><th>Actions</th>
+    </tr></thead>
     <tbody>
       {% for a in auctions %}
       <tr>
-        <td>{{ a.vehicle.title }}</td>
+        <!-- Vehicle: car name + plate · city -->
         <td>
-          <span class="pill {% if a.status == 'live' %}pill-green{% elif a.status == 'closed' %}pill-red{% else %}pill-gray{% endif %}">
-            {{ a.get_status_display }}
-          </span>
+          <div class="au-veh-name">{{ a.vehicle.display_name|default:"—" }}</div>
+          <div class="au-veh-sub">{{ a.vehicle.plate_number|default:"—" }}{% if a.vehicle.city %} · {{ a.vehicle.city }}{% endif %}</div>
+          <span class="pill {% if a.status == 'live' %}pill-green{% elif a.status == 'closed' %}pill-red{% else %}pill-gray{% endif %}" style="margin-top:6px;display:inline-block">{{ a.get_status_display }}</span>
         </td>
-        <td style="font-family:var(--mono)">₹{{ a.reserve_price|floatformat:0 }}</td>
-        <td style="font-family:var(--mono)">
-          {% if a.highest_bid %}₹{{ a.highest_bid.amount|floatformat:0 }}{% else %}—{% endif %}
+
+        <!-- Bid Asked (seller expected price) -->
+        <td class="au-mono">{% if a.vehicle.expected_price %}<span class="au-inr" data-v="{{ a.vehicle.expected_price|floatformat:0 }}"></span>{% else %}—{% endif %}</td>
+
+        <!-- Reserve -->
+        <td class="au-mono"><span class="au-inr" data-v="{{ a.reserve_price }}"></span></td>
+
+        <!-- Highest Bid -->
+        <td class="au-mono">{% if a.highest_bid %}<span class="au-inr" data-v="{{ a.highest_bid.amount }}"></span>{% else %}<span class="au-nobid">No bids</span>{% endif %}</td>
+
+        <!-- Time Left (live countdown) -->
+        <td>
+          <span class="au-cd" data-end="{{ a.end_at|date:'U' }}" data-status="{{ a.status }}">—</span>
+          <div class="au-end-sub" title="Ends {{ a.end_at|date:'d M Y, H:i' }}">{{ a.end_at|date:'d M, H:i' }}</div>
         </td>
-        <td>{{ a.end_at|date:"d M H:i" }}</td>
+
+        <!-- Re-activations -->
         <td>{{ a.reactivation_count }}/10</td>
+
+        <!-- Actions -->
         <td style="display:flex;gap:6px;flex-wrap:wrap">
-          {% if a.status == 'closed' or a.status == 'completed' %}
-          <form method="post" action="/auction_reactivate/{{ a.id }}">{% csrf_token %}<button class="btn btn-primary btn-sm">Re-activate</button></form>
-          {% endif %}
+          <a href="/auction/{{ a.id }}" class="btn btn-sm btn-view">View Auction</a>
           {% if a.status == 'live' %}
           <form method="post" action="/auction_pause/{{ a.id }}">{% csrf_token %}<button class="btn btn-danger btn-sm">Pause</button></form>
+          {% endif %}
+          {% if a.status == 'closed' or a.status == 'completed' %}
+          <form method="post" action="/auction_reactivate/{{ a.id }}">{% csrf_token %}<button class="btn btn-primary btn-sm">Re-activate</button></form>
           {% endif %}
         </td>
       </tr>
@@ -38,4 +70,40 @@
     </tbody>
   </table>
 </div>
+
+<script>
+(function () {
+  // Money: format with Indian thousands grouping + ₹.
+  document.querySelectorAll('.au-inr').forEach(function (el) {
+    var n = parseInt(el.dataset.v, 10);
+    el.textContent = isNaN(n) ? '—' : '₹' + n.toLocaleString('en-IN');
+  });
+
+  // Live countdown for each auction.
+  var cds = Array.prototype.slice.call(document.querySelectorAll('.au-cd'));
+  function fmt(secs) {
+    var d = Math.floor(secs / 86400); secs -= d * 86400;
+    var h = Math.floor(secs / 3600);  secs -= h * 3600;
+    var m = Math.floor(secs / 60);    var s = secs - m * 60;
+    if (d > 0) return d + 'd ' + h + 'h';
+    if (h > 0) return h + 'h ' + m + 'm';
+    if (m > 0) return m + 'm ' + s + 's';
+    return s + 's';
+  }
+  function tick() {
+    var now = Math.floor(Date.now() / 1000);
+    cds.forEach(function (el) {
+      var status = el.dataset.status;
+      if (status === 'closed' || status === 'completed') { el.textContent = 'Ended'; el.classList.add('ended'); return; }
+      var end = parseInt(el.dataset.end, 10);
+      var left = end - now;
+      if (isNaN(end)) { el.textContent = '—'; return; }
+      if (left <= 0) { el.textContent = 'Ended'; el.classList.add('ended'); }
+      else { el.textContent = fmt(left); el.classList.remove('ended'); }
+    });
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
 {% endblock %}

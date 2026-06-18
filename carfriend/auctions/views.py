@@ -8,7 +8,8 @@ from .models import Auction, Bid
 
 @admin_required
 def auctions_overview(request):
-    return render(request, "master/auctions.html", {"active": "auctions", "auctions": Auction.objects.all()})
+    auctions = Auction.objects.select_related("vehicle").prefetch_related("bids")
+    return render(request, "master/auctions.html", {"active": "auctions", "auctions": auctions})
 
 
 @admin_required
