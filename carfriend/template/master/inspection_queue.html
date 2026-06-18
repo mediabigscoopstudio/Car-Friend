@@ -11,7 +11,10 @@
     <tbody>
       {% for r in reports %}
       <tr>
-        <td>{{ r.visit.vehicle.title }}</td>
+        <td>
+          <div style="font-weight:600">{{ r.visit.vehicle.plate_number|default:"—" }}</div>
+          <div style="font-size:12px;color:var(--text-2)">{{ r.visit.vehicle.display_name }}</div>
+        </td>
         <td>{{ r.visit.inspector }}</td>
         <td>{{ r.submitted_at|date:"d M Y H:i"|default:"—" }}</td>
         <td>{{ r.score }}/100</td>
