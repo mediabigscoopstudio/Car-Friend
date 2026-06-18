@@ -255,6 +255,31 @@
   text-transform: uppercase; letter-spacing: .03em;
 }
 
+/* ── per-checkpoint photos (in tables) ── */
+.ir-ph-row td { background: var(--mist) !important; padding: 10px 12px !important; }
+.ir-cp-thumbs { display: flex; flex-wrap: wrap; gap: 8px; }
+.ir-cp-thumb {
+  width: 96px; height: 72px; object-fit: cover;
+  border-radius: 8px; border: 1px solid var(--line);
+  cursor: pointer; display: block; transition: transform .1s;
+}
+.ir-cp-thumb:hover { transform: scale(1.03); border-color: var(--green); }
+
+/* ── video / audio ── */
+.ir-media-col { display: flex; flex-direction: column; gap: 12px; }
+.ir-video { width: 100%; max-width: 640px; border-radius: 12px; border: 1px solid var(--line); background: #000; display: block; }
+.ir-audio { width: 100%; max-width: 640px; }
+
+/* ── lightbox ── */
+.ir-lightbox {
+  position: fixed; inset: 0; z-index: 1100;
+  background: rgba(0,0,0,.85);
+  display: none; align-items: center; justify-content: center; padding: 24px;
+}
+.ir-lightbox.show { display: flex; }
+.ir-lightbox img { max-width: 95%; max-height: 95%; border-radius: 8px; box-shadow: 0 10px 50px rgba(0,0,0,.5); }
+.ir-lightbox-close { position: absolute; top: 18px; right: 24px; color: #fff; font-size: 34px; line-height: 1; cursor: pointer; background: none; border: none; }
+
 /* ── modals ── */
 .modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px; }
 .modal-box { background:var(--paper);border-radius:16px;padding:28px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.15); }
@@ -282,9 +307,13 @@
     {% if r.pdf %}
     <a href="{{ r.pdf.url }}" target="_blank" class="ir-pdf">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      Download PDF
+      View / Download PDF
     </a>
     {% endif %}
+    <a href="?refresh=1" class="ir-pdf" title="Rebuild the PDF with the latest layout">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+      Regenerate PDF
+    </a>
   </div>
 
   <!-- Score banner -->
@@ -295,20 +324,20 @@
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
           CarFriend Inspection
         </div>
-        <div class="ir-vehicle-name">{{ r.visit.vehicle.title }}</div>
+        <div class="ir-vehicle-name">{{ v|short_car_name }}</div>
         <div class="ir-vehicle-meta">
-          {{ r.visit.vehicle.reg_number|default:"—" }} · {{ r.visit.vehicle.year }}
+          {{ v.plate_number|default:"—" }} · {{ v.year }}
           {% with s=r.checkpoints|dictkey:'summary' %}
           {% if s %}
             {% if s|dictkey:'km' %} · {{ s|dictkey:'km' }} km{% endif %}
-            {% if s|dictkey:'fuel_type' %} · {{ s|dictkey:'fuel_type' }}{% endif %}
+            {% if v.fuel_type %} · {{ v.get_fuel_type_display }}{% endif %}
           {% endif %}
           {% endwith %}
         </div>
         <div class="ir-inspector-meta">
           <span>Inspector: {{ r.visit.inspector.get_full_name|default:r.visit.inspector.username }}</span>
           <span>{{ r.submitted_at|date:"d M Y"|default:"Not submitted" }}</span>
-          {% if r.visit.vehicle.location %}<span>{{ r.visit.vehicle.location }}</span>{% endif %}
+          {% if v.city %}<span>{{ v.city }}</span>{% endif %}
         </div>
       </div>
       <div class="ir-score-side">
@@ -438,6 +467,17 @@
             </tr>
             {% endwith %}
           {% endif %}
+          {% if part.photos %}
+          <tr class="ir-ph-row">
+            <td colspan="4">
+              <div class="ir-cp-thumbs">
+                {% for ph in part.photos %}
+                <img src="{{ ph.url }}" class="ir-cp-thumb" loading="lazy" alt="{{ part.label }}" onclick="irLightbox('{{ ph.url|escapejs }}')">
+                {% endfor %}
+              </div>
+            </td>
+          </tr>
+          {% endif %}
         {% endfor %}
       </tbody>
     </table>
@@ -462,6 +502,30 @@
         <div class="ir-photo-label">{{ p.slot }}</div>
       </div>
       {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Video -->
+  {% if videos %}
+  <div class="ir-section" style="margin-top:8px">
+    <div class="ir-section-hd">Vehicle Video <span class="ir-ok-badge">{{ videos|length }}</span></div>
+    <div class="ir-media-col">
+      {% for vid in videos %}
+      <video src="{{ vid.url }}" controls preload="metadata" class="ir-video"></video>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Audio -->
+  {% if audios %}
+  <div class="ir-section" style="margin-top:8px">
+    <div class="ir-section-hd">Engine Audio <span class="ir-ok-badge">{{ audios|length }}</span></div>
+    <div class="ir-media-col">
+      {% for a in audios %}
+      <audio src="{{ a.url }}" controls preload="metadata" class="ir-audio"></audio>
       {% endfor %}
     </div>
   </div>
@@ -542,6 +606,12 @@
   </div>
 </div>
 
+<!-- Lightbox for checkpoint / gallery photos -->
+<div class="ir-lightbox" id="ir-lightbox" onclick="irLightboxClose(event)">
+  <button type="button" class="ir-lightbox-close" onclick="irLightboxClose(event)" aria-label="Close">×</button>
+  <img id="ir-lightbox-img" src="" alt="">
+</div>
+
 <script>
 function openApproveModal(){ document.getElementById('modal-approve').style.display='flex'; }
 function openRedoModal(){    document.getElementById('modal-redo').style.display='flex'; }
@@ -552,6 +622,16 @@ function closeModals(){
 document.querySelectorAll('.modal-overlay').forEach(m =>
   m.addEventListener('click', e => { if(e.target===m) closeModals(); })
 );
+
+function irLightbox(url){
+  document.getElementById('ir-lightbox-img').src = url;
+  document.getElementById('ir-lightbox').classList.add('show');
+}
+function irLightboxClose(e){
+  if (e && e.target && e.target.tagName === 'IMG' && e.target.id === 'ir-lightbox-img') return;
+  document.getElementById('ir-lightbox').classList.remove('show');
+}
+document.addEventListener('keydown', e => { if(e.key==='Escape') irLightboxClose(); });
 </script>
 
 {% endblock %}

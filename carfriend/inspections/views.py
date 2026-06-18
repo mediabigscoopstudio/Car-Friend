@@ -26,6 +26,24 @@ def inspection_queue(request):
 def inspection_review(request, id):
     r = get_object_or_404(InspectionReport, id=id)
 
+    # Regenerate the PDF on demand (e.g. for reports submitted before a template
+    # change). Only deletes the old file once weasyprint is confirmed available.
+    if request.GET.get("refresh"):
+        from .services import generate_report_pdf
+        try:
+            import weasyprint  # noqa: F401
+            if r.pdf:
+                r.pdf.delete(save=False)
+            generate_report_pdf(r)
+        except Exception:
+            pass
+        return redirect(f"/inspection_review/{id}")
+
+    # Per-checkpoint photos grouped by (section, part key)
+    cp_by = {}
+    for ph in r.checkpoint_photos.all():
+        cp_by.setdefault((ph.section, ph.checkpoint_key), []).append({"url": ph.image.url})
+
     # Pre-process checkpoints into template-friendly structure
     sections_data = []
     for sec_key, sec_schema in CHECKPOINT_SCHEMA.items():
@@ -76,20 +94,33 @@ def inspection_review(request, id):
                     "unit": part.get("unit", ""),
                     "has_subparts": bool(part.get("subparts")),
                     "subparts": subparts_data,
+                    "photos": cp_by.get((sec_key, part["key"]), []),
                 })
         sections_data.append(sec_row)
 
-    # Photo list for gallery
-    photos = []
-    for m in r.media.filter(kind="photo"):
-        img = m.webp_file or m.masked_file or m.file
-        photos.append({"slot": m.slot or m.section or "Photo", "url": img.url if img else ""})
+    # Media: photo gallery + video + audio
+    photos, videos, audios = [], [], []
+    for m in r.media.all():
+        if m.kind == "photo":
+            img = m.webp_file or m.masked_file or m.file
+            if img:
+                photos.append({"slot": m.slot or m.section or "Photo", "url": img.url})
+        elif m.kind == "video":
+            vid = m.mp4_file or m.file
+            if vid:
+                videos.append({"url": vid.url})
+        elif m.kind == "audio":
+            if m.file:
+                audios.append({"url": m.file.url})
 
     return render(request, "master/inspection_review.html", {
         "active": "inspections",
         "r": r,
+        "v": r.visit.vehicle,
         "sections_data": sections_data,
         "photos": photos,
+        "videos": videos,
+        "audios": audios,
         "dents": r.dents.all(),
         "schema": CHECKPOINT_SCHEMA,
     })

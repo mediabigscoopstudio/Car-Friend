@@ -1,159 +1,208 @@
-<!DOCTYPE html>
+{% load cf %}<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #222; background: #fff; }
-.page { padding: 24px 28px; max-width: 780px; margin: 0 auto; }
+  @page { size: A4; margin: 18mm 14mm; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 10.5px; color: #1f2937; }
+  .muted { color: #9ca3af; }
 
-/* header */
-.header { display: flex; justify-content: space-between; align-items: flex-start;
-          border-bottom: 3px solid #015310; padding-bottom: 14px; margin-bottom: 18px; }
-.brand { font-size: 22px; font-weight: 800; color: #015310; letter-spacing: -.5px; }
-.brand span { color: #0B7D24; }
-.report-meta { text-align: right; font-size: 10px; color: #666; }
-.report-meta .rn { font-size: 13px; font-weight: 700; color: #222; }
+  /* header */
+  table.layout { width: 100%; border-collapse: collapse; }
+  .header td { vertical-align: top; border-bottom: 2.5px solid #0B7D24; padding-bottom: 12px; }
+  .brand { font-size: 21px; font-weight: 800; color: #015310; letter-spacing: -.5px; }
+  .brand span { color: #0B7D24; }
+  .brand-sub { font-size: 9.5px; color: #6b7280; margin-top: 2px; letter-spacing: .04em; text-transform: uppercase; }
+  .meta { text-align: right; font-size: 9.5px; color: #6b7280; line-height: 1.5; }
+  .meta .rn { font-size: 12px; font-weight: 700; color: #111827; }
 
-/* score banner */
-.score-banner { background: #015310; color: #fff; padding: 14px 20px;
-                border-radius: 8px; display: flex; justify-content: space-between;
-                align-items: center; margin-bottom: 18px; }
-.score-left h2 { font-size: 20px; font-weight: 800; margin-bottom: 2px; }
-.score-left p  { font-size: 11px; opacity: .8; }
-.score-circle  { width: 70px; height: 70px; border-radius: 50%;
-                 background: #fff; display: flex; flex-direction: column;
-                 align-items: center; justify-content: center; }
-.score-num     { font-size: 22px; font-weight: 800; color: #015310; line-height: 1; }
-.score-label   { font-size: 9px; color: #015310; }
-.grade-badge   { font-size: 24px; font-weight: 800; color: #fff;
-                 background: rgba(255,255,255,.2); border-radius: 6px;
-                 padding: 4px 14px; }
+  /* title + score */
+  .titlebar { margin: 16px 0 18px; }
+  .titlebar td { vertical-align: middle; }
+  .car-name { font-size: 19px; font-weight: 800; color: #111827; }
+  .car-sub { font-size: 10.5px; color: #6b7280; margin-top: 4px; }
+  .score-cell { width: 150px; text-align: right; }
+  .score-box { display: inline-block; background: #015310; border-radius: 8px; padding: 8px 6px; width: 150px; }
+  .score-box td { vertical-align: middle; text-align: center; color: #fff; }
+  .grade-big { font-size: 26px; font-weight: 800; line-height: 1; }
+  .grade-lbl { font-size: 8px; text-transform: uppercase; opacity: .85; letter-spacing: .06em; }
+  .score-div { border-left: 1px solid rgba(255,255,255,.3); }
+  .score-num { font-size: 22px; font-weight: 800; line-height: 1; }
+  .score-den { font-size: 8.5px; opacity: .85; }
 
-/* vehicle info */
-.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; margin-bottom: 18px; }
-.info-row { border-bottom: 1px solid #eee; padding: 5px 0; }
-.info-key { font-size: 9px; color: #888; text-transform: uppercase; letter-spacing: .04em; }
-.info-val { font-size: 12px; font-weight: 600; }
+  /* basic info */
+  .info { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+  .info td { width: 33.33%; padding: 6px 10px 6px 0; vertical-align: top; }
+  .info .k { font-size: 8px; color: #9ca3af; text-transform: uppercase; letter-spacing: .05em; }
+  .info .v { font-size: 11.5px; font-weight: 600; color: #111827; margin-top: 1px; }
 
-/* section headers */
-.sec-title { font-size: 12px; font-weight: 700; text-transform: uppercase;
-             letter-spacing: .05em; background: #f5f5f5; padding: 6px 10px;
-             border-left: 4px solid #015310; margin: 14px 0 8px; }
+  /* section */
+  .sec { margin-top: 16px; page-break-inside: avoid; }
+  .sec-hd { background: #f3f4f6; border-left: 4px solid #0B7D24; padding: 6px 10px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #111827; }
+  .sec-hd .cnt { float: right; font-weight: 600; font-size: 9.5px; color: #6b7280; text-transform: none; }
+  .sec-hd .cnt .ok { color: #15803d; } .sec-hd .cnt .is { color: #c0392b; }
 
-/* checkpoint table */
-.chk-table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 8px; }
-.chk-table th { background: #f9f9f9; padding: 5px 8px; text-align: left;
-                border: 1px solid #ddd; font-size: 9px; text-transform: uppercase; color: #666; }
-.chk-table td { padding: 5px 8px; border: 1px solid #ddd; vertical-align: top; }
-.chk-table tr:nth-child(even) td { background: #fafafa; }
-.status-ok    { color: #015310; font-weight: 700; }
-.status-issue { color: #c0392b; font-weight: 700; }
-.status-na    { color: #999; }
+  table.chk { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  table.chk th { background: #fafafa; text-align: left; padding: 5px 8px; font-size: 8px;
+                 text-transform: uppercase; letter-spacing: .04em; color: #6b7280; border-bottom: 1px solid #e5e7eb; }
+  table.chk td { padding: 6px 8px; border-bottom: 1px solid #eef0f2; vertical-align: top; font-size: 10px; }
+  table.chk tr { page-break-inside: avoid; }
+  .p-name { font-weight: 700; color: #111827; }
+  .pill { display: inline-block; font-size: 9px; font-weight: 700; padding: 1.5px 8px; border-radius: 9px; }
+  .pill.ok { background: #dcfce7; color: #15803d; }
+  .pill.is { background: #fee2e2; color: #b91c1c; }
+  .pill.na { background: #f3f4f6; color: #9ca3af; }
+  .val { font-weight: 700; color: #111827; }
 
-/* photos */
-.photo-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
-.photo-item { width: 110px; }
-.photo-item img { width: 110px; height: 76px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; }
-.photo-item .slot { font-size: 9px; color: #666; text-align: center; margin-top: 2px; }
+  .thumbs td { padding: 4px 8px 10px !important; border-bottom: 1px solid #eef0f2; }
+  .thumb { display: inline-block; width: 100px; height: 72px; margin: 0 6px 6px 0;
+           border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden; }
+  .thumb img { width: 100px; height: 72px; object-fit: cover; }
+  .notchk { font-size: 9px; color: #9ca3af; padding: 6px 2px 0; }
 
-/* footer */
-.footer { margin-top: 24px; border-top: 1px solid #ddd; padding-top: 10px;
-          display: flex; justify-content: space-between; font-size: 9px; color: #999; }
+  /* media */
+  .gallery { margin-top: 4px; }
+  .gthumb { display: inline-block; width: 120px; margin: 0 8px 10px 0; vertical-align: top; }
+  .gthumb img { width: 120px; height: 84px; object-fit: cover; border: 1px solid #e5e7eb; border-radius: 4px; }
+  .gthumb .cap { font-size: 8px; color: #6b7280; text-align: center; margin-top: 2px; }
+  .media-note { display: inline-block; width: 240px; vertical-align: top; margin: 0 10px 10px 0;
+                border: 1px dashed #cbd5e1; border-radius: 6px; padding: 12px; font-size: 9.5px; color: #475569; }
+  .media-note b { color: #111827; display: block; margin-bottom: 2px; font-size: 11px; }
+
+  .footer { margin-top: 22px; border-top: 1px solid #e5e7eb; padding-top: 8px;
+            font-size: 8px; color: #9ca3af; }
+  .footer td { vertical-align: top; }
 </style>
 </head>
 <body>
-<div class="page">
 
-  <div class="header">
-    <div>
-      <div class="brand">Car<span>Friend</span></div>
-      <div style="font-size:10px;color:#666;margin-top:2px">Inspection Certificate</div>
-    </div>
-    <div class="report-meta">
-      <div class="rn">Report #{{ report_no }}</div>
-      <div>Inspector: {{ r.visit.inspector.get_full_name }}</div>
-      <div>Date: {{ r.submitted_at|date:"d M Y" }}</div>
-    </div>
-  </div>
-
-  <div class="score-banner">
-    <div class="score-left">
-      <h2>{{ v.make }} {{ v.model }} {{ v.variant }}</h2>
-      <p>{{ v.reg_number }} · {{ v.year }} · {{ v.ownership }} · {{ v.location }}</p>
-    </div>
-    <div style="display:flex;align-items:center;gap:14px">
-      <div class="grade-badge">{{ r.condition_grade }}</div>
-      <div class="score-circle">
-        <div class="score-num">{{ r.score }}</div>
-        <div class="score-label">/100</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- vehicle info -->
-  <div class="info-grid">
-    {% with s=r.checkpoints.summary %}
-    <div class="info-row"><div class="info-key">Registration</div><div class="info-val">{{ v.reg_number }}</div></div>
-    <div class="info-row"><div class="info-key">Year</div><div class="info-val">{{ v.year }}</div></div>
-    <div class="info-row"><div class="info-key">Fuel</div><div class="info-val">{{ v.fuel }}</div></div>
-    <div class="info-row"><div class="info-key">Ownership</div><div class="info-val">{{ v.ownership }}</div></div>
-    <div class="info-row"><div class="info-key">KM</div><div class="info-val">{{ s.km }}</div></div>
-    <div class="info-row"><div class="info-key">Insurance</div><div class="info-val">{{ s.insurance_type }} · {{ s.insurance_expiry }}</div></div>
-    <div class="info-row"><div class="info-key">RC Available</div><div class="info-val">{{ s.rc_availability }}</div></div>
-    <div class="info-row"><div class="info-key">Chassis</div><div class="info-val">{{ s.chassis_number_embossing }}</div></div>
-    {% endwith %}
-  </div>
-
-  <!-- sections -->
-  {% for section_key, section_data in schema.items %}
-  {% if section_key != "summary" %}
-  <div class="sec-title">{{ section_data.label }}</div>
-  <table class="chk-table">
-    <thead><tr><th>Part</th><th>Sub</th><th>Status</th><th>Note</th></tr></thead>
-    <tbody>
-    {% for part in section_data.parts %}
-      {% if part.subparts %}
-        {% for sub in part.subparts %}
-        <tr>
-          {% if forloop.first %}<td rowspan="{{ part.subparts|length }}">{{ part.label }}</td>{% endif %}
-          <td>{{ sub }}</td>
-          <td class="status-na">—</td>
-          <td></td>
-        </tr>
-        {% endfor %}
-      {% else %}
-      <tr>
-        <td>{{ part.label }}</td>
-        <td>—</td>
-        <td class="status-na">—</td>
-        <td></td>
-      </tr>
-      {% endif %}
-    {% endfor %}
-    </tbody>
+  <!-- HEADER -->
+  <table class="layout header">
+    <tr>
+      <td>
+        <div class="brand">Car<span>Friend</span></div>
+        <div class="brand-sub">Vehicle Inspection Certificate</div>
+      </td>
+      <td class="meta">
+        <div class="rn">Report #{{ report_no }}</div>
+        <div>Inspector: {{ r.visit.inspector.get_full_name|default:r.visit.inspector.username }}</div>
+        <div>Date: {{ r.submitted_at|date:"d M Y"|default:"—" }}</div>
+      </td>
+    </tr>
   </table>
-  {% endif %}
+
+  <!-- TITLE + SCORE -->
+  <table class="layout titlebar">
+    <tr>
+      <td>
+        <div class="car-name">{{ v|short_car_name }}</div>
+        <div class="car-sub">{{ subtitle|default:"—" }}</div>
+      </td>
+      <td class="score-cell">
+        <table class="score-box">
+          <tr>
+            <td><div class="grade-big">{{ r.condition_grade|default:"–" }}</div><div class="grade-lbl">Grade</div></td>
+            <td class="score-div"><div class="score-num">{{ r.score }}</div><div class="score-den">/ 100</div></td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <!-- BASIC INFO -->
+  <div class="sec-hd">Vehicle Details</div>
+  <table class="info">
+    {% for pair in basic_info %}
+    {% if forloop.counter0|divisibleby:3 %}<tr>{% endif %}
+      <td>
+        <div class="k">{{ pair.0 }}</div>
+        <div class="v">{% if pair.1 %}{{ pair.1 }}{% else %}<span class="muted">—</span>{% endif %}</div>
+      </td>
+    {% if forloop.counter|divisibleby:3 or forloop.last %}</tr>{% endif %}
+    {% endfor %}
+  </table>
+
+  <!-- CHECKPOINT SECTIONS -->
+  {% for sec in sections %}
+  <div class="sec">
+    <div class="sec-hd">{{ sec.label }}
+      <span class="cnt"><span class="ok">{{ sec.ok_count }} OK</span> · <span class="is">{{ sec.issue_count }} issue</span></span>
+    </div>
+
+    {% if sec.filled %}
+    <table class="chk">
+      <thead><tr><th style="width:30%">Part</th><th style="width:22%">Sub</th><th style="width:14%">Status</th><th>Note / Reading</th></tr></thead>
+      <tbody>
+        {% for part in sec.filled %}
+          {% for row in part.rows %}
+          <tr>
+            <td class="p-name">{% if forloop.first %}{{ part.label }}{% endif %}</td>
+            <td>{{ row.label|default:"—" }}</td>
+            <td>
+              {% if row.status == "ok" %}<span class="pill ok">OK</span>
+              {% elif row.status == "issue" %}<span class="pill is">Issue</span>
+              {% elif part.kind == "measure" or part.kind == "count" %}<span class="pill na">—</span>
+              {% else %}<span class="pill na">—</span>{% endif %}
+            </td>
+            <td>
+              {% if part.kind == "measure" or part.kind == "count" %}
+                {% if row.value %}<span class="val">{{ row.value }}</span> {{ part.unit }}{% else %}<span class="muted">—</span>{% endif %}
+              {% else %}
+                {{ row.condition|default:"" }}
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+          {% if part.photos %}
+          <tr class="thumbs">
+            <td colspan="4">
+              {% for ph in part.photos %}<span class="thumb"><img src="{{ ph.image.path }}"></span>{% endfor %}
+            </td>
+          </tr>
+          {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="notchk">No checkpoints recorded for this section.</div>
+    {% endif %}
+
+    {% if sec.empty_labels %}
+    <div class="notchk">Not inspected: {{ sec.empty_labels|join:", " }}</div>
+    {% endif %}
+  </div>
   {% endfor %}
 
-  <!-- photos -->
-  {% if media %}
-  <div class="sec-title">Inspection Photos</div>
-  <div class="photo-row">
-    {% for m in media %}
-    <div class="photo-item">
-      <img src="{{ m.image.path }}" alt="{{ m.slot }}">
-      <div class="slot">{{ m.slot }}</div>
+  <!-- PHOTOS & MEDIA -->
+  <div class="sec">
+    <div class="sec-hd">Photos &amp; Media</div>
+    {% if photos %}
+    <div class="gallery">
+      {% for p in photos %}
+      <span class="gthumb"><img src="{{ p.file.path }}"><div class="cap">{{ p.slot }}</div></span>
+      {% endfor %}
     </div>
-    {% endfor %}
-  </div>
-  {% endif %}
+    {% else %}
+    <div class="notchk">No general photos uploaded.</div>
+    {% endif %}
 
-  <div class="footer">
-    <span>CarFriend Inspection Certificate · Report {{ report_no }}</span>
-    <span>Generated {{ r.submitted_at|date:"d M Y H:i" }} · This report is system-generated.</span>
+    {% if videos %}
+    <div class="media-note"><b>▶ Vehicle Video</b>{{ videos|length }} video clip{{ videos|length|pluralize }} captured. Video plays in the online report (PDF cannot embed video).</div>
+    {% endif %}
+    {% if audios %}
+    <div class="media-note"><b>🎧 Engine Audio</b>{{ audios|length }} audio clip{{ audios|length|pluralize }} captured. Audio plays in the online report.</div>
+    {% endif %}
   </div>
 
-</div>
+  <!-- FOOTER -->
+  <table class="layout footer">
+    <tr>
+      <td>CarFriend Inspection Certificate · Report {{ report_no }}</td>
+      <td style="text-align:right">Generated {{ r.submitted_at|date:"d M Y H:i"|default:"—" }} · System-generated, no signature required.</td>
+    </tr>
+  </table>
+
 </body>
 </html>

@@ -219,6 +219,103 @@ def publish_guard(report):
     return True
 
 
+def build_report_data(report):
+    """Enriched, render-ready data for BOTH the PDF and the admin review page.
+
+    Merges the checkpoints JSON with the schema (real statuses/notes — not the
+    schema's blank rows), attaches per-checkpoint photos (CheckpointPhoto by
+    section + checkpoint_key), clean basic-info pairs from the real Vehicle
+    fields, and the video/audio/photo media. CheckpointPhoto/InspectionMedia
+    objects are returned so templates can use .image.url (web) or .image.path
+    (weasyprint PDF).
+    """
+    from .schema import CHECKPOINT_SCHEMA
+    from .models import InspectionMedia
+
+    v = report.visit.vehicle
+    summary = report.checkpoints.get("summary", {}) or {}
+
+    # checkpoint photos grouped by (section, part key)
+    cp_by = {}
+    for ph in report.checkpoint_photos.all():
+        cp_by.setdefault((ph.section, ph.checkpoint_key), []).append(ph)
+
+    sections = []
+    for sec_key, sec in CHECKPOINT_SCHEMA.items():
+        if sec.get("kind") == "media" or sec_key == "summary":
+            continue
+        saved = report.checkpoints.get(sec_key, {}) or {}
+        parts, filled, empty_labels, ok, issue = [], [], [], 0, 0
+        for part in sec.get("parts", []):
+            psaved = saved.get(part["key"], {}) if isinstance(saved, dict) else {}
+            rows = []
+            keys = part["subparts"] if part.get("subparts") else ["_"]
+            for sub in keys:
+                cell = psaved.get(sub, {}) if isinstance(psaved, dict) else {}
+                if not isinstance(cell, dict):
+                    cell = {}
+                st = cell.get("status", "")
+                if st == "ok":
+                    ok += 1
+                elif st == "issue":
+                    issue += 1
+                rows.append({
+                    "label": "" if sub == "_" else sub,
+                    "status": st,
+                    "condition": cell.get("condition", ""),
+                    "value": cell.get("value", ""),
+                })
+            photos = cp_by.get((sec_key, part["key"]), [])
+            has_data = bool(photos) or any(r["status"] or r["value"] or r["condition"] for r in rows)
+            pdata = {
+                "key": part["key"], "label": part["label"], "kind": part["kind"],
+                "unit": part.get("unit", ""), "has_subparts": bool(part.get("subparts")),
+                "rows": rows, "photos": photos, "has_data": has_data,
+            }
+            if has_data:
+                filled.append(pdata)
+            else:
+                empty_labels.append(part["label"])
+            parts.append(pdata)
+        sections.append({
+            "key": sec_key, "label": sec["label"], "parts": parts,
+            "filled": filled, "empty_labels": empty_labels,
+            "ok_count": ok, "issue_count": issue,
+        })
+
+    # basic info — real Vehicle fields + summary; empties handled in template
+    basic_info = [
+        ("Registration", v.plate_number or ""),
+        ("Year", v.year or ""),
+        ("Fuel", v.get_fuel_type_display() if v.fuel_type else ""),
+        ("Ownership", f"Owner {v.owner_number}" if v.owner_number else ""),
+        ("KM", summary.get("km", "")),
+        ("Insurance", " · ".join(x for x in [summary.get("insurance_type", ""), summary.get("insurance_expiry", "")] if x)),
+        ("RC Available", summary.get("rc_availability", "")),
+        ("Chassis No.", summary.get("chassis_number_embossing", "") or v.chassis_number or ""),
+    ]
+    subtitle = " · ".join(str(x) for x in [v.plate_number, v.year, f"Owner {v.owner_number}" if v.owner_number else "", v.city] if x)
+
+    photos, videos, audios = [], [], []
+    for m in report.media.all():
+        if m.kind == InspectionMedia.Kind.PHOTO:
+            img = m.webp_file or m.masked_file or m.file
+            if img:
+                photos.append({"slot": m.slot or m.section or "Photo", "file": img})
+        elif m.kind == InspectionMedia.Kind.VIDEO:
+            vid = m.mp4_file or m.file
+            if vid:
+                videos.append({"url": vid.url})
+        elif m.kind == InspectionMedia.Kind.AUDIO:
+            if m.file:
+                audios.append({"url": m.file.url})
+
+    return {
+        "sections": sections, "basic_info": basic_info, "subtitle": subtitle,
+        "photos": photos, "videos": videos, "audios": audios,
+    }
+
+
 def generate_report_pdf(report):
     try:
         from weasyprint import HTML
@@ -226,14 +323,12 @@ def generate_report_pdf(report):
         return None
     from django.template.loader import render_to_string
     from django.core.files.base import ContentFile
-    from .schema import CHECKPOINT_SCHEMA, PHOTO_SLOTS
+    data = build_report_data(report)
     html = render_to_string("inspection/report_pdf.html", {
         "r": report,
         "v": report.visit.vehicle,
-        "schema": CHECKPOINT_SCHEMA,
-        "photo_slots": PHOTO_SLOTS,
-        "media": report.media.all(),
         "report_no": f"{report.visit.vehicle.id:08d}/{report.id}",
+        **data,
     })
     pdf_bytes = HTML(string=html, base_url=".").write_pdf()
     report.pdf.save(f"report_{report.id}.pdf", ContentFile(pdf_bytes), save=True)
