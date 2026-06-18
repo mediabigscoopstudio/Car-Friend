@@ -637,7 +637,7 @@ function setMediaBusy(on, msg) {
 async function uploadMedia(input, kind) {
   const files = Array.from(input.files || []);
   if (!files.length || mediaBusy) { input.value = ''; return; }
-  setMediaBusy(true, kind === 'photo' ? 'Converting to WebP…' : (kind === 'video' ? 'Transcoding video…' : 'Converting audio…'));
+  setMediaBusy(true, kind === 'photo' ? 'Converting to WebP…' : (kind === 'video' ? 'Uploading…' : 'Converting audio…'));
   let err = '';
   for (const file of files) {
     const fd = new FormData();

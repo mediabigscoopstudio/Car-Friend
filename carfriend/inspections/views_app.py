@@ -132,22 +132,13 @@ def insp_upload_media(request, id):
     media = InspectionMedia(report=r, kind=kind, slot=slot, section=section)
 
     if kind == "video":
-        # ALWAYS transcode video to a light streamable mp4 (even already-mp4 —
-        # a 400 MB mp4 still needs compressing). Synchronous (approach A): the
-        # request waits for ffmpeg, so gunicorn --timeout must be raised.
-        # Non-fatal: any failure keeps the raw upload + needs_transcode=True.
-        from .services import convert_to_mp4
-        transcoded = False
-        try:
-            transcoded = convert_to_mp4(media, f)
-        except Exception:
-            logger.exception("Video transcode crashed for report %s.", r.id)
-        if not transcoded:
-            media.file.save(safe_name, f, save=False)   # keep raw, retry later
-            media.needs_transcode = True
-            logger.warning("TODO transcode: stored raw VIDEO for report %s (ffmpeg unavailable/failed).", r.id)
-        # On success we store ONLY the light mp4 — the raw 400 MB original is
-        # never written (saves space; nothing to delete afterwards).
+        # DECOUPLED: save the raw upload as-is and return immediately. NO ffmpeg
+        # in the request — compression runs later via the management command
+        # `transcode_pending_videos` (manually or by cron). The raw mp4 is a
+        # valid, playable file, so it's viewable while it waits to be compressed.
+        media.file.save(safe_name if ext else f"{safe_name}.mp4", f, save=False)
+        media.needs_transcode = True
+        media.transcoded = False
     elif kind == "photo":
         media.file.save(safe_name, f, save=False)
         from .services import convert_to_webp
