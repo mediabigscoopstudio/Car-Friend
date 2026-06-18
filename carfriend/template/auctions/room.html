@@ -10,7 +10,7 @@
     <div>
       <div class="room-label">LIVE AUCTION</div>
       <h1 class="room-title">{{ a.vehicle }}</h1>
-      <div class="room-sub">{{ a.vehicle.reg_number }} · {{ a.vehicle.year }} · {{ a.vehicle.location }}</div>
+      <div class="room-sub">{{ a.vehicle.plate_number }} · {{ a.vehicle.year }}{% if a.vehicle.city %} · {{ a.vehicle.city }}{% endif %}</div>
     </div>
     <div class="room-status">
       {% if a.status == "live" %}
@@ -33,39 +33,22 @@
           {% if highest %}₹{{ highest.amount|floatformat:0 }}{% else %}No bids yet{% endif %}
         </div>
         {% if highest %}
-        <div class="bid-by" id="bid-by">by {{ highest.bidder.get_full_name }}</div>
+        <div class="bid-by" id="bid-by">by {{ highest.dealer.get_full_name|default:highest.dealer.username }}</div>
         {% endif %}
         <div class="reserve">Reserve: ₹{{ a.reserve_price|floatformat:0 }}</div>
       </div>
-
-      {% if a.status == "live" %}
-      <div class="card mb-3">
-        <div class="card-header">Place Bid</div>
-        <form id="bid-form">
-          {% csrf_token %}
-          <div class="bid-input-row">
-            <span class="rupee">₹</span>
-            <input type="number" id="bid-amount" class="bid-input" min="{{ a.reserve_price }}"
-                   step="{{ a.min_increment }}" placeholder="Enter amount">
-          </div>
-          <div class="quick-bids" id="quick-bids"></div>
-          <button type="submit" class="btn-bid">Place Bid</button>
-        </form>
-        <div id="bid-msg" class="bid-msg"></div>
-      </div>
-      {% endif %}
 
       <div class="card">
         <div class="card-header">Bid History</div>
         <div id="bid-feed" class="bid-feed">
           {% for b in bids %}
           <div class="bid-row">
-            <span class="bid-name">{{ b.bidder.get_full_name }}</span>
+            <span class="bid-name">{{ b.dealer.get_full_name|default:b.dealer.username }}</span>
             <span class="bid-amt">₹{{ b.amount|floatformat:0 }}</span>
-            <span class="bid-time">{{ b.placed_at|date:"H:i:s" }}</span>
+            <span class="bid-time">{{ b.created_at|date:"d M H:i:s" }}</span>
           </div>
           {% empty %}
-          <div class="empty-bids">No bids yet — be the first!</div>
+          <div class="empty-bids">No bids yet</div>
           {% endfor %}
         </div>
       </div>
@@ -81,9 +64,9 @@
           <div class="detail-row"><span>Make</span><span>{{ a.vehicle.make }}</span></div>
           <div class="detail-row"><span>Model</span><span>{{ a.vehicle.model }} {{ a.vehicle.variant }}</span></div>
           <div class="detail-row"><span>Year</span><span>{{ a.vehicle.year }}</span></div>
-          <div class="detail-row"><span>Fuel</span><span>{{ a.vehicle.fuel }}</span></div>
-          <div class="detail-row"><span>Ownership</span><span>{{ a.vehicle.ownership }}</span></div>
-          <div class="detail-row"><span>Location</span><span>{{ a.vehicle.location }}</span></div>
+          <div class="detail-row"><span>Fuel</span><span>{{ a.vehicle.get_fuel_type_display|default:"—" }}</span></div>
+          <div class="detail-row"><span>Ownership</span><span>{{ a.vehicle.owner_name|default:a.vehicle.owner_number|default:"—" }}</span></div>
+          <div class="detail-row"><span>Location</span><span>{{ a.vehicle.city|default:"—" }}</span></div>
           <div class="detail-row"><span>Grade</span><span class="grade-badge grade-{{ a.vehicle.condition_grade }}">{{ a.vehicle.condition_grade }}</span></div>
         </div>
       </div>
@@ -126,19 +109,6 @@
 .current-bid{font-size:40px;font-weight:800;color:var(--green)}
 .bid-by{font-size:13px;color:var(--txt-2);margin-top:4px}
 .reserve{font-size:12px;color:var(--txt-2);margin-top:8px}
-.bid-input-row{display:flex;align-items:center;border:1px solid var(--line);border-radius:8px;
-               overflow:hidden;margin-bottom:10px}
-.rupee{padding:0 12px;font-size:18px;font-weight:700;color:var(--txt-2);background:var(--mist)}
-.bid-input{flex:1;border:none;padding:12px;font-size:16px;font-weight:600;outline:none}
-.quick-bids{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
-.quick-bids button{padding:6px 14px;border:1px solid var(--green);color:var(--green);
-                   background:transparent;border-radius:20px;font-size:13px;cursor:pointer}
-.btn-bid{width:100%;padding:14px;background:var(--green);color:#fff;border:none;
-         border-radius:8px;font-weight:700;font-size:16px;cursor:pointer}
-.btn-bid:hover{background:var(--green-2)}
-.bid-msg{font-size:13px;margin-top:8px;min-height:20px;text-align:center}
-.bid-msg.ok{color:var(--green)}
-.bid-msg.err{color:var(--red)}
 .bid-feed{display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto}
 .bid-row{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
 .bid-name{flex:1;font-size:14px;font-weight:600}
@@ -204,7 +174,6 @@ function connectWS() {
         <span class="bid-amt">₹${Number(msg.amount).toLocaleString('en-IN')}</span>
         <span class="bid-time">${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}</span>`;
       feed.insertBefore(row, feed.firstChild);
-      updateQuickBids();
     }
   };
 
@@ -214,46 +183,7 @@ function connectWS() {
 }
 
 if (IS_LIVE) connectWS();
-
-// quick bid buttons
-function updateQuickBids() {
-  const container = document.getElementById('quick-bids');
-  if (!container) return;
-  container.innerHTML = '';
-  [1, 2, 5].forEach(mult => {
-    const amount = currentHighest + MIN_INC * mult;
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.textContent = '+₹' + (MIN_INC * mult).toLocaleString('en-IN');
-    btn.onclick = () => { document.getElementById('bid-amount').value = amount; };
-    container.appendChild(btn);
-  });
-}
-updateQuickBids();
-
-// bid form
-const bidForm = document.getElementById('bid-form');
-if (bidForm) {
-  bidForm.addEventListener('submit', function(e) {
-    e.preventDefault();
-    const amount = parseInt(document.getElementById('bid-amount').value);
-    const msg = document.getElementById('bid-msg');
-    if (!amount || amount < currentHighest + MIN_INC) {
-      msg.textContent = `Min bid: ₹${(currentHighest + MIN_INC).toLocaleString('en-IN')}`;
-      msg.className = 'bid-msg err';
-      return;
-    }
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({amount: amount}));
-      msg.textContent = 'Bid placed!';
-      msg.className = 'bid-msg ok';
-      document.getElementById('bid-amount').value = '';
-      setTimeout(() => msg.textContent = '', 3000);
-    } else {
-      msg.textContent = 'Connection lost. Please refresh.';
-      msg.className = 'bid-msg err';
-    }
-  });
-}
+// Admin oversight is read-only — no bid placement. The WebSocket above only
+// watches: it updates the highest bid + prepends incoming bids to the feed live.
 </script>
 {% endblock %}

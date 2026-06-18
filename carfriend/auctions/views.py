@@ -54,7 +54,7 @@ def auction_room(request, id):
     return render(request, "auctions/room.html", {
         "active": "auctions",
         "a": a,
-        "bids": a.bids.filter(is_voided=False).order_by("-amount")[:50],
+        "bids": a.bids.filter(is_voided=False).select_related("dealer").order_by("-created_at")[:50],
         "highest": a.highest_bid,
     })
 
