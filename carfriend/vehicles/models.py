@@ -90,6 +90,9 @@ class Vehicle(models.Model):
     status          = models.CharField(max_length=30, choices=STATUS_CHOICES, default=STATUS_SUBMITTED)
     inspection_report_ready = models.BooleanField(default=False)
     auction_active  = models.BooleanField(default=False)
+    # Denormalised from the inspection report on submit (read by seller dashboard
+    # + auction room). Single-letter grade A/B/C/D, matching report.condition_grade.
+    condition_grade = models.CharField(max_length=1, blank=True)
 
     # Timestamps
     created_at      = models.DateTimeField(auto_now_add=True)
