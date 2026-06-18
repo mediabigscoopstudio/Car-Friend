@@ -3,61 +3,100 @@
 {% block page_title %}Lead: {{ vehicle.display_name }}{% endblock %}
 
 {% block content %}
-<div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
+<style>
+  .ld-wrap { display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap; }
+  .ld-left { flex:1; min-width:300px; }
+  .ld-right { width:320px; flex-shrink:0; }
+  @media (max-width:900px){ .ld-right{ width:100%; } }
+  .ld-card { background:var(--surface,#fff); border:1px solid var(--line); border-radius:14px; padding:18px 20px; margin-bottom:16px; }
+  .ld-card-title { font-size:14px; font-weight:700; color:var(--text); margin:0 0 14px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .ld-card-title .dot { width:8px; height:8px; border-radius:50%; background:var(--green); display:inline-block; margin-right:8px; vertical-align:middle; }
+  .ld-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:14px 18px; }
+  .ld-k { font-size:11px; color:var(--text-2); text-transform:uppercase; letter-spacing:.4px; margin-bottom:3px; }
+  .ld-v { font-weight:600; font-size:14px; color:var(--text); }
+  .ld-v.green { color:var(--green); }
+  .ld-row { display:flex; justify-content:space-between; gap:10px; font-size:13px; padding:4px 0; }
+  .ld-row .k { color:var(--text-2); }
+  .ld-field { width:100%; padding:8px 11px; border:1px solid var(--line); border-radius:8px; font-size:13px; background:var(--surface); color:var(--text); box-sizing:border-box; }
+  .ld-note { border-bottom:1px solid var(--line); padding:9px 0; }
+  .ld-note:last-child { border-bottom:none; }
+  .ld-muted { font-size:13px; color:var(--text-2); }
+  .ld-mini { width:100%; border-collapse:collapse; font-size:12.5px; }
+  .ld-mini th { text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.4px; color:var(--text-2); padding:6px 8px; border-bottom:1px solid var(--line); }
+  .ld-mini td { padding:8px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .ld-mini tr:last-child td { border-bottom:none; }
+  .ld-chat { display:flex; flex-direction:column; gap:8px; max-height:300px; overflow-y:auto; }
+  .ld-msg { background:var(--mist); border:1px solid var(--line); border-radius:10px; padding:8px 11px; }
+  .ld-msg .meta { font-size:11px; color:var(--text-2); margin-bottom:2px; }
+  .ld-msg .body { font-size:13px; color:var(--text); white-space:pre-wrap; }
+  .ld-ocb-block { border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:14px; }
+  .ld-ocb-block:last-child { margin-bottom:0; }
+  .ld-winner { font-size:10px; font-weight:700; color:var(--green-deep); background:var(--green-soft); border-radius:999px; padding:1px 8px; margin-left:6px; }
+</style>
 
-  <!-- Left column -->
-  <div style="flex:1;min-width:320px">
+<div class="ld-wrap">
 
-    <!-- Vehicle card -->
-    <div class="table-wrap" style="margin-bottom:20px">
-      <div class="section-header" style="padding:0 0 10px"><h3 style="font-size:15px;margin:0">Vehicle Details</h3></div>
-      <table>
-        <tbody>
-          <tr><td style="color:var(--text-2);width:140px">Plate</td><td><code>{{ vehicle.plate_number }}</code></td></tr>
-          <tr><td style="color:var(--text-2)">Make / Model</td><td><strong>{{ vehicle.display_name }}</strong></td></tr>
-          <tr><td style="color:var(--text-2)">Year</td><td>{{ vehicle.year }}</td></tr>
-          <tr><td style="color:var(--text-2)">Fuel</td><td>{{ vehicle.get_fuel_type_display }}</td></tr>
-          <tr><td style="color:var(--text-2)">Odometer</td><td>{{ vehicle.odometer_km|default:"—" }} km</td></tr>
-          <tr><td style="color:var(--text-2)">City</td><td>{{ vehicle.city|default:"—" }}</td></tr>
-          <tr><td style="color:var(--text-2)">Expected Price</td><td><strong>{% if vehicle.expected_price %}&#8377;{{ vehicle.expected_price|floatformat:0 }}{% else %}—{% endif %}</strong></td></tr>
-          <tr><td style="color:var(--text-2)">Status</td><td><span class="pill pill-gray">{{ vehicle.get_status_display }}</span></td></tr>
-          {% if vehicle.inspection_address %}<tr><td style="color:var(--text-2)">Insp. Address</td><td>{{ vehicle.inspection_address }}</td></tr>{% endif %}
-        </tbody>
-      </table>
+  <!-- LEFT COLUMN -->
+  <div class="ld-left">
+
+    <!-- Vehicle Details -->
+    <div class="ld-card">
+      <div class="ld-card-title"><span><span class="dot"></span>Vehicle Details</span></div>
+      <div class="ld-grid">
+        <div><div class="ld-k">Plate</div><div class="ld-v">{{ vehicle.plate_number|default:"—" }}</div></div>
+        <div><div class="ld-k">Make &amp; Model</div><div class="ld-v">{{ vehicle.display_name }}</div></div>
+        <div><div class="ld-k">Year</div><div class="ld-v">{{ vehicle.year }}</div></div>
+        <div><div class="ld-k">Fuel</div><div class="ld-v">{{ vehicle.get_fuel_type_display }}</div></div>
+        <div><div class="ld-k">Odometer</div><div class="ld-v">{{ vehicle.odometer_km|default:"—" }} km</div></div>
+        <div><div class="ld-k">City</div><div class="ld-v">{{ vehicle.city|default:"—" }}</div></div>
+        <div><div class="ld-k">Expected Price</div><div class="ld-v green">{% if vehicle.expected_price %}&#8377;{{ vehicle.expected_price|floatformat:0 }}{% else %}—{% endif %}</div></div>
+        <div><div class="ld-k">Owner</div><div class="ld-v">{{ vehicle.owner_name|default:"—" }}</div></div>
+        <div><div class="ld-k">Status</div><div class="ld-v"><span class="pill pill-gray">{{ vehicle.get_status_display }}</span></div></div>
+      </div>
+      {% if vehicle.inspection_address %}
+      <div style="margin-top:14px">
+        <div class="ld-k">Inspection Address</div>
+        <div style="font-size:13px;color:var(--text)">{{ vehicle.inspection_address }}</div>
+      </div>
+      {% endif %}
     </div>
 
-    <!-- Move stage -->
-    <div class="table-wrap" style="margin-bottom:20px">
-      <div class="section-header" style="padding:0 0 10px"><h3 style="font-size:15px;margin:0">Move Stage</h3></div>
-      <p style="font-size:13px;margin:0 0 10px">Current: <span class="pill pill-gray">{{ lead.stage_label }}</span></p>
-      <form method="POST" action="/pipeline/{{ lead.id }}/move/" style="display:flex;gap:8px;flex-wrap:wrap">
+    <!-- Move Stage -->
+    <div class="ld-card">
+      <div class="ld-card-title"><span><span class="dot"></span>Move Stage</span></div>
+      <div style="margin-bottom:10px;font-size:13px">
+        <span class="k" style="color:var(--text-2)">Current stage:</span>
+        <span class="pill pill-gray">{{ lead.stage_label }}</span>
+      </div>
+      <form method="POST" action="/pipeline/{{ lead.id }}/move/" style="display:flex;gap:10px;flex-wrap:wrap">
         {% csrf_token %}
-        <select name="stage" style="padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;flex:1;min-width:160px">
+        <select name="stage" class="ld-field" style="flex:1;min-width:180px">
           {% for val, label in stage_choices %}
           <option value="{{ val }}" {% if val == lead.stage %}selected{% endif %}>{{ label }}</option>
           {% endfor %}
         </select>
-        <button type="submit" class="btn btn-primary btn-sm">Move</button>
+        <button type="submit" class="btn btn-primary btn-sm">Move Lead</button>
       </form>
     </div>
 
-    <!-- Assign inspector -->
-    <div class="table-wrap" style="margin-bottom:20px">
-      <div class="section-header" style="padding:0 0 10px"><h3 style="font-size:15px;margin:0">Assign Inspector</h3></div>
+    <!-- Assign Inspector -->
+    <div class="ld-card">
+      <div class="ld-card-title"><span><span class="dot"></span>Assign Inspector</span></div>
       {% if inspection_visit %}
-      <p style="font-size:13px;color:var(--text-2);margin:0 0 12px">
-        Currently assigned: <strong>{{ inspection_visit.inspector.get_full_name|default:inspection_visit.inspector.email }}</strong>
-        &mdash; {{ inspection_visit.scheduled_at|date:"d M Y, H:i" }}
-        &mdash; <span class="pill pill-gray">{{ inspection_visit.get_status_display }}</span>
-      </p>
+      <div style="background:var(--green-soft);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px">
+        <strong style="color:var(--green-deep)">Inspector assigned:</strong>
+        {{ inspection_visit.inspector.get_full_name|default:inspection_visit.inspector.email }} —
+        {{ inspection_visit.scheduled_at|date:"d M Y, H:i" }} —
+        <span class="pill pill-gray">{{ inspection_visit.get_status_display }}</span>
+      </div>
       {% endif %}
       {% if inspectors %}
       <form method="POST" action="/pipeline/{{ lead.id }}/assign-inspector/">
         {% csrf_token %}
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
           <div>
-            <label style="font-size:12px;color:var(--text-2);display:block;margin-bottom:4px">Inspector</label>
-            <select name="inspector_id" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px" required>
+            <div class="ld-k" style="margin-bottom:5px">Inspector</div>
+            <select name="inspector_id" class="ld-field" required>
               <option value="">— Select —</option>
               {% for inspector in inspectors %}
               <option value="{{ inspector.id }}">{{ inspector.get_full_name|default:inspector.email }}</option>
@@ -65,33 +104,100 @@
             </select>
           </div>
           <div>
-            <label style="font-size:12px;color:var(--text-2);display:block;margin-bottom:4px">Date &amp; Time</label>
-            <input type="datetime-local" name="scheduled_at" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px" required>
+            <div class="ld-k" style="margin-bottom:5px">Date &amp; Time</div>
+            <input type="datetime-local" name="scheduled_at" class="ld-field" required>
           </div>
         </div>
-        <div style="margin-bottom:10px">
-          <label style="font-size:12px;color:var(--text-2);display:block;margin-bottom:4px">Inspection Address</label>
-          <input type="text" name="inspection_address" value="{{ vehicle.inspection_address }}" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px" placeholder="Address for inspector visit">
+        <div style="margin-bottom:12px">
+          <div class="ld-k" style="margin-bottom:5px">Inspection Address</div>
+          <input type="text" name="inspection_address" value="{{ vehicle.inspection_address }}" class="ld-field" placeholder="Address for inspector visit">
         </div>
         <button type="submit" class="btn btn-primary btn-sm">Assign &amp; Schedule Inspection</button>
       </form>
       {% else %}
-      <p style="font-size:13px;color:var(--text-2)">No inspectors in the system yet. <a href="/add_user" style="color:var(--brand)">Add an inspector user</a> first.</p>
+      <p class="ld-muted">No inspectors in the system yet. <a href="/add_user" style="color:var(--brand)">Add an inspector user</a> first.</p>
+      {% endif %}
+    </div>
+
+    <!-- OCB Oversight (read-only) -->
+    <div class="ld-card">
+      <div class="ld-card-title"><span><span class="dot"></span>OCB Oversight</span>
+        <span class="ld-muted" style="font-size:11px">Read-only</span>
+      </div>
+      {% if ocbs %}
+        {% for ocb in ocbs %}
+        <div class="ld-ocb-block">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+            <div>
+              {% if ocb.status == 'open' %}<span class="pill pill-yellow">Open</span>
+              {% elif ocb.status == 'accepted' %}<span class="pill pill-green">Accepted / Closed</span>
+              {% elif ocb.status == 'rejected' %}<span class="pill pill-red">Rejected</span>
+              {% else %}<span class="pill pill-gray">{{ ocb.get_status_display }}</span>{% endif %}
+              <strong style="margin-left:8px">&#8377;{{ ocb.ocb_price|floatformat:0 }}</strong>
+              <span class="ld-muted" style="margin-left:6px">client price</span>
+            </div>
+            <span class="ld-muted" style="font-size:12px">Created {{ ocb.created_at|date:"d M Y" }}</span>
+          </div>
+
+          <div class="ld-grid" style="grid-template-columns:1fr 1fr;margin-bottom:12px">
+            <div><div class="ld-k">Retail Associate</div><div class="ld-v">{{ ocb.assigned_to.get_full_name|default:ocb.assigned_to.username|default:"—" }}</div></div>
+            <div><div class="ld-k">Sales Associate</div><div class="ld-v">{{ ocb.sales_associate.get_full_name|default:ocb.sales_associate.username|default:"— Unassigned" }}</div></div>
+          </div>
+
+          <!-- Dealer offers -->
+          <div class="ld-k" style="margin-bottom:6px">Dealer Offers</div>
+          {% if ocb.offers.all %}
+          <table class="ld-mini" style="margin-bottom:12px">
+            <thead><tr><th>Dealer</th><th>Offer</th><th>Notes</th><th>By (Sales)</th><th>At</th></tr></thead>
+            <tbody>
+              {% for off in ocb.offers.all %}
+              <tr>
+                <td>{{ off.dealer.get_full_name|default:off.dealer.username }}</td>
+                <td><strong>&#8377;{{ off.price|floatformat:0 }}</strong>{% if off.is_selected %}<span class="ld-winner">Winner</span>{% endif %}</td>
+                <td>{{ off.notes|default:"—" }}</td>
+                <td>{{ off.submitted_by.get_full_name|default:off.submitted_by.username|default:"—" }}</td>
+                <td class="ld-muted" style="white-space:nowrap">{{ off.created_at|date:"d M, H:i" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <p class="ld-muted" style="margin:0 0 12px">No dealer offers submitted yet.</p>
+          {% endif %}
+
+          <!-- Chat thread (Retail ↔ Sales), read-only -->
+          <div class="ld-k" style="margin-bottom:6px">Retail &harr; Sales Chat</div>
+          {% if ocb.messages.all %}
+          <div class="ld-chat">
+            {% for m in ocb.messages.all %}
+            <div class="ld-msg">
+              <div class="meta">{{ m.sender.get_full_name|default:m.sender.username }} · {{ m.created_at|date:"d M, g:i A" }}</div>
+              <div class="body">{{ m.message }}</div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="ld-muted" style="margin:0">No messages yet.</p>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="ld-muted" style="margin:0">No OCB created for this lead yet.</p>
       {% endif %}
     </div>
 
     <!-- Bids -->
     {% if bids %}
-    <div class="table-wrap">
-      <div class="section-header" style="padding:0 0 10px"><h3 style="font-size:15px;margin:0">Bids</h3></div>
-      <table>
+    <div class="ld-card">
+      <div class="ld-card-title"><span><span class="dot"></span>Bids on this Vehicle</span></div>
+      <table class="ld-mini">
         <thead><tr><th>Dealer</th><th>Amount</th><th>Time</th></tr></thead>
         <tbody>
           {% for bid in bids %}
           <tr>
             <td>{{ bid.dealer.get_full_name|default:bid.dealer.email }}</td>
-            <td><strong>&#8377;{{ bid.amount|floatformat:0 }}</strong> {% if bid.is_winning %}<span class="pill pill-green">Winning</span>{% endif %}</td>
-            <td style="color:var(--text-2);font-size:12px">{{ bid.created_at|date:"d M Y, H:i" }}</td>
+            <td><strong style="color:var(--green)">&#8377;{{ bid.amount|floatformat:0 }}</strong> {% if bid.is_winning %}<span class="pill pill-green">Winning</span>{% endif %}</td>
+            <td class="ld-muted">{{ bid.created_at|date:"d M Y, H:i" }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -101,24 +207,60 @@
 
   </div>
 
-  <!-- Right column -->
-  <div style="width:240px;flex-shrink:0">
-    <div class="table-wrap">
-      <div class="section-header" style="padding:0 0 10px"><h3 style="font-size:15px;margin:0">Seller</h3></div>
-      <div style="font-size:13px;display:flex;flex-direction:column;gap:8px">
-        <div><span style="color:var(--text-2)">Name: </span><strong>{{ seller.get_full_name|default:"—" }}</strong></div>
-        <div><span style="color:var(--text-2)">Email: </span><a href="mailto:{{ seller.email }}" style="color:var(--brand)">{{ seller.email }}</a></div>
-        <div><span style="color:var(--text-2)">Phone: </span>{{ seller.phone|default:"—" }}</div>
-        <div><span style="color:var(--text-2)">KYC: </span>{% if seller.is_kyc_done %}<span class="pill pill-green">Verified</span>{% else %}<span class="pill pill-red">Pending</span>{% endif %}</div>
-        <div><span style="color:var(--text-2)">Lead ID: </span><strong>#{{ lead.id }}</strong></div>
-        <div><span style="color:var(--text-2)">Stage: </span><span class="pill pill-gray">{{ lead.stage_label }}</span></div>
-        <div><span style="color:var(--text-2)">Created: </span>{{ lead.created_at|date:"d M Y" }}</div>
+  <!-- RIGHT COLUMN -->
+  <div class="ld-right">
+
+    <!-- Call Notes -->
+    <div class="ld-card">
+      <div class="ld-card-title">
+        <span><span class="dot"></span>Call Notes</span>
+        <a onclick="document.getElementById('noteForm').classList.toggle('open')" style="color:var(--green);font-size:12px;font-weight:600;cursor:pointer">+ Add Note</a>
+      </div>
+      <form id="noteForm" method="post" action="/pipeline/{{ lead.id }}/note/" style="display:none;margin-bottom:12px">
+        {% csrf_token %}
+        <textarea class="ld-field" name="note" rows="3" placeholder="Summary after the call…" required style="margin-bottom:8px;resize:vertical"></textarea>
+        <button class="btn btn-primary btn-sm" type="submit">Save Note</button>
+      </form>
+      <style>#noteForm.open{display:block !important}</style>
+      {% for n in lead_notes %}
+      <div class="ld-note">
+        <div style="font-size:13px;color:var(--text)">{{ n.note }}</div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:3px">{{ n.author.get_full_name|default:n.author.username }} · {{ n.created_at|date:"d M, g:i A" }}</div>
+      </div>
+      {% empty %}
+      <div class="ld-muted">No notes yet. Add a summary after a call.</div>
+      {% endfor %}
+    </div>
+
+    <!-- Seller -->
+    <div class="ld-card">
+      <div class="ld-card-title"><span><span class="dot"></span>Seller</span></div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div><div class="ld-k">Name</div><div class="ld-v">{{ seller.get_full_name|default:"—" }}</div></div>
+        <div><div class="ld-k">Email</div><div style="font-size:13px"><a href="mailto:{{ seller.email }}" style="color:var(--green)">{{ seller.email }}</a></div></div>
+        <div><div class="ld-k">Phone</div><div class="ld-v" style="font-weight:500">{{ seller.phone|default:"—" }}</div></div>
+        <div><div class="ld-k">KYC Status</div><div>{% if seller.is_kyc_done %}<span class="pill pill-green">Verified</span>{% else %}<span class="pill pill-red">Pending</span>{% endif %}</div></div>
+        <div><div class="ld-k">Member Since</div><div class="ld-muted">{{ seller.created_at|date:"d M Y" }}</div></div>
       </div>
       {% if seller.phone %}
-      <a href="https://wa.me/91{{ seller.phone }}" target="_blank" class="btn btn-primary btn-sm" style="margin-top:12px;display:block;text-align:center;background:#25D366;border-color:#25D366">WhatsApp</a>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
+        <a href="https://wa.me/91{{ seller.phone }}" target="_blank" class="btn btn-primary btn-sm" style="width:100%;justify-content:center;background:#25D366;border-color:#25D366">WhatsApp Seller</a>
+      </div>
       {% endif %}
     </div>
-    <a href="/pipeline" class="btn btn-secondary btn-sm" style="display:block;text-align:center;margin-top:8px">&larr; Pipeline</a>
+
+    <!-- Lead Info -->
+    <div class="ld-card">
+      <div class="ld-card-title"><span><span class="dot"></span>Lead Info</span></div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div class="ld-row"><span class="k">Lead ID</span><strong>#{{ lead.id }}</strong></div>
+        <div class="ld-row"><span class="k">Stage</span><span class="pill pill-gray">{{ lead.stage_label }}</span></div>
+        <div class="ld-row"><span class="k">Vehicle Status</span><strong>{{ vehicle.get_status_display }}</strong></div>
+        <div class="ld-row"><span class="k">Created</span><span class="ld-muted">{{ lead.created_at|date:"d M Y" }}</span></div>
+      </div>
+    </div>
+
+    <a href="/pipeline" class="btn btn-secondary btn-sm" style="display:block;text-align:center">&larr; Back to Pipeline</a>
   </div>
 
 </div>

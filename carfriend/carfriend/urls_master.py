@@ -44,6 +44,7 @@ urlpatterns = [
     path("pipeline/<int:lead_id>/",                     crm.master_lead_detail,       name="master_lead_detail"),
     path("pipeline/<int:lead_id>/move/",                crm.master_lead_move,         name="master_lead_move"),
     path("pipeline/<int:lead_id>/assign-inspector/",    crm.master_assign_inspector,  name="master_assign_inspector"),
+    path("pipeline/<int:lead_id>/note/",                crm.master_lead_add_note,     name="master_lead_add_note"),
     path("sellers",                                     crm.master_sellers,           name="sellers"),
     # Sales CRM — dealer network + deals
     path("dealers",                                     crm.master_dealers,           name="dealers"),

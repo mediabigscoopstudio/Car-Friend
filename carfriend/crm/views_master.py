@@ -3,7 +3,8 @@ from django.contrib import messages
 from accounts.decorators import admin_required, role_required, inspector_required
 from accounts.models import User, DealerProfile
 from vehicles.models import Vehicle
-from crm.models import Lead, Bid
+from crm.models import Lead, Bid, LeadNote
+from auctions.models import OCBListing
 from inspections.models import InspectionVisit
 
 retail_or_admin    = role_required('retail', 'admin')
@@ -32,6 +33,14 @@ def master_lead_detail(request, lead_id):
     inspectors       = User.objects.filter(role=User.ROLE_INSPECTOR, is_active=True)
     inspection_visit = getattr(lead, 'inspection_visit', None)
     bids             = Bid.objects.filter(vehicle=lead.vehicle).order_by('-amount')[:10]
+    # OCB oversight (read-only): any OCB on this lead's vehicle, with offers + chat.
+    ocbs = []
+    if lead.vehicle_id:
+        ocbs = (OCBListing.objects
+                .filter(vehicle=lead.vehicle)
+                .select_related('assigned_to', 'sales_associate')
+                .prefetch_related('offers__dealer', 'offers__submitted_by', 'messages__sender')
+                .order_by('-created_at'))
     return render(request, 'master/lead_detail.html', {
         'active':           'pipeline',
         'lead':             lead,
@@ -41,7 +50,23 @@ def master_lead_detail(request, lead_id):
         'inspection_visit': inspection_visit,
         'bids':             bids,
         'stage_choices':    Lead.STAGE_CHOICES,
+        'lead_notes':       lead.call_notes.select_related('author').all(),
+        'ocbs':             ocbs,
     })
+
+
+@retail_or_admin
+def master_lead_add_note(request, lead_id):
+    """Admin logs a call note on a lead — reuses the LeadNote model (same as the
+    Retail Associate page). POST only."""
+    if request.method != 'POST':
+        return redirect('master_lead_detail', lead_id=lead_id)
+    lead = get_object_or_404(Lead, id=lead_id)
+    text = (request.POST.get('note') or '').strip()
+    if text:
+        LeadNote.objects.create(lead=lead, author=request.user, note=text)
+        messages.success(request, 'Note added.')
+    return redirect('master_lead_detail', lead_id=lead_id)
 
 
 @retail_or_admin
