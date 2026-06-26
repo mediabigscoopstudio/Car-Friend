@@ -17,6 +17,7 @@ from accounts.decorators import lead_manager_required
 from accounts.models import Role, User
 from core.models import log
 from crm.models import Lead
+from crm.services import transition_lead
 from inspections.models import InspectionVisit
 from notifications.services import notify
 from vehicles.models import Vehicle
@@ -70,17 +71,15 @@ def lm_qualify(request, lead_id):
     lead = get_object_or_404(Lead, id=lead_id)
     decision = request.POST.get("decision")
     note = (request.POST.get("note") or "").strip()
-    if decision == "qualified":
-        lead.stage = Lead.STAGE_QUALIFIED
-    elif decision == "unqualified":
-        lead.stage = Lead.STAGE_UNQUALIFIED
-    else:
+    event = {"qualified": "qualified", "unqualified": "unqualified"}.get(decision)
+    if not event:
         messages.error(request, "Invalid decision.")
         return redirect("/lead-manager/")
     if note:
         lead.notes = (lead.notes + "\n" if lead.notes else "") + f"[LM] {note}"
     lead.assigned_to = request.user
     lead.save()
+    transition_lead(lead, event, actor=request.user)
     log(request.user, "lead.qualify", lead, request, decision=decision)
     messages.success(request, f"Lead marked {lead.get_stage_display()}.")
     return redirect("/lead-manager/")
@@ -112,9 +111,9 @@ def lm_assign_inspection(request, lead_id):
         visit.status = InspectionVisit.Status.SCHEDULED
         visit.save()
 
-    lead.stage = Lead.STAGE_INSP_SCHED
     lead.assigned_to = request.user
     lead.save()
+    transition_lead(lead, "inspection_scheduled", actor=request.user)
     lead.vehicle.status = Vehicle.STATUS_INSPECTION
     lead.vehicle.inspection_address = address
     lead.vehicle.save()

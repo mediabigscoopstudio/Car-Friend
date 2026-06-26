@@ -9,6 +9,7 @@ from django.utils.dateparse import parse_datetime
 from accounts.models import User, DealerProfile
 from vehicles.models import Vehicle
 from crm.models import Lead, Bid, LeadNote
+from crm.services import transition_lead
 from auctions.models import OCBListing
 from inspections.models import InspectionVisit
 
@@ -146,14 +147,17 @@ def lead_add_note(request, lead_id):
 
 @login_required(login_url='/auth/login/')
 def lead_move(request, lead_id):
+    # The ONE manual override. Status is otherwise read-only and event-driven;
+    # only an admin may force a stage, and it is audited via transition_lead.
     if request.method != 'POST':
         return redirect('pipeline')
+    if not (request.user.role == User.ROLE_ADMIN or request.user.is_superuser):
+        messages.error(request, 'Lead status is automatic — only an admin can override it.')
+        return redirect('lead_detail', lead_id=lead_id)
     lead = get_object_or_404(Lead, id=lead_id)
     new_stage = request.POST.get('stage')
-    valid_stages = [s[0] for s in Lead.STAGE_CHOICES]
-    if new_stage in valid_stages:
-        lead.stage = new_stage
-        lead.save()
+    if new_stage in dict(Lead.STAGE_CHOICES):
+        transition_lead(lead, "manual_override", actor=request.user, to_stage=new_stage)
         messages.success(request, f'Lead moved to {lead.get_stage_display()}.')
     return redirect('lead_detail', lead_id=lead_id)
 
@@ -197,8 +201,7 @@ def assign_inspector(request, lead_id):
             visit.status             = InspectionVisit.Status.SCHEDULED
             visit.save()
 
-        lead.stage = Lead.STAGE_INSP_SCHED
-        lead.save()
+        transition_lead(lead, "inspection_scheduled", actor=request.user)
         lead.vehicle.status             = Vehicle.STATUS_INSPECTION
         lead.vehicle.inspection_address = address
         lead.vehicle.save()

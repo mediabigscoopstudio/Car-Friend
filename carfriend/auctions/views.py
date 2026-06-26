@@ -34,6 +34,9 @@ def auction_pause(request, id):
     a = get_object_or_404(Auction, id=id)
     a.status = "closed"
     a.save()
+    # Pipeline: closing the auction advances the lead to Auction Closed.
+    from crm.services import transition_lead_for_vehicle
+    transition_lead_for_vehicle(a.vehicle, "auction_closed", actor=request.user)
     log(request.user, "auction.pause", a, request)
     return redirect("/auctions_overview")
 

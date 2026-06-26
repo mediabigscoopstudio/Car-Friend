@@ -73,12 +73,42 @@ def retail_lead_detail(request, lead_id):
         return guard
     lead = get_object_or_404(Lead.objects.select_related("vehicle", "seller"),
                              id=lead_id, assigned_to=request.user)
-    can_ocb = lead.stage in (Lead.STAGE_NEGOTIATION, Lead.STAGE_AUCTION)
+    can_ocb = lead.stage in (Lead.STAGE_NEGOTIATION, Lead.STAGE_AUCTION,
+                             Lead.STAGE_AUCTION_LIVE, Lead.STAGE_AUCTION_CLOSED)
     existing_ocb = (OCBListing.objects.filter(vehicle=lead.vehicle).order_by("-created_at").first()
                     if lead.vehicle else None)
+    # An allocated (Assigned) lead can be sent to auction by its retail associate.
+    can_auction = lead.stage == Lead.STAGE_ASSIGNED
     return render(request, "teams/retail/lead_detail.html", {
-        "lead": lead, "can_ocb": can_ocb, "existing_ocb": existing_ocb, "car": _car(lead.vehicle),
+        "lead": lead, "can_ocb": can_ocb, "existing_ocb": existing_ocb,
+        "can_auction": can_auction, "car": _car(lead.vehicle),
     })
+
+
+@require_POST
+def retail_create_auction(request, lead_id):
+    guard = _require_retail(request)
+    if guard:
+        return guard
+    from django.utils import timezone
+    import datetime
+    from auctions.models import Auction
+    from crm.services import transition_lead
+    lead = get_object_or_404(Lead.objects.select_related("vehicle"), id=lead_id)
+    # Reuse a still-open auction for this vehicle if one exists (one was created
+    # at inspection approval); otherwise create one. Either way, advance the lead.
+    auction = (Auction.objects.filter(vehicle=lead.vehicle)
+               .exclude(status=Auction.Status.CLOSED).order_by("-created_at").first())
+    if not auction:
+        start = timezone.now()
+        auction = Auction.objects.create(
+            vehicle=lead.vehicle, reserve_price=int(lead.vehicle.expected_price or 0),
+            created_by=request.user, start_at=start,
+            end_at=start + datetime.timedelta(minutes=30), status=Auction.Status.LIVE)
+    transition_lead(lead, "auction_created", actor=request.user)
+    transition_lead(lead, "auction_live", actor=request.user)
+    messages.success(request, "Auction is live for this lead.")
+    return redirect(f"/crm/retail/lead/{lead.id}/")
 
 
 # ── OCB ──────────────────────────────────────────────────────────────────────

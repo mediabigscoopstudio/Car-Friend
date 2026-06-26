@@ -70,10 +70,12 @@ def proc_complete(request, deal_id):
     deal.save(update_fields=["status"])
     deal.vehicle.status = Vehicle.STATUS_SOLD
     deal.vehicle.save(update_fields=["status"])
+    # Pipeline: hand to procurement, then close — both audited.
+    from crm.services import transition_lead
     lead = getattr(deal.vehicle, "lead", None)
-    if lead and lead.stage != lead.STAGE_CLOSED:
-        lead.stage = lead.STAGE_CLOSED
-        lead.save(update_fields=["stage"])
+    if lead:
+        transition_lead(lead, "handed_to_procurement", actor=request.user)
+        transition_lead(lead, "closed", actor=request.user)
     log(request.user, "handover.complete", deal, request)
     messages.success(request, "Handover completed — car stocked out.")
     return redirect("/procurement/")

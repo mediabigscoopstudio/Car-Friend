@@ -61,13 +61,15 @@
       {% endif %}
     </div>
 
-    <!-- Move Stage -->
+    <!-- Stage (read-only; admin-only override) -->
     <div class="ld-card">
-      <div class="ld-card-title"><span><span class="dot"></span>Move Stage</span></div>
+      <div class="ld-card-title"><span><span class="dot"></span>Stage</span></div>
       <div style="margin-bottom:10px;font-size:13px">
         <span class="k" style="color:var(--text-2)">Current stage:</span>
         <span class="pill pill-gray">{{ lead.stage_label }}</span>
       </div>
+      {% if request.user.is_admin or request.user.is_superuser %}
+      {# Status is automatic and read-only; admins keep one audited override. #}
       <form method="POST" action="/pipeline/{{ lead.id }}/move/" style="display:flex;gap:10px;flex-wrap:wrap">
         {% csrf_token %}
         <select name="stage" class="ld-field" style="flex:1;min-width:180px">
@@ -75,8 +77,11 @@
           <option value="{{ val }}" {% if val == lead.stage %}selected{% endif %}>{{ label }}</option>
           {% endfor %}
         </select>
-        <button type="submit" class="btn btn-primary btn-sm">Move Lead</button>
+        <button type="submit" class="btn btn-primary btn-sm">Override (admin)</button>
       </form>
+      {% else %}
+      <div style="font-size:12px;color:var(--text-2)">Status updates automatically as the lead progresses.</div>
+      {% endif %}
     </div>
 
     <!-- Assign Inspector -->

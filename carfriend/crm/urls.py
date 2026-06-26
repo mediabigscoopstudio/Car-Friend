@@ -38,6 +38,7 @@ urlpatterns = [
     # Retail Associate (role-scoped: pipeline + OCB + tasks)
     path('crm/retail/pipeline/',                       retail.retail_pipeline,         name='retail_pipeline'),
     path('crm/retail/lead/<int:lead_id>/',             retail.retail_lead_detail,      name='retail_lead_detail'),
+    path('crm/retail/lead/<int:lead_id>/create-auction/', retail.retail_create_auction, name='retail_create_auction'),
     path('crm/retail/ocb/',                            retail.retail_ocb_list,         name='retail_ocb_list'),
     path('crm/retail/ocb/create/',                     retail.retail_ocb_create,       name='retail_ocb_create'),
     path('crm/retail/ocb/<int:ocb_id>/',               retail.retail_ocb_detail,       name='retail_ocb_detail'),

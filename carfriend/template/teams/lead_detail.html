@@ -58,11 +58,13 @@
 
     <!-- Move stage -->
     <div class="cf-card">
-      <div class="cf-card-title"><i class="bi bi-arrow-right-circle"></i> Move Stage</div>
+      <div class="cf-card-title"><i class="bi bi-arrow-right-circle"></i> Stage</div>
       <div style="margin-bottom:10px">
         <span style="font-size:13px;color:var(--txt2)">Current stage: </span>
         <span class="badge-stage badge-{{ lead.stage }}">{{ lead.stage_label }}</span>
       </div>
+      {% if request.user.is_admin or request.user.is_superuser %}
+      {# Status is automatic and read-only; admins keep one audited override. #}
       <form method="POST" action="{% url 'lead_move' lead.id %}" style="display:flex;gap:10px;flex-wrap:wrap">
         {% csrf_token %}
         <select name="stage" class="cf-field" style="margin:0;flex:1;min-width:180px">
@@ -70,8 +72,11 @@
           <option value="{{ val }}" {% if val == lead.stage %}selected{% endif %}>{{ label }}</option>
           {% endfor %}
         </select>
-        <button type="submit" class="btn-cf">Move Lead</button>
+        <button type="submit" class="btn-cf">Override (admin)</button>
       </form>
+      {% else %}
+      <div style="font-size:12px;color:var(--txt2)">Status updates automatically as the lead progresses.</div>
+      {% endif %}
     </div>
 
     {# Retail Associate: OCB section — show existing OCB(s), else offer to create #}

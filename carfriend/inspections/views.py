@@ -158,6 +158,9 @@ def inspection_decide(request, id):
             end_at=start + datetime.timedelta(minutes=duration),
             status="live",
         )
+        # Pipeline: the InspectionVisit post_save signal advances the lead to
+        # Admin Approved (it rests there for the Retail Head inbox — allocation
+        # comes next; the auction entity created here does not auto-advance it).
         log(request.user, "inspection.approve", r, request, duration=duration, auction=a.id)
         notify(v.inspector, "insp_decision",
                title=f"Approved: {v.vehicle.display_name}",

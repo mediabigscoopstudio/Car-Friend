@@ -12,13 +12,19 @@
       <tr><td style="border:none;color:var(--cf-slate)">Expected price</td><td style="border:none">{% if lead.vehicle.expected_price %}₹{{ lead.vehicle.expected_price }}{% else %}—{% endif %}</td></tr>
       <tr><td style="border:none;color:var(--cf-slate)">Stage</td><td style="border:none"><span class="pill">{{ lead.get_stage_display }}</span></td></tr>
     </table>
-    <div style="margin-top:16px">
+    <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      {% if can_auction %}
+        <form method="post" action="/crm/retail/lead/{{ lead.id }}/create-auction/" style="display:inline">
+          {% csrf_token %}
+          <button class="btn-sm" type="submit"><i class="bi bi-hammer"></i> Create auction</button>
+        </form>
+      {% endif %}
       {% if existing_ocb %}
         <a class="btn-sm" href="/crm/retail/ocb/{{ existing_ocb.id }}/"><i class="bi bi-people"></i> Open OCB task</a>
       {% elif can_ocb %}
         <a class="btn-sm" href="/crm/retail/ocb/create/"><i class="bi bi-plus-circle"></i> Create OCB</a>
-      {% else %}
-        <span style="font-size:12px;color:var(--cf-slate)">OCB available once the lead is in Negotiation or Auction Created.</span>
+      {% elif not can_auction %}
+        <span style="font-size:12px;color:var(--cf-slate)">OCB available once the lead reaches Auction.</span>
       {% endif %}
     </div>
   </div>
