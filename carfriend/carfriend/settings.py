@@ -33,6 +33,10 @@ load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = config("SECRET_KEY", default="django-insecure-ll@5=mw0mx%0rx92ed$4^3_u6)rr9ea+h@uo)+r^%h@d0^lhln")
 DEBUG      = config("DEBUG", default=True, cast=bool)
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default=".localhost,.carfriend.in,localhost,127.0.0.1").split(",")
+# When True, the public www surface serves a maintenance page (staff hosts stay
+# up). Default False so deploying this never takes the live site down — flip it
+# in the prod .env when you actually want the maintenance page.
+MAINTENANCE_MODE = config("MAINTENANCE_MODE", default=False, cast=bool)
 
 AUTH_USER_MODEL = "accounts.User"
 
@@ -74,6 +78,9 @@ SITE_ID = 1
 
 MIDDLEWARE = [
     "django_hosts.middleware.HostsRequestMiddleware",
+    # Runs after host resolution so request.host is known; gates only the public
+    # www surface when MAINTENANCE_MODE is on.
+    "core.middleware.MaintenanceMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "allauth.account.middleware.AccountMiddleware",

@@ -1,0 +1,38 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>We're upgrading — Car Friend</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--cf-azure:#122E5A;--cf-blue:#2D6CDF;--cf-sky:#5AA9E6;--cf-paper:#F6F9FE;--cf-slate:#51637B;--cf-ink:#0E1B2E;
+        --cf-display:'Sora',system-ui,sans-serif;--cf-sans:'Hanken Grotesk',system-ui,sans-serif;}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;background:linear-gradient(160deg,var(--cf-paper),#eaf1fb);
+       font-family:var(--cf-sans);color:var(--cf-ink);display:flex;align-items:center;justify-content:center;padding:24px}
+  .card{max-width:520px;text-align:center}
+  .logo{height:46px;margin-bottom:26px}
+  .badge{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid #dce6f2;border-radius:999px;
+         padding:7px 16px;font-size:13px;font-weight:600;color:var(--cf-blue);margin-bottom:22px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--cf-sky);box-shadow:0 0 0 4px rgba(90,169,230,.2)}
+  h1{font-family:var(--cf-display);font-size:30px;font-weight:700;color:var(--cf-azure);margin:0 0 12px}
+  p{font-size:16px;line-height:1.6;color:var(--cf-slate);margin:0 0 8px}
+  .contact{margin-top:24px;font-size:14px;color:var(--cf-slate)}
+  .contact a{color:var(--cf-blue);text-decoration:none;font-weight:600}
+</style>
+</head>
+<body>
+  <div class="card">
+    <img class="logo" src="{% static 'images/Logo/Logo.png' %}" alt="Car Friend"
+         onerror="this.style.display='none'">
+    <div class="badge"><span class="dot"></span> Scheduled upgrade in progress</div>
+    <h1>We'll be back shortly</h1>
+    <p>Car Friend is getting a quick upgrade to serve you better.</p>
+    <p>Please check back in a little while — thanks for your patience.</p>
+    <div class="contact">Need help now? Email <a href="mailto:support@carfriend.in">support@carfriend.in</a></div>
+  </div>
+</body>
+</html>
