@@ -9,22 +9,38 @@ class Lead(models.Model):
     STAGE_QUALIFIED   = 'qualified'
     STAGE_UNQUALIFIED = 'unqualified'
     STAGE_INSP_SCHED  = 'inspection_scheduled'
+    STAGE_INSP_PROG   = 'inspection_in_progress'
     STAGE_INSP_DONE   = 'inspection_done'
     STAGE_APPROVED    = 'admin_approved'
+    STAGE_ASSIGNED    = 'assigned'
     STAGE_NEGOTIATION = 'negotiation'
     STAGE_AUCTION     = 'auction_created'
+    STAGE_AUCTION_LIVE   = 'auction_live'
+    STAGE_AUCTION_CLOSED = 'auction_closed'
+    STAGE_SELLER_APPROVED = 'seller_approved'
+    STAGE_OCB         = 'ocb_in_progress'
+    STAGE_AGREEMENT   = 'agreement_signed'
+    STAGE_PROCUREMENT = 'handed_to_procurement'
     STAGE_CLOSED      = 'closed'
 
     STAGE_CHOICES = [
-        (STAGE_NEW,         'New'),
-        (STAGE_QUALIFIED,   'Qualified'),
-        (STAGE_UNQUALIFIED, 'Un-Qualified'),
-        (STAGE_INSP_SCHED,  'Inspection Scheduled'),
-        (STAGE_INSP_DONE,   'Inspection Done'),
-        (STAGE_APPROVED,    'Admin Approved'),
-        (STAGE_NEGOTIATION, 'Negotiation'),
-        (STAGE_AUCTION,     'Auction Created'),
-        (STAGE_CLOSED,      'Closed'),
+        (STAGE_NEW,            'New'),
+        (STAGE_QUALIFIED,      'Qualified'),
+        (STAGE_UNQUALIFIED,    'Un-Qualified'),
+        (STAGE_INSP_SCHED,     'Inspection Scheduled'),
+        (STAGE_INSP_PROG,      'Inspection In Progress'),
+        (STAGE_INSP_DONE,      'Report Submitted'),
+        (STAGE_APPROVED,       'Admin Approved'),
+        (STAGE_ASSIGNED,       'Assigned'),
+        (STAGE_NEGOTIATION,    'Negotiation'),
+        (STAGE_AUCTION,        'Auction Created'),
+        (STAGE_AUCTION_LIVE,   'Auction Live'),
+        (STAGE_AUCTION_CLOSED, 'Auction Closed'),
+        (STAGE_SELLER_APPROVED,'Seller Approved'),
+        (STAGE_OCB,            'OCB In Progress'),
+        (STAGE_AGREEMENT,      'Agreement Signed'),
+        (STAGE_PROCUREMENT,    'Handed To Procurement'),
+        (STAGE_CLOSED,         'Closed'),
     ]
 
     vehicle     = models.OneToOneField(Vehicle, on_delete=models.CASCADE, related_name='lead')
@@ -32,6 +48,14 @@ class Lead(models.Model):
                                     related_name='leads')
     assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
                                     null=True, blank=True, related_name='assigned_leads')
+    # The retail associate a Retail Head allocates this approved lead to. Kept
+    # distinct from `assigned_to`, which the Lead Manager sets to themselves at
+    # intake/qualification.
+    assigned_associate = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                            null=True, blank=True, related_name='allocated_leads')
+    allocated_at = models.DateTimeField(null=True, blank=True)
+    allocated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                     null=True, blank=True, related_name='leads_allocated_by_me')
     stage       = models.CharField(max_length=30, choices=STAGE_CHOICES, default=STAGE_NEW)
     notes       = models.TextField(blank=True)
     created_at  = models.DateTimeField(auto_now_add=True)
@@ -137,3 +161,42 @@ class LeadNote(models.Model):
 
     def __str__(self):
         return f"note by {self.author} on lead {self.lead_id}"
+
+
+class LeadAllocation(models.Model):
+    """Audit row written every time a Retail Head allocates / re-allocates a
+    lead to a retail associate (assumption D — every re-allocation is logged)."""
+
+    lead           = models.ForeignKey("crm.Lead", on_delete=models.CASCADE, related_name="allocations")
+    from_associate = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                       null=True, blank=True, related_name="lead_allocations_from")
+    to_associate   = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                       null=True, blank=True, related_name="lead_allocations_to")
+    by             = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                       null=True, blank=True, related_name="lead_allocations_by")
+    at             = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-at"]
+
+    def __str__(self):
+        return f"alloc lead {self.lead_id} → {self.to_associate}"
+
+
+class LeadStatusEvent(models.Model):
+    """Immutable audit trail of automatic (and override) pipeline transitions.
+    Written only by crm.services.transition_lead — the single source of truth."""
+
+    lead        = models.ForeignKey("crm.Lead", on_delete=models.CASCADE, related_name="status_events")
+    from_status = models.CharField(max_length=30, blank=True)
+    to_status   = models.CharField(max_length=30)
+    trigger     = models.CharField(max_length=40)
+    actor       = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                    null=True, blank=True, related_name="lead_status_events")
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"lead {self.lead_id}: {self.from_status or '∅'} → {self.to_status} ({self.trigger})"
