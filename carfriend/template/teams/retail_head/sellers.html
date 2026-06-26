@@ -1,0 +1,31 @@
+{% extends "teams/dash_base.html" %}
+{% block title %}Sellers{% endblock %}
+{% block page_title %}Retail Head · Sellers{% endblock %}
+{% block nav %}{% include "teams/retail_head/_nav.html" with active="sellers" %}{% endblock %}
+{% block head_extra %}
+<style>.filter{display:flex;gap:8px;margin-bottom:14px}.filter input{padding:9px 12px;border:1px solid var(--cf-mist);border-radius:9px;font-size:13px;min-width:260px}.filter button{padding:9px 16px;border:none;border-radius:9px;background:var(--cf-blue);color:#fff;font-weight:600;cursor:pointer}</style>
+{% endblock %}
+{% block content %}
+<form class="filter" method="get">
+  <input type="text" name="q" value="{{ q }}" placeholder="Search seller, city…">
+  <button type="submit">Search</button>
+</form>
+<div class="panel">
+  <h2>Sellers <span style="font-weight:400;color:var(--cf-slate);font-size:12px">· read-only</span></h2>
+  <table>
+    <thead><tr><th>Seller</th><th>Car</th><th>City</th><th>Verification</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td class="car">{{ r.name }}</td>
+        <td>{{ r.car }}</td>
+        <td>{{ r.city|default:"—" }}</td>
+        <td>{% if r.verified %}<span class="pill" style="background:var(--cf-teal-tint);color:var(--cf-teal-dark)">Verified</span>{% else %}<span class="pill" style="background:var(--cf-coral-tint);color:var(--cf-coral-dark)">Pending</span>{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="empty">No sellers found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

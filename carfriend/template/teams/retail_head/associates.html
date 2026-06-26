@@ -1,0 +1,24 @@
+{% extends "teams/dash_base.html" %}
+{% block title %}Retail Associates{% endblock %}
+{% block page_title %}Retail Head · Retail Associates{% endblock %}
+{% block nav %}{% include "teams/retail_head/_nav.html" with active="associates" %}{% endblock %}
+{% block content %}
+<div class="panel">
+  <h2>All retail associates</h2>
+  <table>
+    <thead><tr><th>Associate</th><th>Email</th><th>Active leads</th><th>Leads closed</th></tr></thead>
+    <tbody>
+      {% for a in associates %}
+      <tr>
+        <td class="car">{{ a.get_full_name|default:a.username }}</td>
+        <td>{{ a.email|default:"—" }}</td>
+        <td><span class="pill">{{ a.active_leads }}</span></td>
+        <td>{{ a.closed_leads }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="empty">No retail associates yet. Admin creates them in master.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

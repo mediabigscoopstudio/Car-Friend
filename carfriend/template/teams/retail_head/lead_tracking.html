@@ -1,0 +1,59 @@
+{% extends "teams/dash_base.html" %}
+{% block title %}Lead Tracking{% endblock %}
+{% block page_title %}Retail Head · Lead Tracking{% endblock %}
+{% block nav %}{% include "teams/retail_head/_nav.html" with active="tracking" %}{% endblock %}
+{% block head_extra %}
+<style>
+  .filter{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+  .filter select{padding:9px 12px;border:1px solid var(--cf-mist);border-radius:9px;font-size:13px}
+  .filter button{padding:9px 16px;border:none;border-radius:9px;background:var(--cf-blue);color:#fff;font-weight:600;cursor:pointer}
+  .grp{margin-bottom:22px}
+  .grp h2 i{color:var(--cf-blue)}
+  .re{display:inline-flex;gap:6px;align-items:center}
+  .re select{padding:5px 8px;border:1px solid var(--cf-mist);border-radius:7px;font-size:12px}
+  .re button{padding:5px 10px;border:none;border-radius:7px;background:var(--cf-azure);color:#fff;font-size:12px;font-weight:600;cursor:pointer}
+</style>
+{% endblock %}
+{% block content %}
+<form class="filter" method="get">
+  <select name="associate">
+    <option value="">All associates</option>
+    {% for a in associates %}<option value="{{ a.id }}" {% if a.id|stringformat:'s' == assoc_filter %}selected{% endif %}>{{ a.get_full_name|default:a.username }}</option>{% endfor %}
+  </select>
+  <select name="stage">
+    <option value="">All statuses</option>
+    {% for value, label in stages %}<option value="{{ value }}" {% if value == stage_filter %}selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <button type="submit">Filter</button>
+</form>
+
+{% for g in groups %}
+<div class="grp panel">
+  <h2><i class="bi bi-person-circle"></i> {{ g.associate.get_full_name|default:g.associate.username }} <span style="font-weight:400;color:var(--cf-slate);font-size:12px">· {{ g.leads|length }} lead(s)</span></h2>
+  <table>
+    <thead><tr><th>Car</th><th>Seller</th><th>Status</th><th>Re-allocate</th></tr></thead>
+    <tbody>
+      {% for l in g.leads %}
+      <tr>
+        <td class="car">{{ l.vehicle.make }} {{ l.vehicle.model }} {{ l.vehicle.year }}</td>
+        <td>{{ l.seller.get_full_name|default:l.seller.username }}</td>
+        <td><span class="pill">{{ l.get_stage_display }}</span></td>
+        <td>
+          <form class="re" method="post" action="/crm/retail-head/reallocate/">
+            {% csrf_token %}
+            <input type="hidden" name="lead_id" value="{{ l.id }}">
+            <select name="associate_id">
+              {% for a in associates %}<option value="{{ a.id }}" {% if a.id == l.assigned_associate_id %}selected{% endif %}>{{ a.get_full_name|default:a.username }}</option>{% endfor %}
+            </select>
+            <button type="submit">Move</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% empty %}
+<div class="panel"><div class="empty">No allocated leads yet. Allocate from the Approved Leads inbox.</div></div>
+{% endfor %}
+{% endblock %}

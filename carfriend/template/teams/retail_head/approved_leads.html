@@ -1,0 +1,48 @@
+{% extends "teams/dash_base.html" %}
+{% block title %}Approved Leads{% endblock %}
+{% block page_title %}Retail Head · Approved Leads{% endblock %}
+{% block nav %}{% include "teams/retail_head/_nav.html" with active="approved" %}{% endblock %}
+{% block head_extra %}
+<style>
+  .alloc-bar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+  .alloc-bar select{padding:9px 12px;border:1px solid var(--cf-mist);border-radius:9px;font-size:13px;min-width:220px}
+  .alloc-bar button{padding:9px 16px;border:none;border-radius:9px;background:var(--cf-blue);color:#fff;font-weight:600;font-size:13px;cursor:pointer}
+  .alloc-bar button:hover{background:var(--cf-blue-700)}
+  td.ck,th.ck{width:34px;text-align:center}
+</style>
+{% endblock %}
+{% block content %}
+<form method="post" action="/crm/retail-head/allocate/">
+  {% csrf_token %}
+  <div class="alloc-bar">
+    <select name="associate_id" required>
+      <option value="">Allocate selected to…</option>
+      {% for a in associates %}<option value="{{ a.id }}">{{ a.get_full_name|default:a.username }}</option>{% endfor %}
+    </select>
+    <button type="submit">Allocate</button>
+    <span style="color:var(--cf-slate);font-size:13px">{{ count }} approved, unallocated</span>
+  </div>
+  <div class="panel">
+    <h2>Admin-approved leads awaiting allocation</h2>
+    <table>
+      <thead><tr>
+        <th class="ck"><input type="checkbox" onclick="for(const c of document.querySelectorAll('.lck'))c.checked=this.checked"></th>
+        <th>Car</th><th>Plate</th><th>Seller</th><th>Expected ₹</th>
+      </tr></thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td class="ck"><input class="lck" type="checkbox" name="lead_ids" value="{{ r.id }}"></td>
+          <td class="car">{{ r.car }}</td>
+          <td>{{ r.plate }}</td>
+          <td>{{ r.seller }}</td>
+          <td>{% if r.price %}₹{{ r.price }}{% else %}—{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="empty">No approved leads waiting. New approvals land here automatically.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</form>
+{% endblock %}

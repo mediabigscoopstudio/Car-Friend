@@ -5,6 +5,7 @@ from crm import views_retail as retail
 from crm import views_sales as sales
 from crm import views_dashboards as dash
 from crm import views_procurement as pcr
+from crm import views_retail_head as rh
 from deals import views_procurement as proc
 from auctions import views_ocb as ocb
 
@@ -44,6 +45,15 @@ urlpatterns = [
     path('crm/retail/tasks/create/',                   retail.retail_task_create,      name='retail_task_create'),
     path('crm/retail/tasks/<int:task_id>/',            retail.retail_task_detail,      name='retail_task_detail'),
     path('crm/retail/tasks/<int:task_id>/status/',     retail.retail_task_status_update, name='retail_task_status_update'),
+
+    # Retail Head (teams oversight: allocate + track the whole retail pool)
+    path('crm/retail-head/',                rh.rh_approved_leads,  name='rh_approved_leads'),
+    path('crm/retail-head/allocate/',       rh.rh_allocate,        name='rh_allocate'),
+    path('crm/retail-head/associates/',     rh.rh_associates,      name='rh_associates'),
+    path('crm/retail-head/sellers/',        rh.rh_sellers,         name='rh_sellers'),
+    path('crm/retail-head/auctions/',       rh.rh_auctions,        name='rh_auctions'),
+    path('crm/retail-head/lead-tracking/',  rh.rh_lead_tracking,   name='rh_lead_tracking'),
+    path('crm/retail-head/reallocate/',     rh.rh_reallocate,      name='rh_reallocate'),
 
     # Sales Associate (role-scoped: OCB assigned-only + restricted tasks)
     path('crm/sales/ocb/',                             sales.sales_ocb_list,           name='sales_ocb_list'),

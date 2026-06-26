@@ -1,0 +1,36 @@
+{% extends "teams/dash_base.html" %}
+{% block title %}Auctions{% endblock %}
+{% block page_title %}Retail Head · Auctions{% endblock %}
+{% block nav %}{% include "teams/retail_head/_nav.html" with active="auctions" %}{% endblock %}
+{% block head_extra %}
+<style>.filter{display:flex;gap:8px;margin-bottom:14px}.filter select{padding:9px 12px;border:1px solid var(--cf-mist);border-radius:9px;font-size:13px}.filter button{padding:9px 16px;border:none;border-radius:9px;background:var(--cf-blue);color:#fff;font-weight:600;cursor:pointer}</style>
+{% endblock %}
+{% block content %}
+<form class="filter" method="get">
+  <select name="status">
+    <option value="">All statuses</option>
+    {% for value, label in statuses %}<option value="{{ value }}" {% if value == status %}selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+  <button type="submit">Filter</button>
+</form>
+<div class="panel">
+  <h2>Auctions <span style="font-weight:400;color:var(--cf-slate);font-size:12px">· read-only</span></h2>
+  <table>
+    <thead><tr><th>Car</th><th>Status</th><th>Current/closing bid</th><th>Reserve</th><th>Associate</th><th>Ends</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td class="car">{{ r.car }}</td>
+        <td><span class="pill">{{ r.status }}</span></td>
+        <td>{% if r.bid %}₹{{ r.bid }}{% else %}—{% endif %}</td>
+        <td>{% if r.reserve %}₹{{ r.reserve }}{% else %}—{% endif %}</td>
+        <td>{{ r.associate }}</td>
+        <td>{{ r.ends|date:"d M, H:i" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="empty">No auctions found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
