@@ -18,6 +18,7 @@ from accounts.models import Role, User
 from core.models import log
 from crm.models import Lead
 from crm.services import transition_lead
+from inspections.assignment import assign_inspector_to_lead
 from inspections.models import InspectionVisit
 from notifications.services import notify
 from vehicles.models import Vehicle
@@ -97,28 +98,11 @@ def lm_assign_inspection(request, lead_id):
         return redirect("/lead-manager/")
     inspector = get_object_or_404(User, id=inspector_id, role=Role.INSPECTOR)
 
-    visit, created = InspectionVisit.objects.get_or_create(
-        lead=lead,
-        defaults=dict(vehicle=lead.vehicle, inspector=inspector, assigned_by=request.user,
-                      scheduled_at=scheduled_at, inspection_address=address,
-                      status=InspectionVisit.Status.SCHEDULED),
-    )
-    if not created:
-        visit.inspector = inspector
-        visit.assigned_by = request.user
-        visit.scheduled_at = scheduled_at
-        visit.inspection_address = address
-        visit.status = InspectionVisit.Status.SCHEDULED
-        visit.save()
-
     lead.assigned_to = request.user
-    lead.save()
-    transition_lead(lead, "inspection_scheduled", actor=request.user)
-    lead.vehicle.status = Vehicle.STATUS_INSPECTION
-    lead.vehicle.inspection_address = address
-    lead.vehicle.save()
-
-    log(request.user, "lead.assign_inspector", lead, request, inspector_id=inspector.id)
+    lead.save(update_fields=["assigned_to"])
+    # Single atomic path: visit (create/relink) + state transition + audit.
+    assign_inspector_to_lead(lead, inspector, scheduled_at=scheduled_at,
+                             address=address, actor=request.user, request=request)
     notify(inspector, "insp_assigned",
            title="New inspection assigned",
            body=f"{lead.vehicle} — scheduled {scheduled_at}", url="/")

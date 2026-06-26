@@ -12,6 +12,7 @@ from crm.models import Lead, Bid, LeadNote
 from crm.services import transition_lead
 from auctions.models import OCBListing
 from inspections.models import InspectionVisit
+from inspections.assignment import assign_inspector_to_lead, inspectors_for_vehicle
 
 
 def _internal_check(request):
@@ -90,7 +91,7 @@ def lead_detail(request, lead_id):
     if not _internal_check(request):
         return redirect('/')
     lead = get_object_or_404(Lead, id=lead_id)
-    inspectors = User.objects.filter(role=User.ROLE_INSPECTOR, is_active=True)
+    inspectors = inspectors_for_vehicle(lead.vehicle)
     inspection_visit = getattr(lead, 'inspection_visit', None)
     bids = Bid.objects.filter(vehicle=lead.vehicle).order_by('-amount')[:10]
 
@@ -182,32 +183,15 @@ def assign_inspector(request, lead_id):
 
         inspector = get_object_or_404(User, id=inspector_id, role=User.ROLE_INSPECTOR)
 
-        visit, created = InspectionVisit.objects.get_or_create(
-            lead=lead,
-            defaults={
-                'vehicle':            lead.vehicle,
-                'inspector':          inspector,
-                'assigned_by':        request.user,
-                'scheduled_at':       scheduled_at,
-                'inspection_address': address,
-                'status':             InspectionVisit.Status.SCHEDULED,
-            }
-        )
-        if not created:
-            visit.inspector          = inspector
-            visit.assigned_by        = request.user
-            visit.scheduled_at       = scheduled_at
-            visit.inspection_address = address
-            visit.status             = InspectionVisit.Status.SCHEDULED
-            visit.save()
-
-        transition_lead(lead, "inspection_scheduled", actor=request.user)
-        lead.vehicle.status             = Vehicle.STATUS_INSPECTION
-        lead.vehicle.inspection_address = address
-        lead.vehicle.save()
+        _, previous = assign_inspector_to_lead(
+            lead, inspector, scheduled_at=scheduled_at, address=address,
+            actor=request.user, request=request)
 
         name = inspector.get_full_name() or inspector.email
-        messages.success(request, f'Inspector {name} assigned. Inspection scheduled.')
+        if previous and previous.id != inspector.id:
+            messages.success(request, f'Inspection reassigned to {name}.')
+        else:
+            messages.success(request, f'Inspector {name} assigned. Inspection scheduled.')
         return redirect('lead_detail', lead_id=lead_id)
 
     return redirect('lead_detail', lead_id=lead_id)
