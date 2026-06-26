@@ -114,14 +114,16 @@
     {% endif %}
     {% endif %}
 
-    <!-- Assign Inspector -->
+    <!-- Assign / Reassign Inspector -->
     <div class="cf-card">
-      <div class="cf-card-title"><i class="bi bi-person-check"></i> Assign Inspector</div>
+      <div class="cf-card-title"><i class="bi bi-person-check"></i> {% if inspection_visit %}Inspection{% else %}Assign Inspector{% endif %}</div>
       {% if inspection_visit %}
       <div style="background:var(--gs);border-radius:8px;padding:12px 16px;margin-bottom:14px;font-size:13px">
-        <strong style="color:var(--g1)">Inspector assigned:</strong>
-        {{ inspection_visit.inspector.get_full_name|default:inspection_visit.inspector.email }} —
-        {{ inspection_visit.scheduled_at|date:"d M Y, H:i" }} —
+        <strong style="color:var(--g1)">Assigned inspector:</strong>
+        {{ inspection_visit.inspector.get_full_name|default:inspection_visit.inspector.email }}
+        {% if inspection_visit.inspector.city %}<span style="color:var(--txt3)">· {{ inspection_visit.inspector.city }}</span>{% endif %}
+        <br>
+        <span style="color:var(--txt2)">Scheduled {{ inspection_visit.scheduled_at|date:"d M Y, H:i" }}</span> —
         <span class="badge-stage badge-{{ inspection_visit.status }}">{{ inspection_visit.get_status_display }}</span>
       </div>
       {% endif %}
@@ -129,24 +131,26 @@
         {% csrf_token %}
         <div class="row g-2">
           <div class="col-12 col-sm-6">
-            <label class="cf-label">Select Inspector</label>
+            <label class="cf-label">{% if inspection_visit %}Reassign to{% else %}Select Inspector{% endif %}</label>
             <select name="inspector_id" class="cf-field" required>
               <option value="">— Choose inspector —</option>
               {% for inspector in inspectors %}
-              <option value="{{ inspector.id }}">{{ inspector.get_full_name|default:inspector.email }}</option>
+              <option value="{{ inspector.id }}" {% if inspection_visit and inspector.id == inspection_visit.inspector_id %}selected{% endif %}>{{ inspector.get_full_name|default:inspector.email }}{% if inspector.city %} · {{ inspector.city }}{% endif %}</option>
               {% endfor %}
             </select>
+            {% if vehicle.city %}<div style="font-size:11px;color:var(--txt3);margin-top:4px">Inspectors in {{ vehicle.city }} shown first.</div>{% endif %}
           </div>
           <div class="col-12 col-sm-6">
             <label class="cf-label">Inspection Date & Time</label>
-            <input type="datetime-local" name="scheduled_at" class="cf-field" required>
+            <input type="datetime-local" name="scheduled_at" class="cf-field" required
+                   value="{% if inspection_visit %}{{ inspection_visit.scheduled_at|date:'Y-m-d\TH:i' }}{% endif %}">
           </div>
           <div class="col-12">
             <label class="cf-label">Inspection Address</label>
-            <input type="text" name="inspection_address" class="cf-field" value="{{ vehicle.inspection_address }}" placeholder="Address where inspector should visit">
+            <input type="text" name="inspection_address" class="cf-field" value="{{ inspection_visit.inspection_address|default:vehicle.inspection_address }}" placeholder="Address where inspector should visit">
           </div>
           <div class="col-12">
-            <button type="submit" class="btn-cf"><i class="bi bi-calendar-check me-1"></i>Assign &amp; Schedule</button>
+            <button type="submit" class="btn-cf"><i class="bi bi-calendar-check me-1"></i>{% if inspection_visit %}Reassign Inspector{% else %}Assign &amp; Schedule{% endif %}</button>
           </div>
         </div>
       </form>
