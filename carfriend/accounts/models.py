@@ -53,6 +53,13 @@ class User(AbstractUser):
     is_kyc_done  = models.BooleanField(default=False)
     is_approved  = models.BooleanField(default=False)
     fcm_token    = models.CharField(max_length=255, blank=True)
+    # Dealer→Sales-Associate allocation (set by the Sales Head). Only meaningful
+    # on dealer accounts. Kept on User because dealers ARE Users (no Dealer model).
+    assigned_sales_associate = models.ForeignKey("self", null=True, blank=True,
+                                                 on_delete=models.SET_NULL, related_name="assigned_dealers")
+    dealer_allocated_at = models.DateTimeField(null=True, blank=True)
+    dealer_allocated_by = models.ForeignKey("self", null=True, blank=True,
+                                            on_delete=models.SET_NULL, related_name="dealer_allocations_by_me")
     created_at   = models.DateTimeField(auto_now_add=True)
     updated_at   = models.DateTimeField(auto_now=True)
 

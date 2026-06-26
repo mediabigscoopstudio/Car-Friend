@@ -1,5 +1,5 @@
 from django.contrib import admin
-from crm.models import Lead, Bid, LeadAllocation, LeadStatusEvent
+from crm.models import Lead, Bid, LeadAllocation, LeadStatusEvent, DealerAllocation
 
 
 @admin.register(Lead)
@@ -26,6 +26,12 @@ class LeadStatusEventAdmin(admin.ModelAdmin):
 @admin.register(LeadAllocation)
 class LeadAllocationAdmin(admin.ModelAdmin):
     list_display  = ('lead', 'from_associate', 'to_associate', 'by', 'at')
+    ordering      = ('-at',)
+
+
+@admin.register(DealerAllocation)
+class DealerAllocationAdmin(admin.ModelAdmin):
+    list_display  = ('dealer', 'from_associate', 'to_associate', 'by', 'at')
     ordering      = ('-at',)
 
 

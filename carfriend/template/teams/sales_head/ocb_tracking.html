@@ -1,0 +1,43 @@
+{% extends "teams/dash_base.html" %}
+{% block title %}OCB Tracking{% endblock %}
+{% block page_title %}Sales Head · OCB Tracking{% endblock %}
+{% block nav %}{% include "teams/sales_head/_nav.html" with active="tracking" %}{% endblock %}
+{% block head_extra %}
+<style>
+  .filter{display:flex;gap:8px;margin-bottom:18px}
+  .filter select{padding:9px 12px;border:1px solid var(--cf-mist);border-radius:9px;font-size:13px}
+  .filter button{padding:9px 16px;border:none;border-radius:9px;background:var(--cf-blue);color:#fff;font-weight:600;cursor:pointer}
+  .grp{margin-bottom:22px}
+  .ocb{border:1px solid var(--cf-mist);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+  .ocb .h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .ocb .h .car{font-weight:600;color:var(--cf-azure)}
+  .off{font-size:12px;color:var(--cf-ink);display:flex;justify-content:space-between;padding:5px 0;border-top:1px dashed var(--cf-mist)}
+  .off .amt{font-weight:700}
+  .sel{color:var(--cf-teal-dark);font-weight:700}
+</style>
+{% endblock %}
+{% block content %}
+<form class="filter" method="get">
+  <select name="associate">
+    <option value="">All associates</option>
+    {% for a in associates %}<option value="{{ a.id }}" {% if a.id|stringformat:'s' == assoc_filter %}selected{% endif %}>{{ a.get_full_name|default:a.username }}</option>{% endfor %}
+  </select>
+  <button type="submit">Filter</button>
+</form>
+
+{% for g in groups %}
+<div class="grp panel">
+  <h2><i class="bi bi-person-circle" style="color:var(--cf-blue)"></i> {{ g.associate.get_full_name|default:g.associate.username }} <span style="font-weight:400;color:var(--cf-slate);font-size:12px">· {{ g.ocbs|length }} OCB(s)</span></h2>
+  {% for o in g.ocbs %}
+  <div class="ocb">
+    <div class="h"><span class="car">{{ o.car }} · ₹{{ o.price }}</span><span class="pill">{{ o.status }}</span></div>
+    {% for of in o.offers %}
+    <div class="off"><span>{{ of.dealer }}{% if of.selected %} <span class="sel">· selected</span>{% endif %}</span><span class="amt">₹{{ of.amount }} <span style="color:var(--cf-slate);font-weight:400">· {{ of.at|date:"d M H:i" }}</span></span></div>
+    {% empty %}<div class="off" style="color:var(--cf-slate)">No dealer offers yet.</div>{% endfor %}
+  </div>
+  {% endfor %}
+</div>
+{% empty %}
+<div class="panel"><div class="empty">No OCBs assigned to sales associates yet.</div></div>
+{% endfor %}
+{% endblock %}

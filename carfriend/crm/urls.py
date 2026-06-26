@@ -6,6 +6,7 @@ from crm import views_sales as sales
 from crm import views_dashboards as dash
 from crm import views_procurement as pcr
 from crm import views_retail_head as rh
+from crm import views_sales_head as sh
 from deals import views_procurement as proc
 from auctions import views_ocb as ocb
 
@@ -61,6 +62,15 @@ urlpatterns = [
     path('crm/sales/tasks/',                           sales.sales_task_list,          name='sales_task_list'),
     path('crm/sales/tasks/<int:task_id>/',             sales.sales_task_detail,        name='sales_task_detail'),
     path('crm/sales/tasks/<int:task_id>/note/',        sales.sales_task_add_note,      name='sales_task_add_note'),
+
+    # Sales Head (teams oversight: OCB inbox + dealer allocation + tracking)
+    path('crm/sales-head/',                   sh.sh_ocb_inbox,         name='sh_ocb_inbox'),
+    path('crm/sales-head/assign/',            sh.sh_ocb_assign,        name='sh_ocb_assign'),
+    path('crm/sales-head/associates/',        sh.sh_associates,        name='sh_associates'),
+    path('crm/sales-head/dealers/',           sh.sh_dealers,           name='sh_dealers'),
+    path('crm/sales-head/dealer-allocation/', sh.sh_dealer_allocation, name='sh_dealer_allocation'),
+    path('crm/sales-head/allocate-dealers/',  sh.sh_allocate_dealers,  name='sh_allocate_dealers'),
+    path('crm/sales-head/ocb-tracking/',      sh.sh_ocb_tracking,      name='sh_ocb_tracking'),
 
     # Procurement Associate (role-scoped)
     path('procurement/',                             proc.proc_dashboard,     name='proc_dashboard'),

@@ -1,0 +1,40 @@
+{% extends "teams/dash_base.html" %}
+{% block title %}OCB Inbox{% endblock %}
+{% block page_title %}Sales Head · OCB Inbox{% endblock %}
+{% block nav %}{% include "teams/sales_head/_nav.html" with active="inbox" %}{% endblock %}
+{% block head_extra %}
+<style>
+  .assign{display:inline-flex;gap:6px;align-items:center}
+  .assign select{padding:5px 8px;border:1px solid var(--cf-mist);border-radius:7px;font-size:12px}
+  .assign button{padding:5px 12px;border:none;border-radius:7px;background:var(--cf-blue);color:#fff;font-size:12px;font-weight:600;cursor:pointer}
+</style>
+{% endblock %}
+{% block content %}
+<div class="panel">
+  <h2>Declined OCBs awaiting a sales associate <span style="font-weight:400;color:var(--cf-slate);font-size:12px">· {{ count }} new</span></h2>
+  <table>
+    <thead><tr><th>Car</th><th>OCB price</th><th>Assign to</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td class="car">{{ r.car }}</td>
+        <td>₹{{ r.price }}</td>
+        <td>
+          <form class="assign" method="post" action="/crm/sales-head/assign/">
+            {% csrf_token %}
+            <input type="hidden" name="ocb_id" value="{{ r.id }}">
+            <select name="associate_id" required>
+              <option value="">Sales associate…</option>
+              {% for a in associates %}<option value="{{ a.id }}">{{ a.get_full_name|default:a.username }}</option>{% endfor %}
+            </select>
+            <button type="submit">Assign</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3" class="empty">No declined OCBs waiting. When an auction winner declines an OCB it lands here automatically.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -183,6 +183,27 @@ class LeadAllocation(models.Model):
         return f"alloc lead {self.lead_id} → {self.to_associate}"
 
 
+class DealerAllocation(models.Model):
+    """Audit row written every time a Sales Head allocates / re-allocates a
+    dealer to a sales associate (assumption D — every re-allocation is logged)."""
+
+    dealer         = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                                       related_name="dealer_allocations")
+    from_associate = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                       null=True, blank=True, related_name="dealer_allocations_from")
+    to_associate   = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                       null=True, blank=True, related_name="dealer_allocations_to")
+    by             = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                       null=True, blank=True, related_name="dealer_allocations_by")
+    at             = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-at"]
+
+    def __str__(self):
+        return f"alloc dealer {self.dealer_id} → {self.to_associate}"
+
+
 class LeadStatusEvent(models.Model):
     """Immutable audit trail of automatic (and override) pipeline transitions.
     Written only by crm.services.transition_lead — the single source of truth."""

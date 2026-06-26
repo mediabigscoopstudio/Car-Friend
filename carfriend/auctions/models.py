@@ -81,10 +81,19 @@ class SellerDecision(models.Model):
 
 class OCBListing(models.Model):
     class Status(models.TextChoices):
-        OPEN      = "open",      "Open"
-        ACCEPTED  = "accepted",  "Accepted"
-        COUNTERED = "countered", "Countered"
-        REJECTED  = "rejected",  "Rejected"
+        # Full OCB lifecycle (BSS-2026-CF-SPEC v3.1, Part D). Legacy values
+        # (OPEN/ACCEPTED/COUNTERED/REJECTED) are kept so old rows stay valid.
+        OPEN              = "open",              "Open"
+        OFFERED_TO_WINNER = "offered_to_winner", "Offered to auction winner"
+        WINNER_ACCEPTED   = "winner_accepted",   "Winner accepted"
+        WINNER_DECLINED   = "winner_declined",   "Winner declined"
+        ASSIGNED_TO_SALES = "assigned_to_sales", "Assigned to sales associate"
+        DEALERS_CONTACTED = "dealers_contacted", "Dealers contacted"
+        SELLER_ACCEPTED   = "seller_accepted",   "Seller accepted price"
+        AGREEMENT         = "agreement",         "Agreement"
+        ACCEPTED          = "accepted",          "Accepted (legacy)"
+        COUNTERED         = "countered",         "Countered (legacy)"
+        REJECTED          = "rejected",          "Rejected (legacy)"
 
     vehicle     = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name="ocb_listings")
     auction     = models.ForeignKey(Auction, null=True, blank=True, on_delete=models.SET_NULL)
@@ -95,7 +104,18 @@ class OCBListing(models.Model):
     # Distinct from assigned_to, which is the Retail creator/owner of the OCB.
     sales_associate = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
                                         on_delete=models.SET_NULL, related_name="sales_ocbs")
-    status      = models.CharField(max_length=10, choices=Status.choices, default=Status.OPEN)
+    # The auction winner the OCB is offered to first (assumption B). On decline
+    # the OCB enters the Sales Head inbox.
+    offered_to          = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                            on_delete=models.SET_NULL, related_name="ocbs_offered_to_me")
+    winner_responded_at = models.DateTimeField(null=True, blank=True)
+    # Set by the Sales Head when assigning a declined OCB to a sales associate.
+    assigned_sales_associate = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                                 on_delete=models.SET_NULL, related_name="sales_head_ocbs")
+    sales_assigned_at = models.DateTimeField(null=True, blank=True)
+    sales_assigned_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                          on_delete=models.SET_NULL, related_name="ocbs_assigned_by_me")
+    status      = models.CharField(max_length=20, choices=Status.choices, default=Status.OPEN)
     created_at  = models.DateTimeField(auto_now_add=True)
     updated_at  = models.DateTimeField(auto_now=True)
 

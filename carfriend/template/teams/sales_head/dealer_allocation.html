@@ -1,0 +1,45 @@
+{% extends "teams/dash_base.html" %}
+{% block title %}Dealer Allocation{% endblock %}
+{% block page_title %}Sales Head · Dealer Allocation{% endblock %}
+{% block nav %}{% include "teams/sales_head/_nav.html" with active="allocation" %}{% endblock %}
+{% block head_extra %}
+<style>
+  .alloc-bar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+  .alloc-bar select{padding:9px 12px;border:1px solid var(--cf-mist);border-radius:9px;font-size:13px;min-width:220px}
+  .alloc-bar button{padding:9px 16px;border:none;border-radius:9px;background:var(--cf-blue);color:#fff;font-weight:600;font-size:13px;cursor:pointer}
+  td.ck,th.ck{width:34px;text-align:center}
+</style>
+{% endblock %}
+{% block content %}
+<form method="post" action="/crm/sales-head/allocate-dealers/">
+  {% csrf_token %}
+  <div class="alloc-bar">
+    <select name="associate_id" required>
+      <option value="">Allocate selected to…</option>
+      {% for a in associates %}<option value="{{ a.id }}">{{ a.get_full_name|default:a.username }}</option>{% endfor %}
+    </select>
+    <button type="submit">Allocate dealers</button>
+  </div>
+  <div class="panel">
+    <h2>Dealers</h2>
+    <table>
+      <thead><tr>
+        <th class="ck"><input type="checkbox" onclick="for(const c of document.querySelectorAll('.dck'))c.checked=this.checked"></th>
+        <th>Dealership</th><th>City</th><th>Current associate</th>
+      </tr></thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td class="ck"><input class="dck" type="checkbox" name="dealer_ids" value="{{ r.id }}"></td>
+          <td class="car">{{ r.dealership }}</td>
+          <td>{{ r.city|default:"—" }}</td>
+          <td>{% if r.current %}<span class="pill">{{ r.current }}</span>{% else %}<span style="color:var(--cf-slate)">Unassigned</span>{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="empty">No dealers to allocate.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</form>
+{% endblock %}
