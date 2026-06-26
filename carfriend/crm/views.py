@@ -165,8 +165,13 @@ def lead_move(request, lead_id):
 
 @login_required(login_url='/auth/login/')
 def assign_inspector(request, lead_id):
-    if not (request.user.role in [User.ROLE_RETAIL, User.ROLE_ADMIN] or request.user.is_superuser):
-        return redirect('/')
+    # Lead Managers book inspections as their core job, so they must be allowed
+    # here too (the pipeline detail shows them the assign form). Previously they
+    # were silently bounced to '/', so their assignment appeared to do nothing.
+    allowed = [User.ROLE_RETAIL, User.ROLE_ADMIN, User.ROLE_LEAD_MANAGER]
+    if not (request.user.role in allowed or request.user.is_superuser):
+        messages.error(request, "You don't have permission to assign inspectors.")
+        return redirect('lead_detail', lead_id=lead_id)
     lead = get_object_or_404(Lead, id=lead_id)
 
     if request.method == 'POST':
