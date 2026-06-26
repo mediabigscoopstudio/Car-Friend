@@ -55,9 +55,9 @@
       <div class="cf-card-title"><i class="bi bi-cash-stack"></i> Dealer Offers</div>
       {% for o in offers %}
       <div class="offer {% if o.is_selected %}win{% endif %}">
-        <div><span class="p">₹{{ o.price }}</span> · {{ o.dealer.get_full_name|default:o.dealer.username }}</div>
+        <div><span class="p">₹{{ o.price }}</span> · {{ o.dealer_label }}</div>
         {% if o.notes %}<div class="meta">{{ o.notes }}</div>{% endif %}
-        <div class="meta">by {{ o.submitted_by.get_full_name|default:o.submitted_by.username|default:"—" }} · {{ o.created_at|date:"d M, H:i" }}</div>
+        <div class="meta">by {{ o.submitted_by_name }} · {{ o.created_at|date:"d M, H:i" }}</div>
         {% if o.is_selected %}
           <div class="meta" style="color:var(--g1);font-weight:700;margin-top:6px"><i class="bi bi-trophy"></i> Winner — deal price ₹{{ o.price }}</div>
         {% elif ocb.status != 'accepted' %}

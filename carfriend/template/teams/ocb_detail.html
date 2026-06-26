@@ -51,9 +51,9 @@
     <h3>Dealer offers</h3>
     {% for o in offers %}
     <div class="offer {% if o.is_selected %}win{% endif %}">
-      <div><span class="p">₹{{ o.price }}</span> · {{ o.dealer.get_full_name|default:o.dealer.username }}
+      <div><span class="p">₹{{ o.price }}</span> · {{ o.dealer_label }}
         {% if o.notes %}<div class="meta">{{ o.notes }}</div>{% endif %}
-        <div class="meta">by {{ o.submitted_by.get_full_name|default:o.submitted_by.username|default:"—" }} · {{ o.created_at|date:"d M, H:i" }}</div></div>
+        <div class="meta">by {{ o.submitted_by_name }} · {{ o.created_at|date:"d M, H:i" }}</div></div>
       {% if o.is_selected %}<span class="pill"><i class="bi bi-trophy"></i> Selected</span>
       {% elif is_retail and listing.status == 'open' %}
       <form method="post" action="/ocb/offer/{{ o.id }}/select/">{% csrf_token %}<button class="btn btn-teal" type="submit"><i class="bi bi-trophy"></i> Select &amp; close</button></form>

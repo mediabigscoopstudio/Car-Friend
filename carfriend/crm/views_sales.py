@@ -38,8 +38,12 @@ def sales_ocb_list(request):
     guard = _require_sales(request)
     if guard:
         return guard
-    ocbs = (OCBListing.objects.filter(sales_associate=request.user)
-            .select_related("vehicle").prefetch_related("offers").order_by("-created_at"))
+    from django.db.models import Q
+    # OCBs assigned the legacy way (retail-set sales_associate) OR via the Sales
+    # Head (assigned_sales_associate) both belong to this associate's board.
+    ocbs = (OCBListing.objects.filter(Q(sales_associate=request.user)
+                                      | Q(assigned_sales_associate=request.user))
+            .select_related("vehicle").prefetch_related("offers").distinct().order_by("-created_at"))
     rows = [{"ocb": o, "car": _car(o.vehicle),
              "my_offers": o.offers.filter(submitted_by=request.user).count()} for o in ocbs]
     return render(request, "teams/sales/ocb_list.html", {"rows": rows})
@@ -50,8 +54,11 @@ def sales_ocb_detail(request, ocb_id):
     if guard:
         return guard
     ocb = get_object_or_404(OCBListing.objects.select_related("vehicle"), id=ocb_id)
-    # Only the assigned Sales Associate (or a superuser) may view/act.
-    if ocb.sales_associate_id != request.user.id and not request.user.is_superuser:
+    # Only the assigned Sales Associate (retail-set or Sales-Head-set) or a
+    # superuser may view/act.
+    if (ocb.sales_associate_id != request.user.id
+            and ocb.assigned_sales_associate_id != request.user.id
+            and not request.user.is_superuser):
         messages.error(request, "This OCB is not assigned to you.")
         return redirect("/crm/sales/ocb/")
 
@@ -78,6 +85,10 @@ def sales_ocb_detail(request, ocb_id):
                 OCBOffer.objects.create(
                     ocb_listing=ocb, dealer=dealer, price=price,
                     notes=(request.POST.get("notes") or "").strip(), submitted_by=request.user)
+                # First dealer offer moves the OCB into "dealers contacted".
+                if ocb.status == OCBListing.Status.ASSIGNED_TO_SALES:
+                    ocb.status = OCBListing.Status.DEALERS_CONTACTED
+                    ocb.save(update_fields=["status", "updated_at"])
                 if ocb.assigned_to and ocb.assigned_to != request.user:
                     notify(ocb.assigned_to, "task_assigned", title="New dealer offer",
                            body=f"₹{price:,} for {_car(ocb.vehicle)}", url=f"/crm/retail/ocb/{ocb.id}/")

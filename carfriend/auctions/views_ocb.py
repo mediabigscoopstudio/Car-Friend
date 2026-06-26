@@ -10,6 +10,7 @@ from django.views.decorators.http import require_POST
 from accounts.decorators import retail_required, role_required, sales_required
 from accounts.models import Role, User
 from auctions.models import OCBListing, OCBMessage, OCBOffer
+from auctions.ocb_services import offer_rows, offer_to_winner
 from core.models import log
 from deals.models import Deal
 from notifications.services import notify
@@ -56,10 +57,9 @@ def ocb_create(request):
         OCBMessage.objects.create(ocb_listing=listing, sender=request.user,
                                   message=request.POST["notes"].strip())
     log(request.user, "ocb.create", listing, request)
-    for s in User.objects.filter(role=Role.SALES, is_suspended=False):
-        notify(s, "task_assigned", title="New OCB task",
-               body=f"{vehicle} — collect dealer offers.", url="/ocb/sales/")
-    messages.success(request, "OCB task created.")
+    # Winner-first: offer the OCB to the auction winner before sales gets it.
+    offer_to_winner(listing, actor=request.user)
+    messages.success(request, "OCB created and offered to the auction winner.")
     return redirect(f"/ocb/{listing.id}/")
 
 
@@ -124,7 +124,8 @@ def ocb_submit_offer(request, listing_id):
 @role_required("retail", "sales")
 def ocb_detail(request, listing_id):
     listing = get_object_or_404(OCBListing.objects.select_related("vehicle", "assigned_to"), id=listing_id)
-    offers = listing.offers.select_related("dealer", "submitted_by").all()
+    # Dealer identity is revealed only to the sales side (assumption F).
+    offers = offer_rows(listing, reveal_dealer=_can_sales(request.user))
     thread = listing.messages.select_related("sender").all()
     dealers = (User.objects.filter(role=Role.DEALER, is_suspended=False).order_by("username")
                if _can_sales(request.user) else None)
