@@ -19,6 +19,8 @@ def protected_storage():
 class Role(models.TextChoices):
     ADMIN        = "admin",        "Admin"
     LEAD_MANAGER = "lead_manager", "Lead Manager"
+    RETAIL_HEAD  = "retail_head",  "Retail Head"
+    SALES_HEAD   = "sales_head",   "Sales Head"
     RETAIL       = "retail",       "Retail Associate"
     SALES        = "sales",        "Sales Associate"
     INSPECTOR    = "inspector",    "Inspection Associate"
@@ -37,6 +39,8 @@ class User(AbstractUser):
     ROLE_ADMIN        = Role.ADMIN
     ROLE_LEAD_MANAGER = Role.LEAD_MANAGER
     ROLE_PROCUREMENT  = Role.PROCUREMENT
+    ROLE_RETAIL_HEAD  = Role.RETAIL_HEAD
+    ROLE_SALES_HEAD   = Role.SALES_HEAD
 
     role         = models.CharField(max_length=20, choices=Role.choices, default=Role.SELLER)
     phone        = models.CharField(max_length=15, blank=True)
@@ -71,11 +75,15 @@ class User(AbstractUser):
     def is_lead_manager(self): return self.role == Role.LEAD_MANAGER
     @property
     def is_procurement(self):  return self.role == Role.PROCUREMENT
+    @property
+    def is_retail_head(self):  return self.role == Role.RETAIL_HEAD
+    @property
+    def is_sales_head(self):   return self.role == Role.SALES_HEAD
 
     def is_staff_role(self):
         return self.role in [
-            Role.ADMIN, Role.LEAD_MANAGER, Role.RETAIL,
-            Role.SALES, Role.INSPECTOR, Role.PROCUREMENT,
+            Role.ADMIN, Role.LEAD_MANAGER, Role.RETAIL_HEAD, Role.SALES_HEAD,
+            Role.RETAIL, Role.SALES, Role.INSPECTOR, Role.PROCUREMENT,
         ]
 
 
