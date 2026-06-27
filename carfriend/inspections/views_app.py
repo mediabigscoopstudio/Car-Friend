@@ -259,12 +259,19 @@ def insp_zone(request, id, zone_key):
         return redirect(f"/inspect/{r.id}")     # gated — zone still locked
     zone = zones.ZONE_BY_KEY[zone_key]
     res = engine.results(r)
+    media_by_key = {}
+    for m in r.media.filter(section="walk"):
+        img = m.image
+        if img:
+            media_by_key.setdefault(m.slot, []).append(
+                {"id": m.id, "url": img.url, "masked": m.plate_masked})
     groups = []
     for g in zone["groups"]:
         rows = []
         for cp in g["checkpoints"]:
             rows.append({**cp, "entry": res.get(cp["key"]),
                          "resolved": engine.is_resolved(cp, res.get(cp["key"])),
+                         "photos": media_by_key.get(cp["key"], []),
                          "chips": zones.chips_for(cp["pt"])})
         groups.append({"label": g["label"], "rows": rows})
     idx = zone["index"]
@@ -289,6 +296,12 @@ def insp_cp_save(request, id):
 
     before_active = engine.active_zone_key(r)
     result = request.POST.get("result")          # ok | issue | na | (none for field)
+    # Photo required on every Issue (§5.3). Photos upload first (insp_cp_photo)
+    # and attach to the entry, so by save time they're present.
+    if result == "issue" and not (engine.entry_for(r, key) or {}).get("photos"):
+        if request.headers.get("X-Requested-With") == "fetch":
+            return JsonResponse({"ok": False, "error": "photo_required"}, status=422)
+        return redirect(f"/inspect/{r.id}/zone/{zone_key}?err=photo#cp-{key}")
     kwargs = {"ts": timezone.now().isoformat()}
     if result == "issue":
         kwargs.update(result="issue",
@@ -311,6 +324,70 @@ def insp_cp_save(request, id):
     if zone_done:
         return redirect(f"/inspect/{r.id}?unlocked=1")
     return redirect(f"/inspect/{r.id}/zone/{zone_key}#cp-{key}")
+
+
+def _attach_photo(r, key, media_id):
+    entry = engine.entry_for(r, key) or {}
+    photos = list(entry.get("photos") or [])
+    if media_id not in photos:
+        photos.append(media_id)
+    engine.save_checkpoint(r, key, photos=photos)
+
+
+@inspector_required
+@require_POST
+def insp_cp_photo(request, id):
+    """Capture one photo for a walk-around checkpoint (§5.8): stored as
+    InspectionMedia (section='walk', slot=checkpoint key), GPS-tagged, then
+    plate-masked + watermarked + WebP'd server-side. The media id is linked
+    into the checkpoint's entry so the report and publish_guard can find it."""
+    r = _get_report(request, id)
+    if not r.editable:
+        return JsonResponse({"locked": True}, status=409)
+    key = request.POST.get("key")
+    if not key or key not in {cp["key"] for _z, cp in zones.all_checkpoints()}:
+        return JsonResponse({"error": "bad key"}, status=400)
+    f = request.FILES.get("file")
+    if not f:
+        return JsonResponse({"error": "no file"}, status=400)
+
+    from .services import mask_plate_and_watermark, convert_to_webp
+    media = InspectionMedia(report=r, kind="photo", section="walk", slot=key,
+                            captured_at=timezone.now())
+    try:
+        media.gps_lat = float(request.POST["lat"]); media.gps_lng = float(request.POST["lng"])
+    except (KeyError, ValueError, TypeError):
+        pass
+    ext = os.path.splitext(f.name)[1].lower() or ".jpg"
+    media.file.save(f"{uuid.uuid4().hex}{ext}", f, save=False)
+    media.save()
+    try:
+        mask_plate_and_watermark(media)        # plate cover + watermark; sets plate_masked
+    except Exception:
+        logger.exception("plate mask failed for walk photo media %s", media.id)
+    try:
+        if convert_to_webp(media, media.file):
+            media.save(update_fields=["webp_file"])
+    except Exception:
+        logger.exception("webp failed for walk photo media %s", media.id)
+    _attach_photo(r, key, media.id)
+    img = media.image
+    return JsonResponse({"ok": True, "id": media.id, "url": img.url if img else "",
+                         "plate_masked": media.plate_masked})
+
+
+@inspector_required
+@require_POST
+def insp_cp_photo_delete(request, media_id):
+    m = get_object_or_404(InspectionMedia, id=media_id, section="walk",
+                          report__visit__inspector=request.user)
+    if not m.report.editable:
+        return JsonResponse({"locked": True}, status=409)
+    r, key = m.report, m.slot
+    entry = engine.entry_for(r, key) or {}
+    engine.save_checkpoint(r, key, photos=[p for p in (entry.get("photos") or []) if p != m.id])
+    m.delete()
+    return JsonResponse({"ok": True})
 
 
 @inspector_required

@@ -5,6 +5,8 @@
 {% block content %}
 
 {{ problem_chips|json_script:"chips-data" }}
+<input type="hidden" id="csrf" value="{{ csrf_token }}">
+<input type="hidden" id="rid" value="{{ r.id }}">
 
 <div class="flow-hd">
   <div class="ring" data-p="{{ progress.pct }}"><b>{{ progress.pct }}%</b></div>
@@ -34,26 +36,35 @@
     {% elif row.entry.result == 'ok' %}<div class="cp-okline">OK</div>
     {% elif row.entry.result == 'na' %}<div class="cp-okline" style="color:var(--cancel-text)">N/A</div>
     {% elif row.entry.value %}<div class="cp-okline">{{ row.entry.value }}</div>{% endif %}
+    {% if row.photos %}
+    <div class="cp-thumbs">
+      {% for p in row.photos %}<div class="photo-thumb"><img src="{{ p.url }}" alt=""></div>{% endfor %}
+    </div>
+    {% endif %}
   </div>
 
   {% if row.kind == 'field' %}
     <form method="post" action="/inspect/{{ r.id }}/save" style="display:flex;gap:6px;align-items:center">
       {% csrf_token %}
       <input type="hidden" name="key" value="{{ row.key }}"><input type="hidden" name="zone" value="{{ zone.key }}">
-      <input type="text" name="value" value="{{ row.entry.value|default:'' }}" placeholder="Enter" style="width:108px;height:38px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:0 10px;font-family:var(--font-b);font-size:13px">
+      <input type="text" name="value" value="{{ row.entry.value|default:'' }}" placeholder="Enter" style="width:96px;height:38px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:0 10px;font-family:var(--font-b);font-size:13px">
       <button class="cp-btn ok" type="submit">Save</button>
+      {% if row.na %}<button class="cp-btn na {% if row.entry.result == 'na' %}sel{% endif %}" data-na="{{ row.key }}" type="button">N/A</button>{% endif %}
     </form>
   {% elif row.kind == 'doc' %}
     <div class="cp-controls">
-      <span class="cp-btn" title="Photo capture wired in Phase 5">Photo</span>
+      <label class="cam-mini" title="Capture photo">
+        <input type="file" accept="image/*" capture="environment" hidden data-doc="{{ row.key }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      </label>
       {% if row.na %}<button class="cp-btn na {% if row.entry.result == 'na' %}sel{% endif %}" data-na="{{ row.key }}" type="button">N/A</button>{% endif %}
     </div>
   {% else %}
     <div class="cp-controls">
       <button class="cp-btn ok {% if row.entry.result == 'ok' %}sel{% endif %}" type="button"
-              data-ok data-key="{{ row.key }}" data-label="{{ row.label }}">OK</button>
+              data-ok data-key="{{ row.key }}" data-label="{{ row.label }}" data-photos="{{ row.photos|length }}">OK</button>
       <button class="cp-btn issue {% if row.entry.result == 'issue' %}sel{% endif %}" type="button"
-              data-issue data-key="{{ row.key }}" data-label="{{ row.label }}" data-pt="{{ row.pt }}">Issue</button>
+              data-issue data-key="{{ row.key }}" data-label="{{ row.label }}" data-pt="{{ row.pt }}" data-photos="{{ row.photos|length }}">Issue</button>
       {% if row.na %}<button class="cp-btn na {% if row.entry.result == 'na' %}sel{% endif %}" data-na="{{ row.key }}" type="button">N/A</button>{% endif %}
     </div>
   {% endif %}
@@ -65,7 +76,6 @@
 <a class="btn btn-primary block" href="/inspect/{{ r.id }}" style="margin-top:14px">Zone done — back to zones</a>
 {% endif %}
 
-{# hidden N/A form, submitted via JS #}
 <form id="na-form" method="post" action="/inspect/{{ r.id }}/save" style="display:none">
   {% csrf_token %}
   <input type="hidden" name="key" id="na-key"><input type="hidden" name="zone" value="{{ zone.key }}">
@@ -78,7 +88,7 @@
 {{ block.super }}
 <div class="scrim" id="cf-scrim"></div>
 
-{# ---- OK sheet (§5.3): confirm + optional photo (photo wired in Phase 5) ---- #}
+{# ---- OK sheet (§5.3): confirm + optional photo ---- #}
 <div class="sheet" id="ok-sheet" role="dialog" aria-modal="true">
   <div class="handle"></div>
   <form method="post" action="/inspect/{{ r.id }}/save">
@@ -88,13 +98,20 @@
     <input type="hidden" name="key" id="ok-key">
     <div class="sheet-hd"><h3 id="ok-title">Confirm OK</h3><div class="s">Looks good — confirm to continue.</div></div>
     <div class="sheet-body">
-      <div class="note-hint">Photo is optional on OK (Phase 5 adds camera capture).</div>
-      <button type="submit" class="btn btn-primary block" style="margin-top:14px">Confirm OK</button>
+      <div class="sheet-field">
+        <label>Photo (optional)</label>
+        <div class="photo-row" id="ok-photos">
+          <label class="cam-btn"><input type="file" accept="image/*" capture="environment" id="ok-cam" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Photo</label>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary block" style="margin-top:8px">Confirm OK</button>
     </div>
   </form>
 </div>
 
-{# ---- Issue sheet (§5.3): chips + severity + note (photo required arrives in Phase 5) ---- #}
+{# ---- Issue sheet (§5.3): chips + photo (required) + severity + note ---- #}
 <div class="sheet" id="issue-sheet" role="dialog" aria-modal="true">
   <div class="handle"></div>
   <form method="post" action="/inspect/{{ r.id }}/save" id="issue-form">
@@ -102,11 +119,19 @@
     <input type="hidden" name="zone" value="{{ zone.key }}">
     <input type="hidden" name="result" value="issue">
     <input type="hidden" name="key" id="issue-key">
-    <div class="sheet-hd"><h3 id="issue-title">Report issue</h3><div class="s">Tap what's wrong, set severity.</div></div>
+    <div class="sheet-hd"><h3 id="issue-title">Report issue</h3><div class="s">Tap what's wrong, add a photo, set severity.</div></div>
     <div class="sheet-body">
       <div class="sheet-field">
         <label>What's wrong</label>
         <div class="chips" id="issue-chips"></div>
+      </div>
+      <div class="sheet-field">
+        <label>Photo (required)</label>
+        <div class="photo-row" id="issue-photos">
+          <label class="cam-btn"><input type="file" accept="image/*" capture="environment" id="issue-cam" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Photo</label>
+        </div>
       </div>
       <div class="sheet-field">
         <label>Severity</label>
@@ -119,9 +144,8 @@
       <div class="sheet-field">
         <label>Note (optional)</label>
         <textarea name="note" rows="2" placeholder="Add detail…"></textarea>
-        <div class="note-hint">Photo required on issues — camera capture lands in Phase 5.</div>
       </div>
-      <button type="submit" class="btn btn-danger block">Save issue</button>
+      <button type="submit" class="btn btn-danger block" id="issue-save" disabled>Save issue</button>
     </div>
   </form>
 </div>
@@ -131,10 +155,20 @@
 <script>
 (function () {
   var CHIPS = JSON.parse(document.getElementById('chips-data').textContent);
+  var CSRF = document.getElementById('csrf').value;
+  var RID = document.getElementById('rid').value;
   var scrim = document.getElementById('cf-scrim');
   var okSheet = document.getElementById('ok-sheet');
   var issueSheet = document.getElementById('issue-sheet');
-  var open = null;
+  var open = null, coords = null;
+
+  // grab location once (best-effort); each photo is GPS-tagged + watermarked server-side
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function (p) {
+      coords = {lat: p.coords.latitude, lng: p.coords.longitude};
+    }, function () {}, {enableHighAccuracy: true, timeout: 8000, maximumAge: 60000});
+  }
+
   function close() {
     if (!open) return;
     open.classList.remove('show'); scrim.classList.remove('show'); open = null;
@@ -147,44 +181,110 @@
   scrim.addEventListener('click', close);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 
+  function thumb(url, masked) {
+    var d = document.createElement('div'); d.className = 'photo-thumb';
+    d.innerHTML = '<img src="' + url + '"><span class="mk' + (masked ? '' : ' no') + '">' + (masked ? 'masked' : 'held') + '</span>';
+    return d;
+  }
+  function spinner() {
+    var d = document.createElement('div'); d.className = 'photo-thumb up';
+    d.innerHTML = '<div class="spin"></div>'; return d;
+  }
+
+  // upload one photo for `key`; container is where thumbs render; cb(ok)
+  function upload(file, key, container, addBtn, cb) {
+    var sp = spinner(); container.insertBefore(sp, addBtn);
+    var fd = new FormData();
+    fd.append('file', file); fd.append('key', key); fd.append('csrfmiddlewaretoken', CSRF);
+    if (coords) { fd.append('lat', coords.lat); fd.append('lng', coords.lng); }
+    fetch('/inspect/' + RID + '/photo', {method: 'POST', body: fd, headers: {'X-Requested-With': 'fetch'}})
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        sp.remove();
+        if (j.ok) { container.insertBefore(thumb(j.url, j.plate_masked), addBtn); cb && cb(true); }
+        else { window.cfToast && cfToast('Upload failed'); cb && cb(false); }
+      })
+      .catch(function () { sp.remove(); window.cfToast && cfToast('Upload failed — will retry'); cb && cb(false); });
+  }
+
+  // ---- OK sheet ----
   document.querySelectorAll('[data-ok]').forEach(function (b) {
     b.addEventListener('click', function () {
       document.getElementById('ok-key').value = b.dataset.key;
       document.getElementById('ok-title').textContent = b.dataset.label;
+      // reset OK photo strip (keep the add button)
+      var box = document.getElementById('ok-photos');
+      box.querySelectorAll('.photo-thumb').forEach(function (t) { t.remove(); });
       show(okSheet);
     });
   });
+  document.getElementById('ok-cam').addEventListener('change', function () {
+    if (!this.files[0]) return;
+    var box = document.getElementById('ok-photos');
+    upload(this.files[0], document.getElementById('ok-key').value, box, this.closest('.cam-btn'));
+    this.value = '';
+  });
+
+  // ---- Issue sheet ----
+  var issueCount = 0;
+  function refreshIssueSave() {
+    document.getElementById('issue-save').disabled = issueCount < 1;
+  }
   document.querySelectorAll('[data-issue]').forEach(function (b) {
     b.addEventListener('click', function () {
       document.getElementById('issue-key').value = b.dataset.key;
       document.getElementById('issue-title').textContent = b.dataset.label;
-      var box = document.getElementById('issue-chips');
-      box.innerHTML = '';
+      issueCount = parseInt(b.dataset.photos, 10) || 0;
+      refreshIssueSave();
+      var chipBox = document.getElementById('issue-chips');
+      chipBox.innerHTML = '';
       (CHIPS[b.dataset.pt] || []).forEach(function (c) {
         var lab = document.createElement('label');
         lab.className = 'chip';
         lab.innerHTML = '<input type="checkbox" name="tags" value="' + c + '">' + c;
-        lab.querySelector('input').addEventListener('change', function () {
-          lab.classList.toggle('on', this.checked);
-        });
-        box.appendChild(lab);
+        lab.querySelector('input').addEventListener('change', function () { lab.classList.toggle('on', this.checked); });
+        chipBox.appendChild(lab);
       });
+      var box = document.getElementById('issue-photos');
+      box.querySelectorAll('.photo-thumb').forEach(function (t) { t.remove(); });
       show(issueSheet);
     });
   });
+  document.getElementById('issue-cam').addEventListener('change', function () {
+    if (!this.files[0]) return;
+    var box = document.getElementById('issue-photos');
+    upload(this.files[0], document.getElementById('issue-key').value, box, this.closest('.cam-btn'),
+      function (ok) { if (ok) { issueCount++; refreshIssueSave(); } });
+    this.value = '';
+  });
+
+  // ---- doc rows: capture then reload to reflect resolved state ----
+  document.querySelectorAll('[data-doc]').forEach(function (inp) {
+    inp.addEventListener('change', function () {
+      if (!this.files[0]) return;
+      var row = this.closest('.cprow');
+      upload(this.files[0], this.dataset.doc, row.querySelector('.cp-controls'), this.closest('.cam-mini'),
+        function (ok) { if (ok) setTimeout(function () { location.reload(); }, 400); });
+      this.value = '';
+    });
+  });
+
+  // ---- N/A ----
   document.querySelectorAll('[data-na]').forEach(function (b) {
     b.addEventListener('click', function () {
       document.getElementById('na-key').value = b.dataset.na;
       document.getElementById('na-form').submit();
     });
   });
-  // severity segmented highlight
+  // severity highlight
   document.querySelectorAll('.sev input').forEach(function (i) {
     i.addEventListener('change', function () {
       document.querySelectorAll('.sev label').forEach(function (l) { l.classList.remove('on'); });
       if (this.checked) this.parentElement.classList.add('on');
     });
   });
+
+  {% if request.GET.err == 'photo' %}window.cfToast && cfToast('Add a photo before saving an issue');{% endif %}
 })();
 </script>
 {% endblock %}
