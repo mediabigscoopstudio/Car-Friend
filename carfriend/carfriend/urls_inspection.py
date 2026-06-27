@@ -2,11 +2,18 @@ from django.conf import settings
 from django.urls import path, re_path
 from django.views.static import serve
 
+from accounts import views as a
 from inspections import views_app as v
 
 urlpatterns = [
     path("", v.insp_dashboard, name="insp_dashboard"),
     path("login_view", v.insp_login, name="insp_login"),
+    path("logout_view", a.logout_view, name="insp_logout"),
+    path("jobs", v.insp_jobs, name="insp_jobs"),
+    path("schedule", v.insp_schedule, name="insp_schedule"),
+    path("profile", v.insp_profile, name="insp_profile"),
+    path("notifications", v.insp_notifications, name="insp_notifications"),
+    path("notifications/read", v.insp_notifications_read, name="insp_notifications_read"),
     path("visits", v.insp_visits, name="insp_visits"),
     path("visit/<int:id>", v.insp_visit, name="insp_visit"),
     path("start/<int:id>", v.insp_start, name="insp_start"),

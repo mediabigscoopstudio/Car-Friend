@@ -1,0 +1,70 @@
+{% extends "base/base_v4.html" %}
+{% load cf %}
+{% block title %}Home · Inspector{% endblock %}
+{% block content %}
+
+{# ---- Resume hero (§4.1): in-progress inspection, else next scheduled job ---- #}
+{% if resume %}
+<div class="hero">
+  <div class="eyebrow">In progress</div>
+  <h2>{{ resume.visit.vehicle.display_name|short_car_name }}</h2>
+  <div class="sub mono">{{ resume.visit.vehicle.plate_number }}</div>
+  <div class="meta">
+    <span>{{ resume.progress.done }} of {{ resume.progress.total }} sections</span>
+    <span>{{ resume.progress.pct }}%</span>
+  </div>
+  <div class="progress" style="margin-bottom:14px"><span style="width:{{ resume.progress.pct }}%"></span></div>
+  <a class="btn btn-onhero block"
+     href="{% if resume.report %}/inspection/{{ resume.report.id }}/summary{% else %}/start/{{ resume.visit.id }}{% endif %}">
+    Continue inspection
+  </a>
+</div>
+{% elif next_job %}
+<div class="hero">
+  <div class="eyebrow">Start next job</div>
+  <h2>{{ next_job.vehicle.display_name|short_car_name }}</h2>
+  <div class="sub mono">{{ next_job.vehicle.plate_number }} · {{ next_job.scheduled_at|date:"D, d M · H:i" }}</div>
+  <a class="btn btn-onhero block" href="/visit/{{ next_job.id }}">Start inspection</a>
+</div>
+{% else %}
+<div class="hero" style="text-align:center">
+  <div class="eyebrow">All clear</div>
+  <h2>No active inspection</h2>
+  <div class="sub">New jobs will appear here when assigned.</div>
+</div>
+{% endif %}
+
+{# ---- Stats strip (§4.1): count up on load ---- #}
+<div class="stats">
+  <div class="stat assigned"><div class="num countup" data-countup="{{ stats.assigned }}">0</div><div class="lbl">Assigned</div></div>
+  <div class="stat pending"><div class="num countup" data-countup="{{ stats.pending }}">0</div><div class="lbl">Pending</div></div>
+  <div class="stat done"><div class="num countup" data-countup="{{ stats.done }}">0</div><div class="lbl">Done</div></div>
+</div>
+
+{# ---- Approval pill (§4.1) ---- #}
+<div class="card">
+  <div class="approval">
+    <div class="ring" data-p="{{ approval.rate }}"><b>{{ approval.rate }}%</b></div>
+    <div class="txt">
+      <b>Approval rate {{ approval.rate }}%</b><br>
+      <span>{{ approval.approved }} approved · {{ approval.rejected }} rejected</span>
+    </div>
+  </div>
+</div>
+
+{# ---- Up next ---- #}
+{% if next_job and resume %}
+<div class="section-label">Up next</div>
+<a class="jobcard" href="/visit/{{ next_job.id }}">
+  <div class="jc-top">
+    <div class="jc-time">{{ next_job.scheduled_at|date:"H:i" }}</div>
+    <div class="jc-body">
+      <div class="jc-car">{{ next_job.vehicle.display_name|short_car_name }}</div>
+      <div class="jc-meta">{{ next_job.vehicle.city|default:"—" }} · {{ next_job.scheduled_at|date:"D, d M" }}</div>
+    </div>
+    <span class="badge pend">Scheduled</span>
+  </div>
+</a>
+{% endif %}
+
+{% endblock %}

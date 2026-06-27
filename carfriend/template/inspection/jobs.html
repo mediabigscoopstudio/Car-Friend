@@ -1,0 +1,58 @@
+{% extends "base/base_v4.html" %}
+{% load cf %}
+{% block title %}Jobs · Inspector{% endblock %}
+{% block topbar_lead %}<h1>Jobs</h1>{% endblock %}
+{% block content %}
+
+<div class="segmented">
+  <a href="/jobs?tab=pending" class="{% if tab != 'completed' %}active{% endif %}">Pending <span class="cnt">{{ pending_count }}</span></a>
+  <a href="/jobs?tab=completed" class="{% if tab == 'completed' %}active{% endif %}">Completed <span class="cnt">{{ completed_count }}</span></a>
+</div>
+
+<form class="search" method="get" action="/jobs">
+  <input type="hidden" name="tab" value="{{ tab }}">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+  <input name="q" value="{{ q }}" placeholder="Search car or customer" autocomplete="off">
+</form>
+
+{% for v in rows %}
+<a class="jobcard {% if v.status == 'reinspect' %}alert{% endif %}" href="/visit/{{ v.id }}">
+  <div class="jc-top">
+    <div class="jc-time">{{ v.scheduled_at|date:"H:i" }}<br><span style="font-weight:500;font-size:10px;color:var(--muted)">{{ v.scheduled_at|date:"d M" }}</span></div>
+    <div class="jc-body">
+      <div class="jc-car">{{ v.vehicle.display_name|short_car_name }}</div>
+      <div class="jc-meta mono">{{ v.vehicle.plate_number }}</div>
+      <div class="jc-meta">{{ v.lead.name|default:v.vehicle.owner_name|default:"—" }} · {{ v.vehicle.city|default:"—" }}</div>
+    </div>
+    {% if v.status == 'scheduled' %}<span class="badge pend">Scheduled</span>
+    {% elif v.status == 'inprogress' %}<span class="badge prog">In progress</span>
+    {% elif v.status == 'submitted' %}<span class="badge prog">In review</span>
+    {% elif v.status == 'approved' %}<span class="badge done">Approved</span>
+    {% elif v.status == 'rejected' %}<span class="badge alert">Rejected</span>
+    {% elif v.status == 'reinspect' %}<span class="badge pend">Re-inspect</span>{% endif %}
+  </div>
+  {% if v.status == 'reinspect' %}
+  <div class="jc-alert">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+    Previous report rejected — address noted issues
+  </div>
+  {% endif %}
+  <div class="jc-actions">
+    {% if tab == 'completed' %}
+      <span class="btn btn-ghost btn-sm">View report</span>
+    {% elif v.status == 'inprogress' %}
+      <span class="btn btn-primary btn-sm">Continue</span>
+    {% else %}
+      <span class="btn btn-primary btn-sm">Start</span>
+    {% endif %}
+  </div>
+</a>
+{% empty %}
+<div class="empty">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+  <div class="t">{% if q %}No matches{% else %}No {{ tab }} jobs{% endif %}</div>
+  <div class="s">{% if q %}Try a different car or customer.{% else %}Assigned jobs will show up here.{% endif %}</div>
+</div>
+{% endfor %}
+
+{% endblock %}

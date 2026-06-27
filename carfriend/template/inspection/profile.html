@@ -1,0 +1,45 @@
+{% extends "base/base_v4.html" %}
+{% block title %}Profile · Inspector{% endblock %}
+{% block page_title %}Profile{% endblock %}
+{% block content %}
+
+{# sync status line (§4.4) — wired to the real queue in Phase 8 #}
+<div class="sync-line ok"><span class="pulse"></span> All synced</div>
+
+<div class="profile-head">
+  <div class="avatar lg" style="margin:0 auto">{{ request.user.first_name|first|upper|default:request.user.username|first|upper }}</div>
+  <div class="name">{{ request.user.get_full_name|default:request.user.username }}</div>
+  <div class="role">{{ request.user.get_role_display }}{% if request.user.city %} · {{ request.user.city }}{% endif %}</div>
+  <span class="badge done" style="margin-top:8px">
+    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg>
+    Verified
+  </span>
+</div>
+
+<div class="section-label">This month</div>
+<div class="stats">
+  <div class="stat done"><div class="num">{{ visits_done }}</div><div class="lbl">Approved</div></div>
+</div>
+
+<div class="section-label">Personal info</div>
+<div class="card">
+  <div class="info-row"><span class="k">Name</span><span class="v">{{ request.user.get_full_name|default:request.user.username }}</span></div>
+  <div class="info-row"><span class="k">Phone</span><span class="v mono">•••• {{ request.user.phone|slice:"-4:"|default:"——" }}</span></div>
+  <div class="info-row"><span class="k">Email</span><span class="v">{{ request.user.email|default:"——" }}</span></div>
+</div>
+
+<div class="section-label">Work info</div>
+<div class="card">
+  <div class="info-row"><span class="k">Franchise</span><span class="v">{{ request.user.city|default:"Car Friend" }}</span></div>
+  <div class="info-row"><span class="k">Employee ID</span><span class="v mono">CF-{{ request.user.id }}</span></div>
+  <div class="info-row"><span class="k">Role</span><span class="v">{{ request.user.get_role_display }}</span></div>
+</div>
+
+<div class="card">
+  <a class="info-row" href="/alerts" style="text-decoration:none"><span class="k">Help &amp; support</span><span class="v">›</span></a>
+</div>
+
+<a href="/logout_view" class="btn btn-danger block" style="margin-top:6px">Log out</a>
+<div style="text-align:center;color:var(--muted);font-size:12px;margin-top:14px">Car Friend Inspector · v4.0</div>
+
+{% endblock %}

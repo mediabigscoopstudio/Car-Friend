@@ -5,6 +5,7 @@ import uuid
 
 from django.contrib.auth import authenticate, login
 from django.core.files.base import ContentFile
+from django.db import models
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
@@ -30,22 +31,124 @@ def insp_login(request):
     return render(request, "inspection/login.html")
 
 
+# ---------------------------------------------------------------------------
+# v4 inspector shell — shared helpers
+# ---------------------------------------------------------------------------
+def _greeting():
+    h = timezone.localtime().hour
+    if h < 12:  return "Good morning"
+    if h < 17:  return "Good afternoon"
+    return "Good evening"
+
+
+def _shell(request, **extra):
+    """Context every v4 shell screen needs (bell unread dot, greeting)."""
+    ctx = {
+        "greeting": _greeting(),
+        "unread_count": request.user.notifications.filter(is_read=False).count(),
+    }
+    ctx.update(extra)
+    return ctx
+
+
+def _report_for(visit):
+    return InspectionReport.objects.filter(visit=visit).first()
+
+
+def _progress(report):
+    """Rough resolved-progress for the resume hero until the zone engine lands
+    (Phase 4). Counts schema sections that have any saved checkpoint data."""
+    if not report or not report.checkpoints:
+        return {"pct": 0, "done": 0, "total": len(CHECKPOINT_SCHEMA)}
+    total = len(CHECKPOINT_SCHEMA)
+    done = sum(1 for k in CHECKPOINT_SCHEMA if report.checkpoints.get(k))
+    return {"pct": round(done * 100 / total) if total else 0, "done": done, "total": total}
+
+
 @inspector_required
 def insp_dashboard(request):
     today = timezone.now().date()
     qs = InspectionVisit.objects.filter(inspector=request.user).select_related('vehicle')
-    # "pending" = today + overdue (any scheduled visit not yet submitted)
-    pending   = qs.filter(status=InspectionVisit.Status.SCHEDULED)
-    upcoming  = qs.filter(scheduled_at__date__gt=today).exclude(status=InspectionVisit.Status.SCHEDULED)
-    completed = qs.filter(status__in=[InspectionVisit.Status.SUBMITTED, InspectionVisit.Status.APPROVED])
-    inprogress = qs.filter(status=InspectionVisit.Status.INPROGRESS)
-    return render(request, "inspection/dashboard.html", {
-        "active_tab": "home",
-        "pending":    pending,
-        "upcoming":   upcoming,
-        "completed":  completed,
-        "inprogress": inprogress,
-    })
+    S = InspectionVisit.Status
+    pending    = qs.filter(status=S.SCHEDULED)
+    upcoming   = qs.filter(scheduled_at__date__gt=today).exclude(status=S.SCHEDULED)
+    completed  = qs.filter(status__in=[S.SUBMITTED, S.APPROVED])
+    inprogress = qs.filter(status=S.INPROGRESS)
+
+    # Approval pill (§4.1): approved vs rejected of everything reviewed.
+    approved = qs.filter(status=S.APPROVED).count()
+    rejected = qs.filter(status__in=[S.REJECTED, S.REINSPECT]).count()
+    reviewed = approved + rejected
+    approval_rate = round(approved * 100 / reviewed) if reviewed else 100
+
+    # Resume hero: most recent in-progress inspection, else the next scheduled job.
+    resume = inprogress.order_by('-updated_at').first()
+    resume_ctx = None
+    if resume:
+        rep = _report_for(resume)
+        resume_ctx = {"visit": resume, "report": rep, "progress": _progress(rep)}
+    next_job = pending.order_by('scheduled_at').first()
+
+    return render(request, "inspection/home.html", _shell(request,
+        active_tab="home",
+        stats={"assigned": pending.count() + inprogress.count(),
+               "pending": pending.count(), "done": completed.count()},
+        approval={"rate": approval_rate, "approved": approved, "rejected": rejected},
+        resume=resume_ctx,
+        next_job=next_job,
+    ))
+
+
+@inspector_required
+def insp_jobs(request):
+    qs = InspectionVisit.objects.filter(inspector=request.user).select_related('vehicle')
+    S = InspectionVisit.Status
+    tab = request.GET.get("tab", "pending")
+    q = (request.GET.get("q") or "").strip()
+    pending_qs   = qs.filter(status__in=[S.SCHEDULED, S.INPROGRESS, S.REINSPECT])
+    completed_qs = qs.filter(status__in=[S.SUBMITTED, S.APPROVED, S.REJECTED])
+    rows = (completed_qs if tab == "completed" else pending_qs).order_by('scheduled_at')
+    if q:
+        rows = rows.filter(
+            models.Q(vehicle__make__icontains=q) | models.Q(vehicle__model__icontains=q)
+            | models.Q(vehicle__plate_number__icontains=q) | models.Q(lead__name__icontains=q)
+        )
+    return render(request, "inspection/jobs.html", _shell(request,
+        active_tab="jobs", tab=tab, q=q, rows=rows,
+        pending_count=pending_qs.count(), completed_count=completed_qs.count(),
+    ))
+
+
+@inspector_required
+def insp_schedule(request):
+    # Phase 1: routed real screen (a simple grouped agenda). The full month
+    # calendar + day bottom sheet lands in Phase 3.
+    qs = (InspectionVisit.objects.filter(inspector=request.user)
+          .select_related('vehicle').order_by('scheduled_at'))
+    return render(request, "inspection/schedule.html", _shell(request,
+        active_tab="schedule", visits=qs))
+
+
+@inspector_required
+def insp_profile(request):
+    return render(request, "inspection/profile.html", _shell(request,
+        pushed=True, hide_nav=True, back_url="/", visits_done=
+        InspectionVisit.objects.filter(inspector=request.user,
+            status=InspectionVisit.Status.APPROVED).count()))
+
+
+@inspector_required
+def insp_notifications(request):
+    notes = request.user.notifications.all()[:60]
+    return render(request, "inspection/notifications.html", _shell(request,
+        pushed=True, hide_nav=True, back_url="/", notes=notes))
+
+
+@inspector_required
+@require_POST
+def insp_notifications_read(request):
+    request.user.notifications.filter(is_read=False).update(is_read=True)
+    return redirect("/notifications")
 
 
 @inspector_required

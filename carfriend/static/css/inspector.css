@@ -1,0 +1,289 @@
+/* ============================================================
+   Car Friend — Inspector App v4 design system
+   Source of truth: CARFRIEND_INSPECTION_APP_UPGRADE_PROMPT §2 (LOCKED)
+   Scoped to the inspector app only (loaded by base/base_v4.html).
+   Warm sand/sage palette — must never leak into the public www site.
+   ============================================================ */
+
+:root {
+  /* §2.1 Palette */
+  --bg-top:        #FFFAF4;
+  --bg-bottom:     #F2E9DB;
+  --card:          #FFFDFA;
+  --surface:       #EEE4D6;  /* sand */
+  --line:          #E4D8C4;
+  --line-strong:   #D8C6A7;
+  --ink:           #39433F;  /* primary text */
+  --muted:         #7C766A;  /* secondary text */
+  --sage:          #8EA28F;
+  --sage-deep:     #5C7060;
+  --sage-text:     #45564A;
+  --sage-bg:       #E8EEE6;
+
+  /* §2.2 Status meaning */
+  --done-text:   #45564A;  --done-solid: #5C7060;  --done-bg:   #E8EEE6;
+  --prog-text:   #39433F;                          --prog-bg:   #E6EAE7;
+  --pend-text:   #8A6B27;                           --pend-bg:   #F2E7CF;
+  --alert-text:  #9E4A35;                           --alert-bg:  #F5E3DC;
+  --cancel-text: #8A8070;                           --cancel-bg: #ECE5D9;
+
+  /* §2.5 tokens */
+  --r-card: 18px;  --r-btn: 13px;  --r-chip: 999px;  --r-sheet: 26px;  --r-icon: 11px;
+  --pad-screen: 16px;  --pad-card: 14px;
+  --shadow-sm: 0 1px 3px rgba(57,67,63,.08), 0 1px 2px rgba(57,67,63,.06);
+  --shadow-md: 0 4px 16px rgba(57,67,63,.12);
+  --shadow-lg: 0 10px 30px rgba(57,67,63,.18);
+
+  /* Typography */
+  --font-d: 'Sora', system-ui, sans-serif;        /* display / headings / buttons */
+  --font-b: 'Hanken Grotesk', system-ui, sans-serif; /* body / UI */
+  --font-m: 'JetBrains Mono', ui-monospace, monospace; /* numeric / codey */
+
+  /* Motion */
+  --ease: cubic-bezier(.22,.61,.36,1);
+  --t-press: 120ms;  --t-screen: 280ms;  --t-sheet: 340ms;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0; padding: 0;
+  font-family: var(--font-b);
+  color: var(--ink);
+  background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+  background-attachment: fixed;
+  min-height: 100%;
+  -webkit-font-smoothing: antialiased;
+}
+
+body { font-size: 15px; line-height: 1.4; }
+
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; }
+
+/* mono helper for codey content (reg no, KM, IDs, times) */
+.mono { font-family: var(--font-m); font-variant-numeric: tabular-nums; }
+
+/* ---------- App shell ---------- */
+.app {
+  max-width: 480px; margin: 0 auto; min-height: 100vh;
+  display: flex; flex-direction: column;
+  padding-bottom: 78px; /* room for bottom nav */
+}
+.screen { flex: 1; padding: 0 var(--pad-screen) 20px; }
+.screen.no-nav { padding-bottom: 24px; }
+.app.no-nav { padding-bottom: 0; }
+
+/* ---------- Top bar (§3.2) ---------- */
+.topbar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px var(--pad-screen) 10px;
+  position: sticky; top: 0; z-index: 20;
+  background: linear-gradient(180deg, var(--bg-top) 60%, rgba(255,250,244,0));
+}
+.topbar .tb-title { flex: 1; min-width: 0; }
+.topbar h1 { font-family: var(--font-d); font-weight: 800; font-size: 24px; margin: 0; color: var(--ink); }
+.topbar .greeting { font-size: 13px; color: var(--muted); font-weight: 500; }
+.topbar .greeting-name { font-family: var(--font-d); font-weight: 800; font-size: 22px; color: var(--ink); }
+.topbar .tb-back {
+  width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--surface); border: 1px solid var(--line); color: var(--ink);
+}
+
+/* icon button (bell) + avatar — green-on-white treatment (§2.3) */
+.icon-btn {
+  position: relative; width: 42px; height: 42px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--card); border: none;
+  box-shadow: inset 0 0 0 1.5px var(--sage-deep);
+  color: var(--sage-deep);
+}
+.icon-btn svg { width: 20px; height: 20px; }
+.icon-btn .dot {
+  position: absolute; top: 6px; right: 7px; width: 9px; height: 9px;
+  border-radius: 50%; background: var(--alert-text); border: 2px solid var(--card);
+}
+.avatar {
+  width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--sage-bg); box-shadow: inset 0 0 0 1.5px var(--sage-deep);
+  color: var(--sage-text); font-family: var(--font-d); font-weight: 800; font-size: 16px;
+}
+.avatar.lg { width: 72px; height: 72px; font-size: 26px; box-shadow: inset 0 0 0 2px var(--sage-deep); }
+
+/* ---------- Bottom nav (§3.1) — 3 tabs ---------- */
+.bottomnav {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 480px; z-index: 30;
+  display: flex; background: #fff; border-top: 1px solid var(--line);
+  padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px));
+}
+.bottomnav a {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  color: var(--cancel-text); font-size: 11px; font-weight: 600;
+}
+.bottomnav a svg { width: 23px; height: 23px; }
+.bottomnav a.active { color: var(--sage-deep); }
+
+/* ---------- Cards ---------- */
+.card {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--r-card); padding: var(--pad-card);
+  box-shadow: var(--shadow-sm); margin-bottom: 12px;
+}
+.card-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.card-hd h2 { font-family: var(--font-d); font-weight: 700; font-size: 15px; margin: 0; }
+.card-hd .more { font-size: 13px; color: var(--sage-deep); font-weight: 600; }
+
+/* ---------- Status badges (§2.2) ---------- */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: var(--r-chip);
+  font-size: 12px; font-weight: 700; font-family: var(--font-b); white-space: nowrap;
+}
+.badge.done   { background: var(--done-bg);   color: var(--done-text); }
+.badge.prog   { background: var(--prog-bg);   color: var(--prog-text); }
+.badge.pend   { background: var(--pend-bg);   color: var(--pend-text); }
+.badge.alert  { background: var(--alert-bg);  color: var(--alert-text); }
+.badge.cancel { background: var(--cancel-bg); color: var(--cancel-text); }
+
+/* ---------- Buttons (§2.3 green-on-white) ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 46px; padding: 0 18px; border-radius: var(--r-btn);
+  font-family: var(--font-d); font-weight: 700; font-size: 15px;
+  border: 1.5px solid transparent; transition: transform var(--t-press) var(--ease), background var(--t-press);
+}
+.btn:active { transform: scale(.97); }
+.btn.block { width: 100%; }
+.btn-primary { background: #EAF0E8; border-color: var(--sage-deep); color: #3E4E43; }
+.btn-primary:active { background: #DFE9DD; }
+.btn-ghost { background: var(--surface); border-color: var(--line); color: #4E483C; }
+.btn-danger { background: var(--alert-bg); border-color: var(--alert-text); color: var(--alert-text); }
+.btn-sm { min-height: 38px; font-size: 13px; padding: 0 14px; }
+.btn[disabled] { opacity: .5; pointer-events: none; }
+
+/* white CTA outlined in sage (hero) */
+.btn-onhero { background: #fff; border-color: var(--sage-deep); color: var(--sage-text); }
+
+/* ---------- Progress ---------- */
+.progress { height: 7px; border-radius: 999px; background: #fff;
+  box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; }
+.progress > span { display: block; height: 100%; border-radius: 999px;
+  background: var(--sage-deep); transition: width var(--t-screen) var(--ease); }
+
+.ring { --p: 0; width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center;
+  background: conic-gradient(var(--sage-deep) calc(var(--p)*1%), #fff 0);
+  box-shadow: inset 0 0 0 1px var(--line); position: relative; }
+.ring::before { content: ""; position: absolute; inset: 6px; border-radius: 50%; background: var(--card); }
+.ring > b { position: relative; font-family: var(--font-d); font-weight: 800; font-size: 14px; color: var(--sage-text); }
+
+/* ---------- Stats strip (§4.1) ---------- */
+.stats { display: flex; gap: 10px; margin-bottom: 12px; }
+.stat { flex: 1; background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+  padding: 12px; text-align: center; box-shadow: var(--shadow-sm); }
+.stat .num { font-family: var(--font-d); font-weight: 800; font-size: 26px; line-height: 1; }
+.stat .lbl { font-size: 11px; color: var(--muted); margin-top: 5px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .04em; }
+.stat.assigned .num { color: var(--ink); }
+.stat.pending  .num { color: var(--pend-text); }
+.stat.done     .num { color: var(--done-text); }
+
+/* ---------- Resume hero (§4.1 / §2.3) ---------- */
+.hero {
+  background: linear-gradient(135deg, #EFF4ED, #E4ECE3);
+  border: 1px solid #D5E2D2; border-radius: 22px; padding: 16px;
+  box-shadow: var(--shadow-md); margin-bottom: 14px; color: var(--sage-text);
+}
+.hero .eyebrow { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--sage-deep); margin-bottom: 6px; }
+.hero h2 { font-family: var(--font-d); font-weight: 800; font-size: 19px; margin: 0 0 2px; color: var(--ink); }
+.hero .sub { font-size: 13px; color: var(--sage-text); margin-bottom: 12px; }
+.hero .meta { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+
+/* approval pill (§4.1) */
+.approval { display: flex; align-items: center; gap: 12px; }
+.approval .txt b { font-family: var(--font-d); font-weight: 800; }
+.approval .txt span { color: var(--muted); font-size: 13px; }
+
+/* ---------- Job card (§2.6) ---------- */
+.jobcard { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-card);
+  padding: var(--pad-card); box-shadow: var(--shadow-sm); margin-bottom: 10px; display: block; }
+.jobcard .jc-top { display: flex; align-items: flex-start; gap: 10px; }
+.jobcard .jc-time { font-family: var(--font-m); font-weight: 700; font-size: 13px; color: var(--ink);
+  background: var(--surface); border-radius: 10px; padding: 6px 9px; text-align: center; min-width: 54px; }
+.jobcard .jc-body { flex: 1; min-width: 0; }
+.jobcard .jc-car { font-family: var(--font-d); font-weight: 700; font-size: 15px; }
+.jobcard .jc-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.jobcard .jc-actions { display: flex; gap: 8px; margin-top: 12px; }
+.jobcard.alert { border-color: var(--alert-text); background: var(--alert-bg); }
+.jobcard .jc-alert { color: var(--alert-text); font-size: 12px; font-weight: 600; margin-top: 8px;
+  display: flex; gap: 6px; align-items: center; }
+
+/* ---------- Segmented toggle (§2.6) ---------- */
+.segmented { display: flex; background: var(--surface); border-radius: var(--r-chip); padding: 4px; margin-bottom: 14px; }
+.segmented a { flex: 1; text-align: center; padding: 8px; border-radius: var(--r-chip);
+  font-weight: 700; font-size: 13px; color: var(--muted); }
+.segmented a.active { background: #fff; color: var(--ink); box-shadow: var(--shadow-sm); }
+.segmented a .cnt { opacity: .6; font-weight: 600; }
+
+/* ---------- Search ---------- */
+.search { position: relative; margin-bottom: 12px; }
+.search input { width: 100%; height: 44px; border-radius: var(--r-btn); border: 1px solid var(--line);
+  background: var(--surface); padding: 0 14px 0 40px; font-family: var(--font-b); font-size: 14px; color: var(--ink); }
+.search svg { position: absolute; left: 13px; top: 12px; width: 18px; height: 18px; color: var(--muted); }
+
+/* ---------- Empty state (§2.6) ---------- */
+.empty { text-align: center; padding: 40px 20px; color: var(--muted); }
+.empty svg { width: 40px; height: 40px; color: var(--line-strong); margin-bottom: 12px; }
+.empty .t { font-family: var(--font-d); font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+.empty .s { font-size: 13px; }
+
+/* ---------- Profile rows ---------- */
+.profile-head { text-align: center; padding: 8px 0 18px; }
+.profile-head .name { font-family: var(--font-d); font-weight: 800; font-size: 20px; margin-top: 10px; }
+.profile-head .role { color: var(--muted); font-size: 13px; }
+.info-row { display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.info-row:last-child { border-bottom: none; }
+.info-row .k { color: var(--muted); }
+.info-row .v { font-weight: 600; }
+
+/* sync status line (§4.4) */
+.sync-line { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 12px;
+  font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+.sync-line.ok      { background: var(--done-bg);  color: var(--done-text); }
+.sync-line.pending { background: var(--pend-bg);  color: var(--pend-text); }
+.sync-line .pulse  { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+/* ---------- Notification cards (§3.4) ---------- */
+.notif { display: flex; gap: 12px; padding: 13px; background: var(--card); border: 1px solid var(--line);
+  border-radius: 14px; margin-bottom: 9px; box-shadow: var(--shadow-sm); }
+.notif.unread { background: #fff; border-color: var(--line-strong); }
+.notif .ic { width: 38px; height: 38px; border-radius: var(--r-icon); display: grid; place-items: center; flex-shrink: 0; }
+.notif .ic svg { width: 19px; height: 19px; }
+.notif .ic.done  { background: var(--done-bg);  color: var(--done-text); }
+.notif .ic.pend  { background: var(--pend-bg);  color: var(--pend-text); }
+.notif .ic.alert { background: var(--alert-bg); color: var(--alert-text); }
+.notif .ic.prog  { background: var(--prog-bg);  color: var(--prog-text); }
+.notif .nt { font-family: var(--font-d); font-weight: 700; font-size: 14px; }
+.notif .nb { font-size: 13px; color: var(--muted); margin-top: 1px; }
+.notif .ntime { font-size: 11px; color: var(--muted); margin-top: 4px; font-family: var(--font-m); }
+
+/* ---------- Toast (§2.3) ---------- */
+.toast { position: fixed; left: 50%; bottom: 92px; transform: translateX(-50%) translateY(20px);
+  background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 14px;
+  padding: 12px 16px; box-shadow: var(--shadow-lg); font-size: 14px; font-weight: 600;
+  opacity: 0; pointer-events: none; transition: opacity var(--t-screen), transform var(--t-screen); z-index: 60; max-width: 90%; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ---------- count-up helper ---------- */
+.countup { font-variant-numeric: tabular-nums; }
+
+/* ---------- reduced motion (§2.7) ---------- */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; animation-iteration-count: 1 !important;
+      transition-duration: .001ms !important; scroll-behavior: auto !important; }
+}
+
+/* section heading */
+.section-label { font-family: var(--font-d); font-weight: 700; font-size: 13px; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .05em; margin: 18px 2px 8px; }
