@@ -1,8 +1,13 @@
 from accounts.models import Role
 
+try:
+    from django_hosts.resolvers import reverse as host_reverse
+except ImportError:          # django_hosts always present in prod; guard for safety
+    host_reverse = None
+
 # Mirrors accounts.views.get_dashboard_url so the "My dashboard" header link
 # always points at the logged-in user's real dashboard instead of being
-# hard-coded to the seller/dealer one (which bounces staff/admin back to home).
+# hard-coded to the seller/dealer one (which bounced staff/admin back to home).
 _ROLE_DASHBOARD = {
     Role.SELLER:       "/auth/seller/dashboard/",
     Role.DEALER:       "/auth/dealer/dashboard/",
@@ -16,8 +21,21 @@ _ROLE_DASHBOARD = {
 }
 
 
+def _master_dashboard_url():
+    """Admins live on the master subdomain, not the www site."""
+    if host_reverse:
+        try:
+            return host_reverse("master_dashboard", host="master")
+        except Exception:
+            pass
+    return "/"
+
+
 def dashboard_link(request):
     user = getattr(request, "user", None)
     if not (user and user.is_authenticated):
         return {}
-    return {"dashboard_url": _ROLE_DASHBOARD.get(user.role, "/")}
+    url = _ROLE_DASHBOARD.get(user.role)
+    if url is None:          # admin / internal staff
+        url = _master_dashboard_url()
+    return {"dashboard_url": url}
