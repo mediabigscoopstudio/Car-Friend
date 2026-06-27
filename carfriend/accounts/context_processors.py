@@ -38,4 +38,6 @@ def dashboard_link(request):
     url = _ROLE_DASHBOARD.get(user.role)
     if url is None:          # admin / internal staff
         url = _master_dashboard_url()
-    return {"dashboard_url": url}
+    # Expose the DB role on every authenticated request so templates never
+    # depend on a per-login session flag.
+    return {"dashboard_url": url, "user_role": user.role}

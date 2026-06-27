@@ -171,13 +171,33 @@
       </div>
     </div>
 
-    <!-- SCREEN 4: OTP -->
+    <!-- SCREEN 4: Verify (signed-in skip · Google primary · OTP fallback) -->
     <div class="screen" id="screen4">
       <div class="flow-card">
-        <div class="icon-wrap"><i class="bi bi-phone"></i></div>
-        <h3>Verify your mobile number</h3>
-        <p class="sub">We'll send a one-time password to show your price and save your car.</p>
+      {% if request.user.is_authenticated %}
+        <div class="icon-wrap" style="background:var(--cf-teal-tint);color:var(--cf-teal-dark)"><i class="bi bi-check2-circle"></i></div>
+        <h3>You're verified</h3>
+        <p class="sub">Signed in to your CarFriend account — no OTP needed.</p>
+        <div class="estimate-car" style="display:flex;align-items:center;gap:12px;text-align:left">
+          <i class="bi bi-check-circle-fill" style="color:var(--cf-teal-dark);font-size:22px"></i>
+          <div>
+            <div class="ec-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+            <div class="ec-meta">{{ request.user.email|default:request.user.phone|default:"Signed in" }}</div>
+          </div>
+        </div>
+        <button class="btn-primary-flow" id="btnContinue" onclick="continueAuthed()"><i class="bi bi-cash-stack"></i> Continue to see price</button>
+        <div class="error-strip" id="otpError"><i class="bi bi-exclamation-circle-fill"></i><span id="otpErrorMsg"></span></div>
+        <button class="btn-ghost-flow" onclick="goStep(3)">← Back</button>
+      {% else %}
+        <div class="icon-wrap"><i class="bi bi-shield-check"></i></div>
+        <h3>Verify to see your price</h3>
+        <p class="sub">Sign in with Google to save your car and view the estimate.</p>
 
+        <a class="btn-primary-flow" href="{{ google_login_url }}" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none">
+          <i class="bi bi-google"></i> Sign in with Google to continue
+        </a>
+
+        <div class="otp-meta" style="margin:16px 0 10px">or verify with OTP</div>
         <div id="otpPhoneStep">
           <div class="plate-input-wrap" id="phoneWrap">
             <div class="plate-flag">+91</div>
@@ -197,6 +217,7 @@
 
         <div class="error-strip" id="otpError"><i class="bi bi-exclamation-circle-fill"></i><span id="otpErrorMsg"></span></div>
         <button class="btn-ghost-flow" onclick="goStep(3)">← Back</button>
+      {% endif %}
       </div>
     </div>
 
@@ -371,19 +392,30 @@
     });
   };
 
+  // Signed-in users skip OTP entirely — verify is the account itself.
+  window.continueAuthed = function () {
+    var btn = $('btnContinue');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Loading…';
+    fetchEstimate(btn, '<i class="bi bi-cash-stack"></i> Continue to see price');
+  };
+
   // ── Screen 5: estimate (also persists the car + lead) ──
-  function fetchEstimate(btn) {
+  function fetchEstimate(btn, label) {
+    label = label || '<i class="bi bi-check2-circle"></i> Verify & see price';
     api('/vehicles/sell/estimate/', { km_band: selectedBand, variant: carEdits.variant, fuel: carEdits.fuel }).then(function (res) {
-      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-check2-circle"></i> Verify & see price'; }
+      if (btn) { btn.disabled = false; btn.innerHTML = label; }
       if (!res.data.ok) { showOtpError(res.data.error || 'Could not compute your price.'); return; }
       var e = res.data.estimate, c = res.data.car;
+      var contact = res.data.phone || phone;
       $('estimateBand').textContent = '₹' + Number(e.low).toLocaleString('en-IN') + ' – ₹' + Number(e.high).toLocaleString('en-IN');
       $('ecName').textContent = [c.year, c.make, c.model, c.variant].filter(Boolean).join(' ');
       $('ecMeta').textContent = [c.fuel_type, c.km_band, 'Owner: ' + c.owner_name].filter(Boolean).join(' · ');
-      $('estimateNote').textContent = 'Saved to your account. Our Retail Associate will call you on +91 ' + phone + ' to schedule a free doorstep inspection.';
+      $('estimateNote').textContent = contact
+        ? 'Saved to your account. Our Retail Associate will call you on +91 ' + contact + ' to schedule a free doorstep inspection.'
+        : 'Saved to your account. Our Retail Associate will call you to schedule a free doorstep inspection.';
       goStep(5);
     }).catch(function () {
-      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-check2-circle"></i> Verify & see price'; }
+      if (btn) { btn.disabled = false; btn.innerHTML = label; }
       showOtpError('Network error. Please try again.');
     });
   }
@@ -391,8 +423,9 @@
   // input niceties
   $('plateInput').addEventListener('input', function () { this.value = this.value.toUpperCase(); });
   $('plateInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); doLookup(); } });
-  $('phoneInput').addEventListener('input', function () { this.value = this.value.replace(/[^0-9]/g, ''); });
-  $('otpInput').addEventListener('input', function () { this.value = this.value.replace(/[^0-9]/g, ''); });
+  // OTP inputs exist only on the anonymous (fallback) verify screen.
+  var _pi = $('phoneInput'); if (_pi) _pi.addEventListener('input', function () { this.value = this.value.replace(/[^0-9]/g, ''); });
+  var _oi = $('otpInput');  if (_oi) _oi.addEventListener('input', function () { this.value = this.value.replace(/[^0-9]/g, ''); });
 
   // Arrived from the homepage hero? The car is already in the session — resume
   // at the Car Details step (Step 2) instead of asking for the plate again.

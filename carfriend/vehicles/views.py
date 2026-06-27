@@ -1,5 +1,6 @@
 import json
 from datetime import date
+from urllib.parse import urlencode
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login as auth_login
@@ -143,6 +144,10 @@ def list_car(request):
         return redirect('seller_dashboard')
 
     ctx = {'km_bands': pricing.KM_BANDS}
+    # Existing Google login (allauth) for the verify step. ?next returns the
+    # visitor to the sell flow, where the session-kept car resumes the steps.
+    ctx['google_login_url'] = '/accounts/google/login/?' + urlencode(
+        {'process': 'login', 'next': '/vehicles/list-car/'})
     # If the visitor came from the homepage hero, a lookup already populated the
     # session — hand the (masked) car to the template so the flow resumes at the
     # Car Details step instead of asking for the plate again.
@@ -243,9 +248,13 @@ def sell_verify_otp(request):
 def sell_estimate(request):
     """Compute the price estimate and persist the car + lead under the
     phone-keyed account. Requires a verified phone (OTP) in the session."""
-    phone = request.session.get(SESS_VERIFIED)
     car = request.session.get(SESS_CAR)
-    if not phone or not car:
+    phone = request.session.get(SESS_VERIFIED)
+    # Authenticated users (e.g. signed in with Google) are already verified — no
+    # OTP needed. Anonymous users still must have a verified phone in session.
+    if not phone and request.user.is_authenticated:
+        phone = request.user.phone or ""
+    if not car or (not phone and not request.user.is_authenticated):
         return JsonResponse({'ok': False, 'error': 'Please verify your phone first.'}, status=403)
 
     body = _json_body(request)
@@ -308,4 +317,5 @@ def sell_estimate(request):
             'km_band': band_label,
         },
         'already_listed': not created,
+        'phone': phone,
     })
