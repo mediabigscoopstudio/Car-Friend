@@ -397,8 +397,9 @@ def insp_cp_photo(request, id):
     ext = os.path.splitext(f.name)[1].lower() or ".jpg"
     media.file.save(f"{uuid.uuid4().hex}{ext}", f, save=False)
     media.save()
+    _mask_uploaded(media.file)                  # robust, guaranteed plate masking (BUG 1)
     try:
-        mask_plate_and_watermark(media)        # plate cover + watermark; sets plate_masked
+        mask_plate_and_watermark(media)        # GPS/timestamp watermark + masked_file
     except Exception:
         logger.exception("plate mask failed for walk photo media %s", media.id)
     try:
@@ -523,8 +524,12 @@ def _mask_uploaded(field_file):
         if path:
             from .plate_masker import mask_license_plate
             mask_license_plate(path)
+        else:
+            print("[plate-mask] SKIP — no local path for", getattr(field_file, "name", field_file))
     except Exception:
+        import traceback; traceback.print_exc()
         logger.exception("plate masking after upload failed")
+        print("[plate-mask] ERROR in _mask_uploaded")
 
 
 @inspector_required

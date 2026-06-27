@@ -76,55 +76,94 @@ def _contour_boxes(cv_img):
     return boxes
 
 
+def _save_in_place(pil, image_path):
+    ext = os.path.splitext(image_path)[1].lstrip(".").upper()
+    if ext in ("JPG", "JPEG", ""):
+        pil.save(image_path, "JPEG", quality=85)
+    elif ext == "WEBP":
+        pil.save(image_path, "WEBP", quality=85)
+    elif ext == "PNG":
+        pil.save(image_path, "PNG")
+    else:
+        pil.save(image_path)
+
+
 def mask_license_plate(image_path, logo_path=None):
-    """Detect the plate in `image_path`, cover it with the Car Friend logo, and
-    overwrite the file. Returns True/False/None (masked / none found / error)."""
+    """Cover the number plate in `image_path` with the Car Friend logo and
+    overwrite the file. GUARANTEED mask: if detection finds nothing, the logo is
+    still stamped bottom-centre so no car photo is ever left unmasked.
+
+    Returns "masked" (plate covered), "fallback" (last-resort stamp), or None
+    (error). Prints a line per image so it is visible in the server console."""
     try:
         import cv2
         import numpy as np
-        from PIL import Image, ImageDraw
+        from PIL import Image
     except Exception:
+        import traceback; traceback.print_exc()
         logger.exception("plate masking dependencies (opencv/Pillow) unavailable")
+        print("[plate-mask] ERROR deps unavailable for", image_path)
         return None
 
     try:
         pil = Image.open(image_path).convert("RGB")
         cv_img = cv2.cvtColor(np.array(pil), cv2.COLOR_RGB2BGR)
 
+        # detection: plate-specific YOLO -> Haar cascade -> contour heuristic
         boxes = _yolo_boxes(cv_img)
         if not boxes:
             boxes = _haar_boxes(cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY))
         if not boxes:
             boxes = _contour_boxes(cv_img)
-        if not boxes:
-            return False                      # no plate — leave the image as-is
 
+        # load the Car Friend logo (RGBA, for transparent paste)
         logo = None
         lp = str(logo_path or DEFAULT_LOGO)
         try:
             if os.path.exists(lp):
                 logo = Image.open(lp).convert("RGBA")
+            else:
+                print("[plate-mask] WARN logo not found at", lp)
         except Exception:
+            import traceback; traceback.print_exc()
             logger.exception("could not open mask logo %s", lp)
 
-        draw = ImageDraw.Draw(pil)
-        for (x, y, w, h) in boxes:
-            if w <= 0 or h <= 0:
-                continue
-            draw.rectangle([x, y, x + w, y + h], fill=(13, 15, 19))
-            if logo is not None:
-                pil.paste(logo.resize((w, h)), (x, y), logo.resize((w, h)))
+        from PIL import ImageDraw
+        W, H = pil.size
 
-        ext = os.path.splitext(image_path)[1].lstrip(".").upper()
-        if ext in ("JPG", "JPEG", ""):
-            pil.save(image_path, "JPEG", quality=85)
-        elif ext == "WEBP":
-            pil.save(image_path, "WEBP", quality=85)
-        elif ext == "PNG":
-            pil.save(image_path, "PNG")
+        if boxes:
+            draw = ImageDraw.Draw(pil)
+            for (x, y, w, h) in boxes:
+                if w <= 0 or h <= 0:
+                    continue
+                draw.rectangle([x, y, x + w, y + h], fill=(13, 15, 19))
+                if logo is not None:
+                    lg = logo.resize((w, h))
+                    pil.paste(lg, (x, y), lg)
+            _save_in_place(pil, image_path)
+            print(f"[plate-mask] OK {image_path} — {len(boxes)} plate region(s) covered")
+            return "masked"
+
+        # ---- last resort: no plate detected — stamp logo bottom-centre ----
+        if logo is not None:
+            bw = max(1, int(W * 0.28))
+            bh = max(1, int(bw * logo.height / logo.width))
+            bx = (W - bw) // 2
+            by = H - bh - int(H * 0.04)
+            lg = logo.resize((bw, bh))
+            pil.paste(lg, (bx, by), lg)
         else:
-            pil.save(image_path)
-        return True
+            # no logo file — fall back to an opaque block so the plate area still
+            # can't leak if it happens to be bottom-centre
+            block_w, block_h = int(W * 0.3), int(H * 0.08)
+            ImageDraw.Draw(pil).rectangle(
+                [(W - block_w) // 2, H - block_h - int(H * 0.04),
+                 (W + block_w) // 2, H - int(H * 0.04)], fill=(13, 15, 19))
+        _save_in_place(pil, image_path)
+        print(f"[plate-mask] FALLBACK {image_path} — no plate detected, logo stamped bottom-centre")
+        return "fallback"
     except Exception:
+        import traceback; traceback.print_exc()
         logger.exception("plate masking failed for %s", image_path)
+        print("[plate-mask] ERROR", image_path)
         return None
