@@ -247,6 +247,8 @@ ZONES = [
         "key": "inside", "index": 5, "title": "Inside (cabin + test drive)", "short": "Inside",
         "groups": [
             {"label": "Cabin", "checkpoints": [
+                _cp("power_windows_count", "No. of power windows", PT_WINDOW, kind="field", na=True),
+                _cp("airbags_count", "No. of airbags", PT_WARN, kind="field", na=True),
                 _cp("seats_upholstery", "Seats / upholstery", PT_SEAT),
                 _cp("dashboard_trim", "Dashboard / trim", PT_DASH),
                 _cp("steering_wheel", "Steering wheel", PT_STEER),
