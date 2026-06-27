@@ -208,6 +208,7 @@ button { font-family: inherit; cursor: pointer; }
 /* ---------- Job card (§2.6) ---------- */
 .jobcard { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-card);
   padding: var(--pad-card); box-shadow: var(--shadow-sm); margin-bottom: 10px; display: block; }
+.jobcard .jc-link { display: block; color: inherit; }
 .jobcard .jc-top { display: flex; align-items: flex-start; gap: 10px; }
 .jobcard .jc-time { font-family: var(--font-m); font-weight: 700; font-size: 13px; color: var(--ink);
   background: var(--surface); border-radius: 10px; padding: 6px 9px; text-align: center; min-width: 54px; }

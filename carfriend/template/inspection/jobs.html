@@ -16,37 +16,45 @@
 </form>
 
 {% for v in rows %}
-<a class="jobcard {% if v.status == 'reinspect' %}alert{% endif %}" href="/visit/{{ v.id }}">
-  <div class="jc-top">
-    <div class="jc-time">{{ v.scheduled_at|date:"H:i" }}<br><span style="font-weight:500;font-size:10px;color:var(--muted)">{{ v.scheduled_at|date:"d M" }}</span></div>
-    <div class="jc-body">
-      <div class="jc-car">{{ v.vehicle.display_name|short_car_name }}</div>
-      <div class="jc-meta mono">{{ v.vehicle.plate_number }}</div>
-      <div class="jc-meta">{{ v.lead.name|default:v.vehicle.owner_name|default:"—" }} · {{ v.vehicle.city|default:"—" }}</div>
+<div class="jobcard {% if v.status == 'reinspect' %}alert{% endif %}">
+  <a class="jc-link" href="/visit/{{ v.id }}">
+    <div class="jc-top">
+      <div class="jc-time">{{ v.scheduled_at|date:"H:i" }}<br><span style="font-weight:500;font-size:10px;color:var(--muted)">{{ v.scheduled_at|date:"d M" }}</span></div>
+      <div class="jc-body">
+        <div class="jc-car">{{ v.vehicle|short_car_name }}</div>
+        <div class="jc-meta mono">{{ v.vehicle.plate_number }}</div>
+        <div class="jc-meta">{{ v.lead.seller.get_full_name|default:v.vehicle.owner_name|default:"—" }} · {{ v.vehicle.city|default:"—" }}</div>
+      </div>
+      {% if v.status == 'scheduled' %}<span class="badge pend">Scheduled</span>
+      {% elif v.status == 'inprogress' %}<span class="badge prog">In progress</span>
+      {% elif v.status == 'submitted' %}<span class="badge prog">In review</span>
+      {% elif v.status == 'approved' %}<span class="badge done">Approved</span>
+      {% elif v.status == 'rejected' %}<span class="badge alert">Rejected</span>
+      {% elif v.status == 'reinspect' %}<span class="badge pend">Re-inspect</span>{% endif %}
     </div>
-    {% if v.status == 'scheduled' %}<span class="badge pend">Scheduled</span>
-    {% elif v.status == 'inprogress' %}<span class="badge prog">In progress</span>
-    {% elif v.status == 'submitted' %}<span class="badge prog">In review</span>
-    {% elif v.status == 'approved' %}<span class="badge done">Approved</span>
-    {% elif v.status == 'rejected' %}<span class="badge alert">Rejected</span>
-    {% elif v.status == 'reinspect' %}<span class="badge pend">Re-inspect</span>{% endif %}
-  </div>
-  {% if v.status == 'reinspect' %}
-  <div class="jc-alert">
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-    Previous report rejected — address noted issues
-  </div>
-  {% endif %}
+    {% if v.status == 'reinspect' %}
+    <div class="jc-alert">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+      Previous report rejected — address noted issues
+    </div>
+    {% endif %}
+  </a>
   <div class="jc-actions">
-    {% if tab == 'completed' %}
-      <span class="btn btn-ghost btn-sm">View report</span>
-    {% elif v.status == 'inprogress' %}
-      <span class="btn btn-primary btn-sm">Continue</span>
+    {% if v.status == 'inprogress' %}
+      <a class="btn btn-primary btn-sm" href="{% if v.report.id %}/inspection/{{ v.report.id }}/summary{% else %}/start/{{ v.id }}{% endif %}">Continue</a>
+    {% elif v.status == 'submitted' or v.status == 'approved' or v.status == 'rejected' %}
+      <a class="btn btn-ghost btn-sm" href="/report/{{ v.report.id }}">View report</a>
     {% else %}
-      <span class="btn btn-primary btn-sm">Start</span>
+      <a class="btn btn-primary btn-sm" href="/visit/{{ v.id }}">Start</a>
+    {% endif %}
+    {% if v.lead.seller.phone %}
+      <a class="btn btn-ghost btn-sm" href="tel:{{ v.lead.seller.phone }}">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0122 16.92z"/></svg>
+        Call
+      </a>
     {% endif %}
   </div>
-</a>
+</div>
 {% empty %}
 <div class="empty">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
