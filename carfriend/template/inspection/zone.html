@@ -48,8 +48,10 @@
 {% endif %}
 {% endif %}
 
+<div class="sync-line ok" id="cf-sync-line" style="margin-bottom:10px"><span class="pulse"></span> All synced</div>
+
 <div class="zone-toolbar">
-  <form method="post" action="/inspect/{{ r.id }}/zone/{{ zone.key }}/markgood" style="flex:1">
+  <form method="post" action="/inspect/{{ r.id }}/zone/{{ zone.key }}/markgood" style="flex:1" data-needs-online>
     {% csrf_token %}
     <button type="submit" class="btn btn-ghost block btn-sm">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg>
@@ -76,8 +78,8 @@
   </div>
 
   {% if row.kind == 'field' %}
-    <form method="post" action="/inspect/{{ r.id }}/save" style="display:flex;gap:6px;align-items:center">
-      {% csrf_token %}
+    <form method="post" action="/inspect/{{ r.id }}/save" class="cp-form" data-needs-online style="display:flex;gap:6px;align-items:center">
+      {% csrf_token %}<input type="hidden" name="crid">
       <input type="hidden" name="key" value="{{ row.key }}"><input type="hidden" name="zone" value="{{ zone.key }}">
       <input type="text" name="value" value="{{ row.entry.value|default:row.prefill }}" placeholder="Enter" style="width:96px;height:38px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:0 10px;font-family:var(--font-b);font-size:13px">
       <button class="cp-btn ok" type="submit">Save</button>
@@ -108,8 +110,8 @@
 <a class="btn btn-primary block" href="/inspect/{{ r.id }}" style="margin-top:14px">Zone done — back to zones</a>
 {% endif %}
 
-<form id="na-form" method="post" action="/inspect/{{ r.id }}/save" style="display:none">
-  {% csrf_token %}
+<form id="na-form" method="post" action="/inspect/{{ r.id }}/save" class="cp-form" data-needs-online style="display:none">
+  {% csrf_token %}<input type="hidden" name="crid">
   <input type="hidden" name="key" id="na-key"><input type="hidden" name="zone" value="{{ zone.key }}">
   <input type="hidden" name="result" value="na">
 </form>
@@ -123,8 +125,8 @@
 {# ---- OK sheet (§5.3): confirm + optional photo ---- #}
 <div class="sheet" id="ok-sheet" role="dialog" aria-modal="true">
   <div class="handle"></div>
-  <form method="post" action="/inspect/{{ r.id }}/save">
-    {% csrf_token %}
+  <form method="post" action="/inspect/{{ r.id }}/save" class="cp-form" data-needs-online>
+    {% csrf_token %}<input type="hidden" name="crid">
     <input type="hidden" name="zone" value="{{ zone.key }}">
     <input type="hidden" name="result" value="ok">
     <input type="hidden" name="key" id="ok-key">
@@ -146,8 +148,8 @@
 {# ---- Issue sheet (§5.3): chips + photo (required) + severity + note ---- #}
 <div class="sheet" id="issue-sheet" role="dialog" aria-modal="true">
   <div class="handle"></div>
-  <form method="post" action="/inspect/{{ r.id }}/save" id="issue-form">
-    {% csrf_token %}
+  <form method="post" action="/inspect/{{ r.id }}/save" id="issue-form" class="cp-form" data-needs-online>
+    {% csrf_token %}<input type="hidden" name="crid">
     <input type="hidden" name="zone" value="{{ zone.key }}">
     <input type="hidden" name="result" value="issue">
     <input type="hidden" name="key" id="issue-key">
@@ -192,14 +194,7 @@
   var scrim = document.getElementById('cf-scrim');
   var okSheet = document.getElementById('ok-sheet');
   var issueSheet = document.getElementById('issue-sheet');
-  var open = null, coords = null;
-
-  // grab location once (best-effort); each photo is GPS-tagged + watermarked server-side
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(function (p) {
-      coords = {lat: p.coords.latitude, lng: p.coords.longitude};
-    }, function () {}, {enableHighAccuracy: true, timeout: 8000, maximumAge: 60000});
-  }
+  var open = null;
 
   function close() {
     if (!open) return;
@@ -213,30 +208,27 @@
   scrim.addEventListener('click', close);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 
-  function thumb(url, masked) {
-    var d = document.createElement('div'); d.className = 'photo-thumb';
-    d.innerHTML = '<img src="' + url + '"><span class="mk' + (masked ? '' : ' no') + '">' + (masked ? 'masked' : 'held') + '</span>';
-    return d;
-  }
-  function spinner() {
-    var d = document.createElement('div'); d.className = 'photo-thumb up';
-    d.innerHTML = '<div class="spin"></div>'; return d;
-  }
-
-  // upload one photo for `key`; container is where thumbs render; cb(ok)
+  // upload one photo for `key` via the resilient queue (retry + backoff + flush
+  // on reconnect — see inspector-sync.js). `cell` is a placeholder thumb we
+  // mutate through the upload states; cb(ok) fires on terminal state.
   function upload(file, key, container, addBtn, cb) {
-    var sp = spinner(); container.insertBefore(sp, addBtn);
-    var fd = new FormData();
-    fd.append('file', file); fd.append('key', key); fd.append('csrfmiddlewaretoken', CSRF);
-    if (coords) { fd.append('lat', coords.lat); fd.append('lng', coords.lng); }
-    fetch('/inspect/' + RID + '/photo', {method: 'POST', body: fd, headers: {'X-Requested-With': 'fetch'}})
-      .then(function (r) { return r.json(); })
-      .then(function (j) {
-        sp.remove();
-        if (j.ok) { container.insertBefore(thumb(j.url, j.plate_masked), addBtn); cb && cb(true); }
-        else { window.cfToast && cfToast('Upload failed'); cb && cb(false); }
-      })
-      .catch(function () { sp.remove(); window.cfToast && cfToast('Upload failed — will retry'); cb && cb(false); });
+    var cell = document.createElement('div'); cell.className = 'photo-thumb up';
+    cell.innerHTML = '<div class="spin"></div>';
+    container.insertBefore(cell, addBtn);
+    window.cfUploadPhoto(file, key, {csrf: CSRF, rid: RID, onState: function (state, data) {
+      if (state === 'uploading' || state === 'retry') {
+        cell.className = 'photo-thumb up';
+        cell.innerHTML = '<div class="spin"></div>' + (state === 'retry' ? '<span class="badge-q">retry</span>' : '');
+      } else if (state === 'done') {
+        cell.className = 'photo-thumb';
+        cell.innerHTML = '<img src="' + data.url + '"><span class="mk' + (data.plate_masked ? '' : ' no') + '">' + (data.plate_masked ? 'masked' : 'held') + '</span>';
+        cb && cb(true);
+      } else if (state === 'failed') {
+        cell.className = 'photo-thumb up';
+        cell.innerHTML = '<span class="badge-f badge-q">failed</span>';
+        cb && cb(false);
+      }
+    }});
   }
 
   // ---- OK sheet ----
@@ -279,6 +271,7 @@
       });
       var box = document.getElementById('issue-photos');
       box.querySelectorAll('.photo-thumb').forEach(function (t) { t.remove(); });
+      loadIssueDraft(b.dataset.key);
       show(issueSheet);
     });
   });
@@ -305,9 +298,40 @@
   document.querySelectorAll('[data-na]').forEach(function (b) {
     b.addEventListener('click', function () {
       document.getElementById('na-key').value = b.dataset.na;
-      document.getElementById('na-form').submit();
+      document.getElementById('na-form').requestSubmit();   // fires submit (crid + offline guard)
     });
   });
+
+  // crid stamp on every checkpoint save (idempotent retries §5.11)
+  document.querySelectorAll('.cp-form').forEach(function (f) {
+    f.addEventListener('submit', function () {
+      var c = f.querySelector('input[name=crid]');
+      if (c && !c.value) c.value = 'cp_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    });
+  });
+
+  // issue-sheet draft cache — never lose typing on refresh/crash
+  var issueForm = document.getElementById('issue-form');
+  function curKey() { return document.getElementById('issue-key').value; }
+  function saveIssueDraft() {
+    var k = curKey(); if (!k) return;
+    var tags = [];
+    issueForm.querySelectorAll('input[name=tags]:checked').forEach(function (i) { tags.push(i.value); });
+    var sev = issueForm.querySelector('input[name=severity]:checked');
+    window.cfDraft.save(RID, k, {tags: tags, severity: sev ? sev.value : 'moderate', note: issueForm.querySelector('[name=note]').value});
+  }
+  function loadIssueDraft(k) {
+    var d = window.cfDraft.load(RID, k); if (!d) return;
+    issueForm.querySelector('[name=note]').value = d.note || '';
+    if (d.severity) { var s = issueForm.querySelector('input[name=severity][value="' + d.severity + '"]'); if (s) { s.checked = true; s.dispatchEvent(new Event('change')); } }
+    var box = document.getElementById('issue-chips');
+    (d.tags || []).forEach(function (t) {
+      box.querySelectorAll('.chip input').forEach(function (i) { if (i.value === t) { i.checked = true; i.parentElement.classList.add('on'); } });
+    });
+  }
+  issueForm.addEventListener('input', saveIssueDraft);
+  issueForm.addEventListener('change', saveIssueDraft);
+  issueForm.addEventListener('submit', function () { if (navigator.onLine) window.cfDraft.clear(RID, curKey()); });
   // severity highlight
   document.querySelectorAll('.sev input').forEach(function (i) {
     i.addEventListener('change', function () {

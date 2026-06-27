@@ -60,6 +60,8 @@
 </nav>
 {% endif %}
 
+<div class="offline-bar" id="cf-offline">Offline — your work is saved on this device and syncs when you reconnect.</div>
+
 {% block toast %}
 <div class="toast" id="cf-toast"></div>
 {% endblock %}
@@ -91,6 +93,7 @@
     setTimeout(function () { t.classList.remove('show'); }, 2600);
   };
 </script>
+<script src="{% static 'js/inspector-sync.js' %}"></script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>

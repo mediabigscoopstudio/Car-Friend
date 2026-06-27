@@ -276,6 +276,17 @@ button { font-family: inherit; cursor: pointer; }
   opacity: 0; pointer-events: none; transition: opacity var(--t-screen), transform var(--t-screen); z-index: 60; max-width: 90%; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* ---------- offline bar (§5.11) ---------- */
+.offline-bar { position: fixed; left: 50%; bottom: 0; transform: translateX(-50%) translateY(100%);
+  width: 100%; max-width: 480px; z-index: 35; background: var(--pend-text); color: #fff;
+  font-size: 12.5px; font-weight: 600; text-align: center; padding: 9px 14px;
+  transition: transform var(--t-screen) var(--ease); }
+.offline-bar.show { transform: translateX(-50%) translateY(0); }
+.is-offline .bottomnav { bottom: 36px; }
+.photo-thumb .badge-q { position: absolute; bottom: 0; left: 0; right: 0; font-size: 8px; text-align: center;
+  background: var(--pend-text); color: #fff; padding: 1px; font-weight: 700; }
+.photo-thumb .badge-f { background: var(--alert-text); }
+
 /* ---------- count-up helper ---------- */
 .countup { font-variant-numeric: tabular-nums; }
 

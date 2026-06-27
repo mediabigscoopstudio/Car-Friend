@@ -48,10 +48,15 @@ def is_walk_inspection(report):
 # ---- writing ---------------------------------------------------------------
 def save_checkpoint(report, key, *, result=None, value=None, severity=None,
                     tags=None, note=None, voice=None, photos=None, ts=None,
-                    commit=True):
-    """Upsert one checkpoint result. Only provided fields are written."""
+                    crid=None, commit=True):
+    """Upsert one checkpoint result. Only provided fields are written.
+
+    Idempotent on `crid` (client_request_id): replaying the same request id is a
+    no-op, so offline retries with backoff never double-apply (§5.11)."""
     walk = _walk(report)
     entry = walk["results"].get(key, {})
+    if crid and entry.get("crid") == crid:
+        return entry            # already applied this exact request
     if result is not None:   entry["result"] = result
     if value is not None:    entry["value"] = value
     if severity is not None: entry["severity"] = severity
@@ -60,6 +65,7 @@ def save_checkpoint(report, key, *, result=None, value=None, severity=None,
     if voice is not None:    entry["voice"] = voice
     if photos is not None:   entry["photos"] = photos
     if ts is not None:       entry["ts"] = ts
+    if crid is not None:     entry["crid"] = crid
     # An OK / N/A result clears any stale issue metadata.
     if result in ("ok", "na"):
         entry.pop("severity", None)

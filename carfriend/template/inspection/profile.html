@@ -4,7 +4,7 @@
 {% block content %}
 
 {# sync status line (§4.4) — wired to the real queue in Phase 8 #}
-<div class="sync-line ok"><span class="pulse"></span> All synced</div>
+<div class="sync-line ok" id="cf-sync-line"><span class="pulse"></span> All synced</div>
 
 <div class="profile-head">
   <div class="avatar lg" style="margin:0 auto">{{ request.user.first_name|first|upper|default:request.user.username|first|upper }}</div>

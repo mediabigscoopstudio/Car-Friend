@@ -315,7 +315,7 @@ def insp_cp_save(request, id):
         if request.headers.get("X-Requested-With") == "fetch":
             return JsonResponse({"ok": False, "error": "photo_required"}, status=422)
         return redirect(f"/inspect/{r.id}/zone/{zone_key}?err=photo#cp-{key}")
-    kwargs = {"ts": timezone.now().isoformat()}
+    kwargs = {"ts": timezone.now().isoformat(), "crid": request.POST.get("crid") or None}
     if result == "issue":
         kwargs.update(result="issue",
                       severity=request.POST.get("severity") or "moderate",
