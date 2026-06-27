@@ -318,7 +318,10 @@ def _seller_kyc_state(user):
 
 @login_required(login_url="/auth/login/")
 def seller_dashboard(request):
-    if not request.user.is_seller:
+    # Sellers see their dashboard; admins may open it too (preview). Dealers and
+    # CRM staff each have their own dashboard, so send them there instead of
+    # rendering the seller page.
+    if not request.user.is_seller and not request.user.is_admin:
         return redirect(get_dashboard_url(request.user))
     return render(request, "www/dashboard/seller.html", {
         "kyc_status": _seller_kyc_state(request.user),
