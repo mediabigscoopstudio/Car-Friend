@@ -132,7 +132,6 @@ ZONES = [
             {"label": "Physical capture", "checkpoints": [
                 _cp("odometer_km", "Odometer / KM reading", PT_WARN, kind="field", photo="req"),
                 _cp("rc_card", "RC card — availability, condition, name match", PT_RC, photo="req"),
-                _cp("insurance_doc", "Insurance — type + expiry", PT_INSURANCE, photo="req"),
                 _cp("keys_spare", "Keys / spare key", PT_KEYS, photo="req"),
                 _cp("hsrp_embossing", "HSRP / chassis embossing present", PT_RC),
                 _cp("service_history", "Service history available", PT_RC, kind="field", photo="opt", na=True),
@@ -289,14 +288,10 @@ ZONES = [
                 _cp("doc_service", "Service records photo", PT_RC, kind="doc", photo="opt", na=True),
                 _cp("doc_duplicate_key", "Duplicate-key photo", PT_KEYS, kind="doc", photo="opt", na=True),
             ]},
-            {"label": "360° set & sign-off", "checkpoints": [
-                _cp("doc_360_front", "360° — front", PT_BODY, kind="doc", photo="req"),
-                _cp("doc_360_rear", "360° — rear", PT_BODY, kind="doc", photo="req"),
-                _cp("doc_360_left", "360° — left", PT_BODY, kind="doc", photo="req"),
-                _cp("doc_360_right", "360° — right", PT_BODY, kind="doc", photo="req"),
-                _cp("doc_selfie", "Inspector selfie at location", PT_BODY, kind="doc", photo="req"),
-                _cp("final_notes", "Final notes / signature", PT_RC, kind="field"),
-            ]},
+            # The old "360° set & sign-off" group is replaced by the WRAP-UP block
+            # (front/rear/left/right photos + walk-around video + engine audio +
+            # final notes), rendered from InspectionReport model fields in the
+            # docs zone template — not as checkpoints.
         ],
     },
 ]

@@ -1,0 +1,42 @@
+{% extends "base/base_v4.html" %}
+{% load cf %}
+{% block title %}Hero shot · {{ vehicle|short_car_name }}{% endblock %}
+{% block page_title %}Hero shot{% endblock %}
+{% block content %}
+
+<div class="hero" style="text-align:center;margin-top:8px">
+  <div class="eyebrow">Step 1 · required</div>
+  <h2>Take the hero shot</h2>
+  <div class="sub">Photograph the car from a <b>3/4 front angle</b> (front-left corner). This becomes the auction cover photo.</div>
+</div>
+
+<form method="post" action="/inspect/{{ r.id }}/hero" enctype="multipart/form-data" id="hero-form">
+  {% csrf_token %}
+  <label class="cam-btn" style="width:100%;height:200px;border-radius:18px;margin-bottom:14px;gap:8px">
+    <input type="file" accept="image/*" capture="environment" name="file" id="hero-file" hidden required>
+    <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    <span id="hero-label" style="font-size:14px">Tap to capture the hero shot</span>
+  </label>
+  <img id="hero-preview" alt="" style="display:none;width:100%;border-radius:18px;margin-bottom:14px;border:1px solid var(--line)">
+  <button type="submit" class="btn btn-primary block" id="hero-next" disabled>Start inspection</button>
+  <div class="note-hint" style="text-align:center;margin-top:8px">A hero shot is required before the inspection can begin.</div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var inp = document.getElementById('hero-file');
+  var nxt = document.getElementById('hero-next');
+  var prev = document.getElementById('hero-preview');
+  var lab = document.getElementById('hero-label');
+  inp.addEventListener('change', function () {
+    if (!this.files[0]) return;
+    nxt.disabled = false;
+    lab.textContent = 'Photo captured — tap Start inspection';
+    try { prev.src = URL.createObjectURL(this.files[0]); prev.style.display = 'block'; } catch (e) {}
+  });
+})();
+</script>
+{% endblock %}

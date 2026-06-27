@@ -5,6 +5,11 @@
 {% block content %}
 
 <div class="flow-hd">
+  {% if r.auction_hero_image %}
+  <img src="{{ r.auction_hero_image.url }}" alt="Hero shot" style="width:56px;height:56px;border-radius:12px;object-fit:cover;border:1px solid var(--line);flex-shrink:0">
+  {% else %}
+  <div style="width:56px;height:56px;border-radius:12px;background:var(--surface);border:1px solid var(--line);flex-shrink:0"></div>
+  {% endif %}
   <div class="ring" data-p="{{ overall.pct }}"><b>{{ overall.pct }}%</b></div>
   <div class="ft">
     <h2>{{ vehicle|short_car_name }}</h2>

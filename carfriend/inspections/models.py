@@ -62,6 +62,23 @@ class InspectionReport(models.Model):
     challan_count         = models.IntegerField(default=0)
     challan_fetched_at    = models.DateTimeField(null=True, blank=True)
     challan_fetch_status  = models.CharField(max_length=10, blank=True, default="")  # ok / failed / no_data
+    # Pre-inspection hero shot (3/4 front angle) — captured before the zones.
+    auction_hero_image = models.ImageField(upload_to="inspections/hero/", max_length=255, blank=True, null=True)
+    # Wrap-up section (replaces the old 360 set & sign-off).
+    front_photo      = models.ImageField(upload_to="inspections/wrapup/", max_length=255, blank=True, null=True)
+    rear_photo       = models.ImageField(upload_to="inspections/wrapup/", max_length=255, blank=True, null=True)
+    left_photo       = models.ImageField(upload_to="inspections/wrapup/", max_length=255, blank=True, null=True)
+    right_photo      = models.ImageField(upload_to="inspections/wrapup/", max_length=255, blank=True, null=True)
+    walkaround_video = models.FileField(upload_to="inspections/wrapup/video/", max_length=255, blank=True, null=True)
+    engine_audio     = models.FileField(upload_to="inspections/wrapup/audio/", max_length=255, blank=True, null=True)
+    final_notes      = models.TextField(blank=True, default="")
+    # Insurance (Details zone) — structured, replaces the OK/Issue checkpoint.
+    insurance_type         = models.CharField(max_length=30, blank=True)
+    insurer_name           = models.CharField(max_length=120, blank=True)
+    policy_number          = models.CharField(max_length=80, blank=True)
+    insurance_expiry_month = models.CharField(max_length=12, blank=True)
+    insurance_expiry_year  = models.CharField(max_length=4, blank=True)
+    insurance_photo        = models.ImageField(upload_to="inspections/insurance/", max_length=255, blank=True, null=True)
     created_at       = models.DateTimeField(auto_now_add=True)
     updated_at       = models.DateTimeField(auto_now=True)
 

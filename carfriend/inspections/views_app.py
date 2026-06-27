@@ -238,6 +238,10 @@ def insp_inspect_start(request, id):
 @inspector_required
 def insp_inspect(request, id):
     r = _get_report(request, id)
+    # Mandatory pre-inspection hero shot — gates the whole flow (Change 1).
+    if not r.auction_hero_image and r.editable:
+        return render(request, "inspection/hero.html", _shell(request,
+            pushed=True, hide_nav=True, back_url="/jobs", r=r, vehicle=r.visit.vehicle))
     return render(request, "inspection/inspect.html", _shell(request,
         active_tab="jobs", pushed=True, hide_nav=True, back_url="/jobs",
         r=r, vehicle=r.visit.vehicle,
@@ -267,10 +271,16 @@ def insp_zone(request, id, zone_key):
             media_by_key.setdefault(m.slot, []).append(
                 {"id": m.id, "url": img.url, "masked": m.plate_masked})
 
-    prefill, registry = {}, None
+    prefill, registry, extra = {}, None, {}
     if zone_key == "details":
         prefill = _registry_prefill(r.visit.vehicle)
         registry = VehicleRegistryData.objects.filter(vehicle=r.visit.vehicle).first()
+        yr = timezone.now().year
+        extra = {"ins_types": INSURANCE_TYPES, "ins_months": EXPIRY_MONTHS,
+                 "ins_years": [str(y) for y in range(yr, yr + 11)]}
+    elif zone_key == "docs":
+        extra = {"wrap_ready": all([r.front_photo, r.rear_photo, r.left_photo,
+                                    r.right_photo, r.walkaround_video])}
 
     groups = []
     for g in zone["groups"]:
@@ -292,7 +302,7 @@ def insp_zone(request, id, zone_key):
         r=r, zone=zone, groups=groups, progress=engine.zone_progress(r, zone),
         severities=zones.SEVERITIES, next_zone=next_zone,
         problem_chips=zones.PROBLEM_CHIPS,
-        registry=registry, vehicle=r.visit.vehicle))
+        registry=registry, vehicle=r.visit.vehicle, **extra))
 
 
 @inspector_required
@@ -490,6 +500,64 @@ def insp_registry_ocr(request, id):
     except Exception:
         logger.exception("RC photo store failed for report %s", r.id)
     return redirect(f"/inspect/{r.id}/zone/details?ocr={msg}")
+
+
+# model FileField/ImageField targets the inspector can upload to (Changes 1-3).
+_UPLOAD_FIELDS = {
+    "auction_hero_image", "front_photo", "rear_photo", "left_photo", "right_photo",
+    "walkaround_video", "engine_audio", "insurance_photo",
+}
+INSURANCE_TYPES = ["Comprehensive", "Third Party", "Zero Depreciation", "Not Available"]
+EXPIRY_MONTHS = ["January", "February", "March", "April", "May", "June",
+                 "July", "August", "September", "October", "November", "December"]
+
+
+@inspector_required
+@require_POST
+def insp_hero_upload(request, id):
+    """Save the mandatory pre-inspection hero shot, then enter the flow."""
+    r = _get_report(request, id)
+    f = request.FILES.get("file")
+    if f and r.editable:
+        r.auction_hero_image.save(f"hero_{r.id}_{uuid.uuid4().hex}{os.path.splitext(f.name)[1].lower() or '.jpg'}", f, save=True)
+    return redirect(f"/inspect/{r.id}")
+
+
+@inspector_required
+@require_POST
+def insp_field_upload(request, id):
+    """Generic upload to a whitelisted InspectionReport file/image field
+    (wrap-up photos/video/audio, insurance photo). Reuses Django's storage."""
+    r = _get_report(request, id)
+    if not r.editable:
+        return redirect(f"/inspect/{r.id}")
+    field = request.POST.get("field")
+    f = request.FILES.get("file")
+    nxt = request.POST.get("next") or f"/inspect/{r.id}/zone/docs"
+    if field in _UPLOAD_FIELDS and f:
+        getattr(r, field).save(f"{field}_{r.id}_{uuid.uuid4().hex}{os.path.splitext(f.name)[1].lower()}", f, save=True)
+    return redirect(nxt)
+
+
+@inspector_required
+@require_POST
+def insp_insurance_save(request, id):
+    """Save the structured insurance block (Change 3)."""
+    r = _get_report(request, id)
+    if r.editable:
+        r.insurance_type = request.POST.get("insurance_type", "")
+        r.insurer_name = request.POST.get("insurer_name", "")
+        r.policy_number = request.POST.get("policy_number", "")
+        r.insurance_expiry_month = request.POST.get("insurance_expiry_month", "")
+        r.insurance_expiry_year = request.POST.get("insurance_expiry_year", "")
+        fields = ["insurance_type", "insurer_name", "policy_number",
+                  "insurance_expiry_month", "insurance_expiry_year", "updated_at"]
+        f = request.FILES.get("insurance_photo")
+        if f:
+            r.insurance_photo.save(f"insurance_{r.id}_{uuid.uuid4().hex}{os.path.splitext(f.name)[1].lower()}", f, save=False)
+            fields.append("insurance_photo")
+        r.save(update_fields=fields)
+    return redirect(f"/inspect/{r.id}/zone/details#insurance")
 
 
 @inspector_required
@@ -755,6 +823,14 @@ def insp_submit(request, id):
     if not r.editable:
         return redirect(f"/report/{r.id}")
     is_walk = engine.is_walk_inspection(r)
+    # Wrap-up gating (Change 2): 4 exterior photos + walk-around video required.
+    if is_walk and not all([r.front_photo, r.rear_photo, r.left_photo,
+                            r.right_photo, r.walkaround_video]):
+        return redirect(f"/inspect/{r.id}/zone/docs?err=wrapup")
+    notes = request.POST.get("final_notes")
+    if notes is not None:
+        r.final_notes = notes
+        r.save(update_fields=["final_notes", "updated_at"])
     from .services import publish_guard, generate_report_pdf, generate_walk_pdf
     try:
         publish_guard(r)              # blocks unmasked plates (§5.8) — same guard both flows
