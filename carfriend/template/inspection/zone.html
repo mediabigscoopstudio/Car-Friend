@@ -16,6 +16,38 @@
   </div>
 </div>
 
+{% if zone.key == 'details' %}
+{# ---- Surepass prefill panel (§6) ---- #}
+<div class="card" style="background:var(--sage-bg);border-color:#D5E2D2">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--sage-deep)" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M21 12c-1 0-3-1-3-3s2-3 3-3-2-3-3-3-3 2-3 3-2 3-3 3 2 3 3 3"/></svg>
+    <div style="font-family:var(--font-d);font-weight:700;font-size:14px;color:var(--sage-text)">Auto-filled from RC</div>
+  </div>
+  <div style="font-size:12px;color:var(--muted)">
+    {% if registry %}{{ registry.get_source_display }} · fetched {{ registry.fetched_at|date:"d M Y" }}{% else %}From the RC pulled at listing. Verify each field; edits are flagged for audit.{% endif %}
+  </div>
+  <div style="display:flex;gap:8px;margin-top:10px">
+    <form method="post" action="/inspect/{{ r.id }}/registry/fetch" style="flex:1">{% csrf_token %}
+      <button type="submit" class="btn btn-ghost block btn-sm">Re-fetch from RC</button></form>
+    <form method="post" action="/inspect/{{ r.id }}/registry/ocr" enctype="multipart/form-data" id="ocr-form" style="flex:1">{% csrf_token %}
+      <label class="btn btn-ghost block btn-sm" style="margin:0">
+        <input type="file" accept="image/*" capture="environment" name="file" hidden id="ocr-file">Scan RC (OCR)</label></form>
+  </div>
+</div>
+
+{% if fraud %}
+<div class="card" style="background:var(--pend-bg);border-color:var(--pend-text)">
+  <div style="display:flex;gap:8px;align-items:flex-start">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--pend-text)" stroke-width="2" style="flex-shrink:0;margin-top:1px"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+    <div style="font-size:12px;color:var(--pend-text)">
+      <b>Owner name doesn't match the seller.</b><br>
+      RC owner: {{ fraud.owner }} · Seller: {{ fraud.seller }}. Not blocking — note it if there's a valid reason (sale in progress, family transfer).
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endif %}
+
 <div class="zone-toolbar">
   <form method="post" action="/inspect/{{ r.id }}/zone/{{ zone.key }}/markgood" style="flex:1">
     {% csrf_token %}
@@ -31,7 +63,7 @@
 {% for row in g.rows %}
 <div class="cprow {% if row.entry.result == 'ok' %}r-ok{% elif row.entry.result == 'issue' %}r-issue{% elif row.entry.result == 'na' %}r-na{% endif %}" id="cp-{{ row.key }}">
   <div class="cp-main">
-    <div class="cp-label">{{ row.label }}</div>
+    <div class="cp-label">{{ row.label }}{% if row.auto %} <span style="font-size:10px;font-weight:700;color:{% if row.edited %}var(--pend-text){% else %}var(--sage-deep){% endif %}">· {% if row.edited %}EDITED{% else %}RC{% endif %}</span>{% endif %}</div>
     {% if row.entry.result == 'issue' %}<div class="cp-tags">{{ row.entry.tags|join:" · " }}{% if row.entry.severity %} · {{ row.entry.severity|capfirst }}{% endif %}</div>
     {% elif row.entry.result == 'ok' %}<div class="cp-okline">OK</div>
     {% elif row.entry.result == 'na' %}<div class="cp-okline" style="color:var(--cancel-text)">N/A</div>
@@ -47,7 +79,7 @@
     <form method="post" action="/inspect/{{ r.id }}/save" style="display:flex;gap:6px;align-items:center">
       {% csrf_token %}
       <input type="hidden" name="key" value="{{ row.key }}"><input type="hidden" name="zone" value="{{ zone.key }}">
-      <input type="text" name="value" value="{{ row.entry.value|default:'' }}" placeholder="Enter" style="width:96px;height:38px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:0 10px;font-family:var(--font-b);font-size:13px">
+      <input type="text" name="value" value="{{ row.entry.value|default:row.prefill }}" placeholder="Enter" style="width:96px;height:38px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:0 10px;font-family:var(--font-b);font-size:13px">
       <button class="cp-btn ok" type="submit">Save</button>
       {% if row.na %}<button class="cp-btn na {% if row.entry.result == 'na' %}sel{% endif %}" data-na="{{ row.key }}" type="button">N/A</button>{% endif %}
     </form>
@@ -285,6 +317,12 @@
   });
 
   {% if request.GET.err == 'photo' %}window.cfToast && cfToast('Add a photo before saving an issue');{% endif %}
+  {% if request.GET.fetch == 'ok' %}window.cfToast && cfToast('Vehicle details refreshed from RC');{% endif %}
+  {% if request.GET.fetch == 'fail' %}window.cfToast && cfToast('Could not reach RC service — verify manually');{% endif %}
+  {% if request.GET.ocr == 'manual' %}window.cfToast && cfToast('RC saved — auto-read unavailable, verify fields manually');{% endif %}
+  {% if request.GET.ocr == 'ok' %}window.cfToast && cfToast('RC scanned — verify the fields');{% endif %}
+  var ocrFile = document.getElementById('ocr-file');
+  if (ocrFile) ocrFile.addEventListener('change', function () { if (this.files[0]) document.getElementById('ocr-form').submit(); });
 })();
 </script>
 {% endblock %}

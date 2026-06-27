@@ -15,7 +15,8 @@ from django.views.decorators.http import require_POST
 from accounts.decorators import inspector_required
 from core.models import log
 from notifications.services import notify
-from .models import InspectionVisit, InspectionReport, InspectionMedia, CheckpointPhoto
+from .models import (InspectionVisit, InspectionReport, InspectionMedia,
+                     CheckpointPhoto, VehicleRegistryData)
 from .schema import CHECKPOINT_SCHEMA
 from . import engine, zones
 
@@ -265,13 +266,24 @@ def insp_zone(request, id, zone_key):
         if img:
             media_by_key.setdefault(m.slot, []).append(
                 {"id": m.id, "url": img.url, "masked": m.plate_masked})
+
+    prefill, registry, fraud = {}, None, None
+    if zone_key == "details":
+        prefill = _registry_prefill(r.visit.vehicle)
+        registry = VehicleRegistryData.objects.filter(vehicle=r.visit.vehicle).first()
+        fraud = _fraud_flag(r.visit)
+
     groups = []
     for g in zone["groups"]:
         rows = []
         for cp in g["checkpoints"]:
-            rows.append({**cp, "entry": res.get(cp["key"]),
-                         "resolved": engine.is_resolved(cp, res.get(cp["key"])),
+            entry = res.get(cp["key"])
+            pf = prefill.get(cp["key"], "")
+            rows.append({**cp, "entry": entry,
+                         "resolved": engine.is_resolved(cp, entry),
                          "photos": media_by_key.get(cp["key"], []),
+                         "prefill": pf, "auto": bool(pf),
+                         "edited": bool(entry and entry.get("value") and entry.get("value") != pf),
                          "chips": zones.chips_for(cp["pt"])})
         groups.append({"label": g["label"], "rows": rows})
     idx = zone["index"]
@@ -280,7 +292,8 @@ def insp_zone(request, id, zone_key):
         active_tab="jobs", pushed=True, hide_nav=True, back_url=f"/inspect/{r.id}",
         r=r, zone=zone, groups=groups, progress=engine.zone_progress(r, zone),
         severities=zones.SEVERITIES, next_zone=next_zone,
-        problem_chips=zones.PROBLEM_CHIPS))
+        problem_chips=zones.PROBLEM_CHIPS,
+        registry=registry, fraud=fraud, vehicle=r.visit.vehicle))
 
 
 @inspector_required
@@ -324,6 +337,32 @@ def insp_cp_save(request, id):
     if zone_done:
         return redirect(f"/inspect/{r.id}?unlocked=1")
     return redirect(f"/inspect/{r.id}/zone/{zone_key}#cp-{key}")
+
+
+def _registry_prefill(v):
+    """Identity values to verify (not retype) at Zone 0, from the already
+    Surepass-populated Vehicle fields (§6.2)."""
+    return {
+        "reg_number": v.plate_number or "",
+        "owner_name": v.owner_name or "",
+        "make_model": " ".join(x for x in [v.make, v.model] if x),
+        "variant_transmission": " · ".join(x for x in [v.variant, (v.get_transmission_display() if v.transmission else "")] if x),
+        "mfg_month_year": " · ".join(str(x) for x in [v.year, (v.registration_date or "")] if x),
+        "fuel_owners": " · ".join(x for x in [(v.get_fuel_type_display() if v.fuel_type else ""),
+                                              (f"{v.owner_number} owner" if v.owner_number else "")] if x),
+    }
+
+
+def _fraud_flag(visit):
+    """Non-blocking owner≠seller flag (§6.4)."""
+    owner = (visit.vehicle.owner_name or "").strip()
+    seller = visit.lead.seller if (visit.lead_id and visit.lead and visit.lead.seller_id) else visit.vehicle.seller
+    sname = ((seller.get_full_name() if seller else "") or (seller.username if seller else "") or "").strip()
+    if not owner or not sname:
+        return None
+    if set(owner.lower().split()) & set(sname.lower().split()):
+        return None          # shared token → likely the same person
+    return {"owner": owner, "seller": sname}
 
 
 def _attach_photo(r, key, media_id):
@@ -388,6 +427,82 @@ def insp_cp_photo_delete(request, media_id):
     engine.save_checkpoint(r, key, photos=[p for p in (entry.get("photos") or []) if p != m.id])
     m.delete()
     return JsonResponse({"ok": True})
+
+
+@inspector_required
+@require_POST
+def insp_registry_fetch(request, id):
+    """Fallback #2 (§6.3): on-demand Surepass pull via the server proxy, cached
+    into VehicleRegistryData and reflected onto the Vehicle identity fields."""
+    r = _get_report(request, id)
+    v = r.visit.vehicle
+    msg = "fail"
+    try:
+        from www.services import lookup_rc_full
+        data = lookup_rc_full(v.plate_number)
+        for f in ("make", "model", "variant", "fuel_type", "transmission", "colour",
+                  "registration_state", "rto", "owner_name", "chassis_number", "engine_number"):
+            if data.get(f):
+                setattr(v, f, data[f])
+        if data.get("year"):
+            v.year = data["year"]
+        if data.get("owner_number"):
+            v.owner_number = data["owner_number"]
+        if data.get("is_hypothecated") is not None:
+            v.is_hypothecated = data["is_hypothecated"]
+        v.save()
+        VehicleRegistryData.objects.update_or_create(vehicle=v, defaults={
+            "reg_number": v.plate_number, "raw_json": data,
+            "owner_name": data.get("owner_name", ""), "source": "surepass",
+            "fetched_at": timezone.now()})
+        msg = "ok"
+    except Exception:
+        logger.exception("registry fetch failed for vehicle %s", v.id)
+    return redirect(f"/inspect/{r.id}/zone/details?fetch={msg}")
+
+
+@inspector_required
+@require_POST
+def insp_registry_ocr(request, id):
+    """Fallback #3 (§6.3): RC photo → backend OCR if a provider is wired, else
+    capture the RC photo and degrade to manual verification."""
+    r = _get_report(request, id)
+    f = request.FILES.get("file")
+    if not f:
+        return redirect(f"/inspect/{r.id}/zone/details?ocr=nofile")
+    msg = "manual"
+    try:
+        from www import services as wsvc
+        if hasattr(wsvc, "ocr_rc"):
+            data = wsvc.ocr_rc(f)
+            v = r.visit.vehicle
+            for k in ("make", "model", "variant", "owner_name", "chassis_number", "engine_number"):
+                if data.get(k):
+                    setattr(v, k, data[k])
+            v.save()
+            VehicleRegistryData.objects.update_or_create(vehicle=v, defaults={
+                "reg_number": v.plate_number, "raw_json": data,
+                "owner_name": data.get("owner_name", ""), "source": "ocr",
+                "fetched_at": timezone.now()})
+            msg = "ok"
+    except Exception:
+        logger.exception("registry OCR failed for report %s", r.id)
+        msg = "fail"
+    # keep the RC photo on the rc_card checkpoint regardless
+    try:
+        from .services import image_to_webp_bytes
+        media = InspectionMedia(report=r, kind="photo", section="walk", slot="rc_card",
+                                captured_at=timezone.now())
+        data = image_to_webp_bytes(f)
+        if data:
+            media.webp_file.save(f"{uuid.uuid4().hex}.webp", ContentFile(data), save=False)
+        else:
+            media.file.save(f"{uuid.uuid4().hex}.jpg", f, save=False)
+        media.save()
+        _attach_photo(r, "rc_card", media.id)
+    except Exception:
+        logger.exception("RC photo store failed for report %s", r.id)
+    return redirect(f"/inspect/{r.id}/zone/details?ocr={msg}")
 
 
 @inspector_required

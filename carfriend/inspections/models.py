@@ -132,6 +132,29 @@ class InspectionMedia(models.Model):
     def __str__(self): return f"{self.get_kind_display()} · {self.slot or self.section}"
 
 
+class VehicleRegistryData(models.Model):
+    """Cached RC/VAHAN registry pull for a vehicle (§6/§7). Captured once at
+    listing (Surepass) and reused at inspection so the inspector VERIFIES rather
+    than retypes — never re-billed for the same vehicle. Thin by design: the
+    parsed fields already live on Vehicle; this stores the raw payload + source
+    + fetched_at for audit, caching, and the 'fetched <date>' prefill label."""
+    class Source(models.TextChoices):
+        SUREPASS = "surepass", "Surepass / VAHAN"
+        OCR      = "ocr",      "RC OCR"
+        MANUAL   = "manual",   "Manual entry"
+
+    vehicle    = models.OneToOneField(Vehicle, on_delete=models.CASCADE, related_name="registry")
+    reg_number = models.CharField(max_length=20, blank=True)
+    raw_json   = models.JSONField(default=dict, blank=True)
+    owner_name = models.CharField(max_length=200, blank=True)
+    source     = models.CharField(max_length=10, choices=Source.choices, default=Source.SUREPASS)
+    fetched_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self): return f"Registry · {self.reg_number or self.vehicle} · {self.source}"
+
+
 class CheckpointPhoto(models.Model):
     """Multiple condition photos per checkpoint. Checkpoints are stored as JSON
     on InspectionReport (Pattern B), so a checkpoint is identified by section +
