@@ -6,9 +6,11 @@
 
 <div class="flow-hd">
   {% if r.auction_hero_image %}
-  <img src="{{ r.auction_hero_image.url }}" alt="Hero shot" style="width:56px;height:56px;border-radius:12px;object-fit:cover;border:1px solid var(--line);flex-shrink:0">
+  <img src="{{ r.auction_hero_image.url }}" alt="Hero shot" style="width:60px;height:60px;border-radius:12px;object-fit:cover;border:1px solid var(--line);flex-shrink:0">
   {% else %}
-  <div style="width:56px;height:56px;border-radius:12px;background:var(--surface);border:1px solid var(--line);flex-shrink:0"></div>
+  <div style="width:60px;height:60px;border-radius:12px;background:var(--surface);border:1px solid var(--line);flex-shrink:0;display:grid;place-items:center;color:var(--line-strong)">
+    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 13l1.5-4.5A2 2 0 018.4 7h7.2a2 2 0 011.9 1.5L19 13M4 13h16v4H4zM7 17v1M17 17v1"/><circle cx="7.5" cy="15" r="1"/><circle cx="16.5" cy="15" r="1"/></svg>
+  </div>
   {% endif %}
   <div class="ring" data-p="{{ overall.pct }}"><b>{{ overall.pct }}%</b></div>
   <div class="ft">

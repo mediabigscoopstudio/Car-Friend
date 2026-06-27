@@ -17,6 +17,11 @@
   {% if r.est_market_value %}<div class="sub" style="margin-top:4px">Est. value band ≈ <b>₹{{ r.est_market_value|floatformat:0 }}</b></div>{% endif %}
 </div>
 
+{% if r.auction_hero_image %}
+<div class="section-label">Hero shot</div>
+<img src="{{ r.auction_hero_image.url }}" alt="Hero shot" style="width:100%;max-width:600px;display:block;margin:0 auto 14px;border-radius:16px;border:1px solid var(--line)">
+{% endif %}
+
 <div class="stats">
   <div class="stat done"><div class="num">{{ ok }}</div><div class="lbl">OK</div></div>
   <div class="stat pending"><div class="num">{{ na }}</div><div class="lbl">N/A</div></div>
@@ -49,14 +54,41 @@
       {% if row.result == 'issue' %}<span style="color:var(--alert-text)">Issue{% if row.severity %} · {{ row.severity|capfirst }}{% endif %}</span>
       {% elif row.result == 'ok' %}<span style="color:var(--done-text)">OK</span>
       {% elif row.result == 'na' %}<span style="color:var(--cancel-text)">N/A</span>{% endif %}
-      {% if row.photos %} 📷{{ row.photos|length }}{% endif %}
     </span>
   </div>
+  {% if row.photos %}<div style="display:flex;flex-wrap:wrap;gap:6px;padding:0 0 8px">{% for p in row.photos %}<a href="{{ p.url }}" target="_blank"><img src="{{ p.url }}" alt="{{ row.label }}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--line)"></a>{% endfor %}</div>{% endif %}
   {% elif row.value %}<div class="info-row"><span class="k">{{ row.label }}</span><span class="v">{{ row.value }}</span></div>{% endif %}
   {% endfor %}
   {% endfor %}
 </div>
 {% endfor %}
+
+{% if r.insurance_type or r.insurer_name or r.insurance_photo %}
+<div class="section-label">Insurance</div>
+<div class="card">
+  {% if r.insurance_type or r.insurer_name %}<div class="info-row"><span class="k">Policy</span><span class="v">{{ r.insurance_type }}{% if r.insurer_name %} · {{ r.insurer_name }}{% endif %}{% if r.insurance_expiry_month %} · Expires {{ r.insurance_expiry_month }} {{ r.insurance_expiry_year }}{% endif %}</span></div>{% endif %}
+  {% if r.policy_number %}<div class="info-row"><span class="k">Policy no.</span><span class="v mono">{{ r.policy_number }}</span></div>{% endif %}
+  {% if r.insurance_photo %}<img src="{{ r.insurance_photo.url }}" alt="Insurance document" style="width:100%;max-width:200px;display:block;margin:10px auto 0;border-radius:12px;border:1px solid var(--line)"><div style="text-align:center;font-size:12px;color:var(--muted);margin-top:4px">Insurance document</div>{% endif %}
+</div>
+{% endif %}
+
+{% if r.front_photo or r.rear_photo or r.left_photo or r.right_photo %}
+<div class="section-label">Exterior set</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+  {% if r.front_photo %}<div><img src="{{ r.front_photo.url }}" alt="Front" style="width:100%;max-height:240px;object-fit:cover;border-radius:12px;border:1px solid var(--line)"><div style="text-align:center;font-size:12px;color:var(--muted);margin-top:4px">Front</div></div>{% endif %}
+  {% if r.rear_photo %}<div><img src="{{ r.rear_photo.url }}" alt="Rear" style="width:100%;max-height:240px;object-fit:cover;border-radius:12px;border:1px solid var(--line)"><div style="text-align:center;font-size:12px;color:var(--muted);margin-top:4px">Rear</div></div>{% endif %}
+  {% if r.left_photo %}<div><img src="{{ r.left_photo.url }}" alt="Left side" style="width:100%;max-height:240px;object-fit:cover;border-radius:12px;border:1px solid var(--line)"><div style="text-align:center;font-size:12px;color:var(--muted);margin-top:4px">Left side</div></div>{% endif %}
+  {% if r.right_photo %}<div><img src="{{ r.right_photo.url }}" alt="Right side" style="width:100%;max-height:240px;object-fit:cover;border-radius:12px;border:1px solid var(--line)"><div style="text-align:center;font-size:12px;color:var(--muted);margin-top:4px">Right side</div></div>{% endif %}
+</div>
+{% endif %}
+
+{% if r.walkaround_video or r.engine_audio %}
+<div class="section-label">Media</div>
+<div class="card">
+  {% if r.walkaround_video %}<a class="info-row" href="{{ r.walkaround_video.url }}" target="_blank"><span class="k">Walk-around video</span><span class="v">View ›</span></a>{% endif %}
+  {% if r.engine_audio %}<a class="info-row" href="{{ r.engine_audio.url }}" target="_blank"><span class="k">Engine audio</span><span class="v">Play ›</span></a>{% endif %}
+</div>
+{% endif %}
 
 {% if r.editable %}
 <form method="post" action="/submit/{{ r.id }}" onsubmit="this.querySelector('button').disabled=true">
