@@ -1,0 +1,72 @@
+{% extends "base/base_v4.html" %}
+{% load cf %}
+{% block title %}Report · {{ vehicle|short_car_name }}{% endblock %}
+{% block page_title %}Report{% endblock %}
+{% block content %}
+
+<div class="hero" style="text-align:center">
+  <div class="eyebrow">Condition grade</div>
+  <div style="display:flex;align-items:center;justify-content:center;gap:18px;margin:6px 0">
+    <div class="ring" data-p="{{ score }}" style="width:84px;height:84px"><b style="font-size:20px">{{ score }}</b></div>
+    <div style="text-align:left">
+      <div style="font-family:var(--font-d);font-weight:800;font-size:40px;line-height:1;color:var(--ink)">{{ grade }}</div>
+      <div class="sub" style="margin:0">Grade</div>
+    </div>
+  </div>
+  <div class="sub">{{ vehicle|short_car_name }} · <span class="mono">{{ vehicle.plate_number }}</span></div>
+  {% if r.est_market_value %}<div class="sub" style="margin-top:4px">Est. value band ≈ <b>₹{{ r.est_market_value|floatformat:0 }}</b></div>{% endif %}
+</div>
+
+<div class="stats">
+  <div class="stat done"><div class="num">{{ ok }}</div><div class="lbl">OK</div></div>
+  <div class="stat pending"><div class="num">{{ na }}</div><div class="lbl">N/A</div></div>
+  <div class="stat"><div class="num" style="color:var(--alert-text)">{{ issue_total }}</div><div class="lbl">Issues</div></div>
+</div>
+
+{% if issues %}
+<div class="section-label">Issues found ({{ issue_count }})</div>
+{% for it in issues %}
+<div class="jobcard alert" style="margin-bottom:8px">
+  <div style="display:flex;justify-content:space-between;gap:8px">
+    <div class="jc-car">{{ it.label }}</div>
+    <span class="badge {% if it.severity == 'major' %}alert{% elif it.severity == 'moderate' %}pend{% else %}cancel{% endif %}">{{ it.severity|capfirst }}</span>
+  </div>
+  {% if it.tags %}<div class="cp-tags" style="margin-top:4px">{{ it.tags|join:" · " }}</div>{% endif %}
+  {% if it.note %}<div class="jc-meta" style="margin-top:4px">{{ it.note }}</div>{% endif %}
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="section-label">Zone summary</div>
+{% for z in zones %}
+<div class="card">
+  <div class="card-hd"><h2>{{ z.title }}</h2>{% if z.issues %}<span class="badge alert">{{ z.issues }} issue{{ z.issues|pluralize }}</span>{% else %}<span class="badge done">Clear</span>{% endif %}</div>
+  {% for g in z.groups %}
+  {% for row in g.rows %}{% if row.result %}
+  <div class="info-row">
+    <span class="k">{{ row.label }}</span>
+    <span class="v">
+      {% if row.result == 'issue' %}<span style="color:var(--alert-text)">Issue{% if row.severity %} · {{ row.severity|capfirst }}{% endif %}</span>
+      {% elif row.result == 'ok' %}<span style="color:var(--done-text)">OK</span>
+      {% elif row.result == 'na' %}<span style="color:var(--cancel-text)">N/A</span>{% endif %}
+      {% if row.photos %} 📷{{ row.photos|length }}{% endif %}
+    </span>
+  </div>
+  {% elif row.value %}<div class="info-row"><span class="k">{{ row.label }}</span><span class="v">{{ row.value }}</span></div>{% endif %}
+  {% endfor %}
+  {% endfor %}
+</div>
+{% endfor %}
+
+{% if r.editable %}
+<form method="post" action="/submit/{{ r.id }}" onsubmit="this.querySelector('button').disabled=true">
+  {% csrf_token %}
+  <button type="submit" class="btn btn-primary block" style="margin-top:8px">Submit for review</button>
+</form>
+<div class="note-hint" style="text-align:center;margin-top:8px">Plate masking is verified and challans fetched on submit.</div>
+{% else %}
+<div class="sync-line ok" style="justify-content:center;margin-top:10px"><span class="pulse"></span> Submitted · in review</div>
+{% if r.pdf %}<a class="btn btn-ghost block" href="{{ r.pdf.url }}" style="margin-top:8px">View PDF report</a>{% endif %}
+{% endif %}
+
+{% endblock %}

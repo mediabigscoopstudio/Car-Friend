@@ -337,6 +337,43 @@ def generate_report_pdf(report):
     return report.pdf
 
 
+def walk_media_by_key(report):
+    """Walk checkpoint photos grouped by checkpoint key, with url + filesystem
+    path (path is what weasyprint embeds reliably)."""
+    out = {}
+    for m in report.media.filter(section="walk"):
+        img = m.image
+        if not img:
+            continue
+        try:
+            path = img.path
+        except Exception:
+            path = ""
+        out.setdefault(m.slot, []).append(
+            {"url": img.url, "path": path, "masked": m.plate_masked})
+    return out
+
+
+def generate_walk_pdf(report):
+    """PDF for a walk-around inspection (§5.10)."""
+    try:
+        from weasyprint import HTML
+    except ImportError:
+        return None
+    from django.template.loader import render_to_string
+    from . import engine
+    ctx = engine.report_context(report, walk_media_by_key(report))
+    v = report.visit.vehicle
+    html = render_to_string("inspection/report_walk_pdf.html", {
+        "r": report, "v": v,
+        "report_no": f"{v.id:08d}/{report.id}",
+        **ctx,
+    })
+    pdf_bytes = HTML(string=html, base_url=str(settings.MEDIA_ROOT)).write_pdf()
+    report.pdf.save(f"report_{report.id}.pdf", ContentFile(pdf_bytes), save=True)
+    return report.pdf
+
+
 def generate_pdf(report):
     from reportlab.lib.pagesizes import A4
     from reportlab.pdfgen import canvas

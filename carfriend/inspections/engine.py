@@ -191,3 +191,53 @@ def compute_score(report):
     score = max(0, min(100, round(100 - penalty)))
     return {"score": score, "grade": grade_for(score), "issues": issues,
             "issue_count": len(issues)}
+
+
+# market-value band by grade (§5.9) — tunable
+GRADE_VALUE_FACTOR = {"A": 1.0, "B": 0.92, "C": 0.82, "D": 0.70}
+
+
+def estimated_value(grade, base_price):
+    try:
+        base = float(base_price or 0)
+    except (TypeError, ValueError):
+        base = 0
+    return int(round(base * GRADE_VALUE_FACTOR.get(grade, 0.85)))
+
+
+def report_context(report, media_by_key=None):
+    """Render-ready data for the walk-around report (inspector view, admin
+    review, and PDF). media_by_key maps checkpoint key -> list of photo dicts."""
+    media_by_key = media_by_key or {}
+    res = results(report)
+    sc = compute_score(report)
+    ok = na = issue = 0
+    zones_out = []
+    for z in ZONES:
+        groups = []
+        z_issue = 0
+        for g in z["groups"]:
+            rows = []
+            for cp in g["checkpoints"]:
+                e = res.get(cp["key"]) or {}
+                r_ = e.get("result")
+                if r_ == "ok":
+                    ok += 1
+                elif r_ == "na":
+                    na += 1
+                elif r_ == "issue":
+                    issue += 1; z_issue += 1
+                rows.append({
+                    "label": cp["label"], "kind": cp["kind"], "pt": cp["pt"],
+                    "result": r_, "value": e.get("value", ""),
+                    "severity": e.get("severity", ""), "tags": e.get("tags", []),
+                    "note": e.get("note", ""), "photos": media_by_key.get(cp["key"], []),
+                })
+            groups.append({"label": g["label"], "rows": rows})
+        zones_out.append({"key": z["key"], "title": z["title"],
+                          "groups": groups, "issues": z_issue})
+    return {
+        "zones": zones_out, "score": sc["score"], "grade": sc["grade"],
+        "issues": sc["issues"], "issue_count": sc["issue_count"],
+        "ok": ok, "na": na, "issue_total": issue, "progress": overall_progress(report),
+    }

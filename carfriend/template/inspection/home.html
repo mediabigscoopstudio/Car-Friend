@@ -15,7 +15,7 @@
   </div>
   <div class="progress" style="margin-bottom:14px"><span style="width:{{ resume.progress.pct }}%"></span></div>
   <a class="btn btn-onhero block"
-     href="{% if resume.report %}/inspection/{{ resume.report.id }}/summary{% else %}/start/{{ resume.visit.id }}{% endif %}">
+     href="{% if resume.report %}/resume/{{ resume.report.id }}{% else %}/start/{{ resume.visit.id }}{% endif %}">
     Continue inspection
   </a>
 </div>

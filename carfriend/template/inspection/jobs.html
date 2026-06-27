@@ -41,7 +41,7 @@
   </a>
   <div class="jc-actions">
     {% if v.status == 'inprogress' %}
-      <a class="btn btn-primary btn-sm" href="{% if v.report.id %}/inspection/{{ v.report.id }}/summary{% else %}/start/{{ v.id }}{% endif %}">Continue</a>
+      <a class="btn btn-primary btn-sm" href="{% if v.report.id %}/resume/{{ v.report.id }}{% else %}/start/{{ v.id }}{% endif %}">Continue</a>
     {% elif v.status == 'submitted' or v.status == 'approved' or v.status == 'rejected' %}
       <a class="btn btn-ghost btn-sm" href="/report/{{ v.report.id }}">View report</a>
     {% else %}

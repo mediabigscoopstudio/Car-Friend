@@ -17,6 +17,7 @@ urlpatterns = [
     path("visits", v.insp_visits, name="insp_visits"),
     path("visit/<int:id>", v.insp_visit, name="insp_visit"),
     path("start/<int:id>", v.insp_start, name="insp_start"),
+    path("resume/<int:id>", v.insp_resume, name="insp_resume"),
     path("inspection/<int:id>/<str:section>", v.insp_form, name="insp_form"),
     path("save/<int:id>", v.insp_save, name="insp_save"),
     path("upload/<int:id>", v.insp_upload_media, name="insp_upload_media"),

@@ -26,19 +26,28 @@ def inspection_queue(request):
 @admin_required
 def inspection_review(request, id):
     r = get_object_or_404(InspectionReport, id=id)
+    from . import engine
+    is_walk = engine.is_walk_inspection(r)
 
     # Regenerate the PDF on demand (e.g. for reports submitted before a template
     # change). Only deletes the old file once weasyprint is confirmed available.
     if request.GET.get("refresh"):
-        from .services import generate_report_pdf
+        from .services import generate_report_pdf, generate_walk_pdf
         try:
             import weasyprint  # noqa: F401
             if r.pdf:
                 r.pdf.delete(save=False)
-            generate_report_pdf(r)
+            generate_walk_pdf(r) if is_walk else generate_report_pdf(r)
         except Exception:
             pass
         return redirect(f"/inspection_review/{id}")
+
+    if is_walk:
+        from .services import walk_media_by_key
+        ctx = engine.report_context(r, walk_media_by_key(r))
+        return render(request, "master/inspection_review_walk.html", {
+            "active": "inspections", "r": r, "v": r.visit.vehicle, **ctx,
+        })
 
     # Per-checkpoint photos grouped by (section, part key)
     cp_by = {}

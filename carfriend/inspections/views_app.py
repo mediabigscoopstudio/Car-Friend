@@ -537,11 +537,22 @@ def insp_visit(request, id):
 
 @inspector_required
 def insp_start(request, id):
+    # Walk-around is now the default flow (§5). New inspections land in /inspect.
     v = get_object_or_404(InspectionVisit, id=id, inspector=request.user)
     v.status = "inprogress"
     v.save()
     report, _ = InspectionReport.objects.get_or_create(visit=v)
-    return redirect(f"/inspection/{report.id}/summary")
+    return redirect(f"/inspect/{report.id}")
+
+
+@inspector_required
+def insp_resume(request, id):
+    """Dispatch a Continue/resume to whichever flow the report was started in:
+    walk-around if it has walk data, else the legacy section flow."""
+    r = _get_report(request, id)
+    if engine.is_walk_inspection(r) or not r.checkpoints:
+        return redirect(f"/inspect/{r.id}")
+    return redirect(f"/inspection/{r.id}/summary")
 
 
 @inspector_required
@@ -714,9 +725,26 @@ def insp_save(request, id):
     return JsonResponse({"ok": True})
 
 
+def _persist_walk_score(r):
+    from .services import walk_media_by_key  # noqa: F401 (kept symmetric)
+    sc = engine.compute_score(r)
+    r.score = sc["score"]
+    r.condition_grade = sc["grade"]
+    r.est_market_value = engine.estimated_value(sc["grade"], r.visit.vehicle.expected_price)
+    r.save(update_fields=["score", "condition_grade", "est_market_value", "updated_at"])
+    return sc
+
+
 @inspector_required
 def insp_report(request, id):
     r = get_object_or_404(InspectionReport, id=id, visit__inspector=request.user)
+    if engine.is_walk_inspection(r):
+        from .services import walk_media_by_key
+        _persist_walk_score(r)
+        ctx = engine.report_context(r, walk_media_by_key(r))
+        return render(request, "inspection/report_walk.html", _shell(request,
+            active_tab="jobs", pushed=True, hide_nav=True, back_url=f"/inspect/{r.id}",
+            r=r, vehicle=r.visit.vehicle, **ctx))
     r.compute_score()
     r.save(update_fields=["score", "condition_grade"])
     # Condition photos grouped by checkpoint (in schema order), for the report.
@@ -748,12 +776,16 @@ def insp_submit(request, id):
     r = get_object_or_404(InspectionReport, id=id, visit__inspector=request.user)
     if not r.editable:
         return redirect(f"/report/{r.id}")
-    from .services import publish_guard, generate_report_pdf
+    is_walk = engine.is_walk_inspection(r)
+    from .services import publish_guard, generate_report_pdf, generate_walk_pdf
     try:
-        publish_guard(r)
+        publish_guard(r)              # blocks unmasked plates (§5.8) — same guard both flows
     except ValueError:
         pass  # allow submit even without masked photos in dev
-    r.compute_score()
+    if is_walk:
+        _persist_walk_score(r)
+    else:
+        r.compute_score()
     r.is_locked = True
     r.decision = "pending"
     r.submitted_at = timezone.now()
@@ -784,9 +816,9 @@ def insp_submit(request, id):
         except Exception:
             pass
     try:
-        generate_report_pdf(r)
+        generate_walk_pdf(r) if is_walk else generate_report_pdf(r)
     except Exception:
-        pass
+        logger.exception("PDF generation failed for report %s", r.id)
     log(request.user, "inspection.submit", r, request, score=r.score, redo=r.redo_count)
     from accounts.models import User
     for adm in User.objects.filter(role="admin"):
