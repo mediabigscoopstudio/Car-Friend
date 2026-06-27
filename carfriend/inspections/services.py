@@ -367,6 +367,7 @@ def generate_walk_pdf(report):
     html = render_to_string("inspection/report_walk_pdf.html", {
         "r": report, "v": v,
         "report_no": f"{v.id:08d}/{report.id}",
+        "watermark_logo": str(settings.BASE_DIR / "static" / "images" / "Logo" / "Logo.png"),
         **ctx,
     })
     pdf_bytes = HTML(string=html, base_url=str(settings.MEDIA_ROOT)).write_pdf()

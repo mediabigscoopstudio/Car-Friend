@@ -510,6 +510,21 @@ _UPLOAD_FIELDS = {
 INSURANCE_TYPES = ["Comprehensive", "Third Party", "Zero Depreciation", "Not Available"]
 EXPIRY_MONTHS = ["January", "February", "March", "April", "May", "June",
                  "July", "August", "September", "October", "November", "December"]
+# Car photos get license-plate masking on upload. NOT video/audio, NOT the
+# insurance document (those carry no public-facing plate to hide).
+_MASK_PHOTO_FIELDS = {"auction_hero_image", "front_photo", "rear_photo",
+                      "left_photo", "right_photo"}
+
+
+def _mask_uploaded(field_file):
+    """Mask the number plate in a just-saved car photo (in place). Never raises."""
+    try:
+        path = getattr(field_file, "path", None)
+        if path:
+            from .plate_masker import mask_license_plate
+            mask_license_plate(path)
+    except Exception:
+        logger.exception("plate masking after upload failed")
 
 
 @inspector_required
@@ -520,6 +535,7 @@ def insp_hero_upload(request, id):
     f = request.FILES.get("file")
     if f and r.editable:
         r.auction_hero_image.save(f"hero_{r.id}_{uuid.uuid4().hex}{os.path.splitext(f.name)[1].lower() or '.jpg'}", f, save=True)
+        _mask_uploaded(r.auction_hero_image)        # plate masking (Task 2)
     return redirect(f"/inspect/{r.id}")
 
 
@@ -536,6 +552,8 @@ def insp_field_upload(request, id):
     nxt = request.POST.get("next") or f"/inspect/{r.id}/zone/docs"
     if field in _UPLOAD_FIELDS and f:
         getattr(r, field).save(f"{field}_{r.id}_{uuid.uuid4().hex}{os.path.splitext(f.name)[1].lower()}", f, save=True)
+        if field in _MASK_PHOTO_FIELDS:          # car photos only — not video/audio (Task 2)
+            _mask_uploaded(getattr(r, field))
     return redirect(nxt)
 
 

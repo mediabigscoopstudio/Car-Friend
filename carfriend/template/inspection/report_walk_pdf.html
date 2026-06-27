@@ -23,8 +23,12 @@
   .issue-card .m { color: #7C766A; font-size: 9.5px; }
   .ph { display: inline-block; width: 78px; height: 58px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd; margin: 3px 3px 0 0; }
   .foot { margin-top: 18px; font-size: 8.5px; color: #9a948a; border-top: 1px solid #E4D8C4; padding-top: 8px; }
+  /* Car Friend logo watermark — position:fixed repeats on every PDF page in WeasyPrint */
+  .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    opacity: 0.07; z-index: -1; width: 400px; }
 </style></head>
 <body>
+<img class="watermark" src="file://{{ watermark_logo }}" alt="">
 
 <div class="hd">
   <div>

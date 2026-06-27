@@ -13,3 +13,8 @@ opencv-python-headless
 requests
 weasyprint
 python-dotenv
+# Plate masking uses opencv-python-headless + pillow (above) — works out of the
+# box. ultralytics/YOLO is OPTIONAL and only helps with a PLATE-SPECIFIC model
+# (set settings.PLATE_YOLO_MODEL); stock yolov8n.pt has no 'plate' class and it
+# pulls torch (~2GB). Install only if you add a real plate model:
+# ultralytics
