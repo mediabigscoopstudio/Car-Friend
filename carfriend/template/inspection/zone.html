@@ -1,0 +1,190 @@
+{% extends "base/base_v4.html" %}
+{% load cf %}
+{% block title %}{{ zone.title }}{% endblock %}
+{% block page_title %}{{ zone.short }}{% endblock %}
+{% block content %}
+
+{{ problem_chips|json_script:"chips-data" }}
+
+<div class="flow-hd">
+  <div class="ring" data-p="{{ progress.pct }}"><b>{{ progress.pct }}%</b></div>
+  <div class="ft">
+    <h2>{{ zone.title }}</h2>
+    <div class="s">{{ progress.resolved }}/{{ progress.total }} checked{% if progress.issues %} · {{ progress.issues }} issue{{ progress.issues|pluralize }}{% endif %}</div>
+  </div>
+</div>
+
+<div class="zone-toolbar">
+  <form method="post" action="/inspect/{{ r.id }}/zone/{{ zone.key }}/markgood" style="flex:1">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-ghost block btn-sm">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg>
+      Mark all good
+    </button>
+  </form>
+</div>
+
+{% for g in groups %}
+<div class="cp-group-label">{{ g.label }}</div>
+{% for row in g.rows %}
+<div class="cprow {% if row.entry.result == 'ok' %}r-ok{% elif row.entry.result == 'issue' %}r-issue{% elif row.entry.result == 'na' %}r-na{% endif %}" id="cp-{{ row.key }}">
+  <div class="cp-main">
+    <div class="cp-label">{{ row.label }}</div>
+    {% if row.entry.result == 'issue' %}<div class="cp-tags">{{ row.entry.tags|join:" · " }}{% if row.entry.severity %} · {{ row.entry.severity|capfirst }}{% endif %}</div>
+    {% elif row.entry.result == 'ok' %}<div class="cp-okline">OK</div>
+    {% elif row.entry.result == 'na' %}<div class="cp-okline" style="color:var(--cancel-text)">N/A</div>
+    {% elif row.entry.value %}<div class="cp-okline">{{ row.entry.value }}</div>{% endif %}
+  </div>
+
+  {% if row.kind == 'field' %}
+    <form method="post" action="/inspect/{{ r.id }}/save" style="display:flex;gap:6px;align-items:center">
+      {% csrf_token %}
+      <input type="hidden" name="key" value="{{ row.key }}"><input type="hidden" name="zone" value="{{ zone.key }}">
+      <input type="text" name="value" value="{{ row.entry.value|default:'' }}" placeholder="Enter" style="width:108px;height:38px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:0 10px;font-family:var(--font-b);font-size:13px">
+      <button class="cp-btn ok" type="submit">Save</button>
+    </form>
+  {% elif row.kind == 'doc' %}
+    <div class="cp-controls">
+      <span class="cp-btn" title="Photo capture wired in Phase 5">Photo</span>
+      {% if row.na %}<button class="cp-btn na {% if row.entry.result == 'na' %}sel{% endif %}" data-na="{{ row.key }}" type="button">N/A</button>{% endif %}
+    </div>
+  {% else %}
+    <div class="cp-controls">
+      <button class="cp-btn ok {% if row.entry.result == 'ok' %}sel{% endif %}" type="button"
+              data-ok data-key="{{ row.key }}" data-label="{{ row.label }}">OK</button>
+      <button class="cp-btn issue {% if row.entry.result == 'issue' %}sel{% endif %}" type="button"
+              data-issue data-key="{{ row.key }}" data-label="{{ row.label }}" data-pt="{{ row.pt }}">Issue</button>
+      {% if row.na %}<button class="cp-btn na {% if row.entry.result == 'na' %}sel{% endif %}" data-na="{{ row.key }}" type="button">N/A</button>{% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endfor %}
+{% endfor %}
+
+{% if progress.complete %}
+<a class="btn btn-primary block" href="/inspect/{{ r.id }}" style="margin-top:14px">Zone done — back to zones</a>
+{% endif %}
+
+{# hidden N/A form, submitted via JS #}
+<form id="na-form" method="post" action="/inspect/{{ r.id }}/save" style="display:none">
+  {% csrf_token %}
+  <input type="hidden" name="key" id="na-key"><input type="hidden" name="zone" value="{{ zone.key }}">
+  <input type="hidden" name="result" value="na">
+</form>
+
+{% endblock %}
+
+{% block toast %}
+{{ block.super }}
+<div class="scrim" id="cf-scrim"></div>
+
+{# ---- OK sheet (§5.3): confirm + optional photo (photo wired in Phase 5) ---- #}
+<div class="sheet" id="ok-sheet" role="dialog" aria-modal="true">
+  <div class="handle"></div>
+  <form method="post" action="/inspect/{{ r.id }}/save">
+    {% csrf_token %}
+    <input type="hidden" name="zone" value="{{ zone.key }}">
+    <input type="hidden" name="result" value="ok">
+    <input type="hidden" name="key" id="ok-key">
+    <div class="sheet-hd"><h3 id="ok-title">Confirm OK</h3><div class="s">Looks good — confirm to continue.</div></div>
+    <div class="sheet-body">
+      <div class="note-hint">Photo is optional on OK (Phase 5 adds camera capture).</div>
+      <button type="submit" class="btn btn-primary block" style="margin-top:14px">Confirm OK</button>
+    </div>
+  </form>
+</div>
+
+{# ---- Issue sheet (§5.3): chips + severity + note (photo required arrives in Phase 5) ---- #}
+<div class="sheet" id="issue-sheet" role="dialog" aria-modal="true">
+  <div class="handle"></div>
+  <form method="post" action="/inspect/{{ r.id }}/save" id="issue-form">
+    {% csrf_token %}
+    <input type="hidden" name="zone" value="{{ zone.key }}">
+    <input type="hidden" name="result" value="issue">
+    <input type="hidden" name="key" id="issue-key">
+    <div class="sheet-hd"><h3 id="issue-title">Report issue</h3><div class="s">Tap what's wrong, set severity.</div></div>
+    <div class="sheet-body">
+      <div class="sheet-field">
+        <label>What's wrong</label>
+        <div class="chips" id="issue-chips"></div>
+      </div>
+      <div class="sheet-field">
+        <label>Severity</label>
+        <div class="sev">
+          {% for s in severities %}
+          <label class="{% if s.key == 'moderate' %}on{% endif %}"><input type="radio" name="severity" value="{{ s.key }}" {% if s.key == 'moderate' %}checked{% endif %}>{{ s.label }}</label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="sheet-field">
+        <label>Note (optional)</label>
+        <textarea name="note" rows="2" placeholder="Add detail…"></textarea>
+        <div class="note-hint">Photo required on issues — camera capture lands in Phase 5.</div>
+      </div>
+      <button type="submit" class="btn btn-danger block">Save issue</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var CHIPS = JSON.parse(document.getElementById('chips-data').textContent);
+  var scrim = document.getElementById('cf-scrim');
+  var okSheet = document.getElementById('ok-sheet');
+  var issueSheet = document.getElementById('issue-sheet');
+  var open = null;
+  function close() {
+    if (!open) return;
+    open.classList.remove('show'); scrim.classList.remove('show'); open = null;
+    document.body.style.overflow = '';
+  }
+  function show(sheet) {
+    close(); open = sheet; sheet.classList.add('show'); scrim.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+  scrim.addEventListener('click', close);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+
+  document.querySelectorAll('[data-ok]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.getElementById('ok-key').value = b.dataset.key;
+      document.getElementById('ok-title').textContent = b.dataset.label;
+      show(okSheet);
+    });
+  });
+  document.querySelectorAll('[data-issue]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.getElementById('issue-key').value = b.dataset.key;
+      document.getElementById('issue-title').textContent = b.dataset.label;
+      var box = document.getElementById('issue-chips');
+      box.innerHTML = '';
+      (CHIPS[b.dataset.pt] || []).forEach(function (c) {
+        var lab = document.createElement('label');
+        lab.className = 'chip';
+        lab.innerHTML = '<input type="checkbox" name="tags" value="' + c + '">' + c;
+        lab.querySelector('input').addEventListener('change', function () {
+          lab.classList.toggle('on', this.checked);
+        });
+        box.appendChild(lab);
+      });
+      show(issueSheet);
+    });
+  });
+  document.querySelectorAll('[data-na]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.getElementById('na-key').value = b.dataset.na;
+      document.getElementById('na-form').submit();
+    });
+  });
+  // severity segmented highlight
+  document.querySelectorAll('.sev input').forEach(function (i) {
+    i.addEventListener('change', function () {
+      document.querySelectorAll('.sev label').forEach(function (l) { l.classList.remove('on'); });
+      if (this.checked) this.parentElement.classList.add('on');
+    });
+  });
+})();
+</script>
+{% endblock %}

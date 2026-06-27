@@ -1,0 +1,85 @@
+{% extends "base/base_v4.html" %}
+{% load cf %}
+{% block title %}Inspect · {{ vehicle|short_car_name }}{% endblock %}
+{% block page_title %}Inspection{% endblock %}
+{% block content %}
+
+<div class="flow-hd">
+  <div class="ring" data-p="{{ overall.pct }}"><b>{{ overall.pct }}%</b></div>
+  <div class="ft">
+    <h2>{{ vehicle|short_car_name }}</h2>
+    <div class="s mono">{{ vehicle.plate_number }} · {{ overall.zones_done }} of {{ overall.zones_total }} zones</div>
+  </div>
+</div>
+
+{# car diagram (§5.6): the physical walk-around segments #}
+<div class="cardiagram" style="grid-template-columns:repeat(7,1fr)">
+  {% for s in zone_states %}
+  <div class="seg {{ s.state }}">{{ s.zone.short }}</div>
+  {% endfor %}
+</div>
+
+{% for s in zone_states %}
+{% if s.state == 'locked' %}
+<div class="zonecard locked">
+  <div class="zc-ic">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>
+  </div>
+  <div class="zc-body">
+    <div class="zc-title">{{ s.zone.title }}</div>
+    <div class="zc-sub">Locked · finish the current zone first</div>
+  </div>
+</div>
+{% else %}
+<a class="zonecard {{ s.state }}" href="/inspect/{{ r.id }}/zone/{{ s.zone.key }}">
+  <div class="zc-ic">
+    {% if s.state == 'done' %}<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg>
+    {% else %}{{ s.zone.index }}{% endif %}
+  </div>
+  <div class="zc-body">
+    <div class="zc-title">{{ s.zone.title }}</div>
+    <div class="zc-sub">
+      {% if s.state == 'done' %}{{ s.progress.total }} checked{% if s.progress.issues %} · {{ s.progress.issues }} issue{{ s.progress.issues|pluralize }}{% endif %}
+      {% else %}{{ s.progress.resolved }}/{{ s.progress.total }} · tap to continue{% endif %}
+    </div>
+    <div class="zc-bar"><span style="width:{{ s.progress.pct }}%"></span></div>
+  </div>
+  <span class="zc-arrow">›</span>
+</a>
+{% endif %}
+{% endfor %}
+
+{% if all_done %}
+<div class="hero" style="text-align:center;margin-top:14px">
+  <div class="burst" style="width:56px;height:56px;border-radius:50%;margin:0 auto 12px;display:grid;place-items:center;background:var(--done-bg);box-shadow:inset 0 0 0 2px var(--sage-deep);color:var(--done-text)">
+    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg>
+  </div>
+  <h2>All zones complete</h2>
+  <div class="sub">{{ overall.checkpoints_total }} checkpoints · {{ overall.issues }} issue{{ overall.issues|pluralize }} found.</div>
+  <a class="btn btn-onhero block" href="/report/{{ r.id }}">Review &amp; submit</a>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+{% if unlocked %}
+<div class="celebrate show" id="cf-celebrate">
+  <div class="card">
+    <div class="burst">
+      <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg>
+    </div>
+    <h3>Zone complete</h3>
+    <p>Next side unlocked — keep going.</p>
+    {% if active %}<a class="btn btn-primary block" href="/inspect/{{ r.id }}/zone/{{ active }}">Continue</a>
+    {% else %}<a class="btn btn-primary block" href="/inspect/{{ r.id }}">Done</a>{% endif %}
+  </div>
+</div>
+<script>
+  (function () {
+    var el = document.getElementById('cf-celebrate');
+    el.addEventListener('click', function (e) { if (e.target === el) el.classList.remove('show'); });
+  })();
+</script>
+{% endif %}
+{% endblock %}

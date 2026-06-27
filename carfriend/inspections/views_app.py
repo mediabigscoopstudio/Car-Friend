@@ -17,6 +17,7 @@ from core.models import log
 from notifications.services import notify
 from .models import InspectionVisit, InspectionReport, InspectionMedia, CheckpointPhoto
 from .schema import CHECKPOINT_SCHEMA
+from . import engine, zones
 
 logger = logging.getLogger(__name__)
 
@@ -212,6 +213,116 @@ def insp_notifications(request):
 def insp_notifications_read(request):
     request.user.notifications.filter(is_read=False).update(is_read=True)
     return redirect("/notifications")
+
+
+# ---------------------------------------------------------------------------
+# Walk-around inspection flow (v4 §5). Lives on new routes ALONGSIDE the legacy
+# section flow; legacy stays the live entry point until Phase 7 wires submit.
+# ---------------------------------------------------------------------------
+def _get_report(request, id):
+    return get_object_or_404(InspectionReport, id=id, visit__inspector=request.user)
+
+
+@inspector_required
+def insp_inspect_start(request, id):
+    """Beta entry into the walk-around flow from a visit (mirrors insp_start)."""
+    v = get_object_or_404(InspectionVisit, id=id, inspector=request.user)
+    if v.status == InspectionVisit.Status.SCHEDULED:
+        v.status = InspectionVisit.Status.INPROGRESS
+        v.save(update_fields=["status", "updated_at"])
+    report, _ = InspectionReport.objects.get_or_create(visit=v)
+    return redirect(f"/inspect/{report.id}")
+
+
+@inspector_required
+def insp_inspect(request, id):
+    r = _get_report(request, id)
+    return render(request, "inspection/inspect.html", _shell(request,
+        active_tab="jobs", pushed=True, hide_nav=True, back_url="/jobs",
+        r=r, vehicle=r.visit.vehicle,
+        zone_states=engine.zone_states(r),
+        overall=engine.overall_progress(r),
+        active=engine.active_zone_key(r),
+        unlocked=request.GET.get("unlocked") == "1",
+        all_done=engine.active_zone_key(r) is None,
+    ))
+
+
+@inspector_required
+def insp_zone(request, id, zone_key):
+    r = _get_report(request, id)
+    if zone_key not in zones.ZONE_BY_KEY:
+        return redirect(f"/inspect/{r.id}")
+    if not r.editable:
+        return redirect(f"/report/{r.id}")
+    if not engine.can_enter(r, zone_key):
+        return redirect(f"/inspect/{r.id}")     # gated — zone still locked
+    zone = zones.ZONE_BY_KEY[zone_key]
+    res = engine.results(r)
+    groups = []
+    for g in zone["groups"]:
+        rows = []
+        for cp in g["checkpoints"]:
+            rows.append({**cp, "entry": res.get(cp["key"]),
+                         "resolved": engine.is_resolved(cp, res.get(cp["key"])),
+                         "chips": zones.chips_for(cp["pt"])})
+        groups.append({"label": g["label"], "rows": rows})
+    idx = zone["index"]
+    next_zone = zones.ZONES[idx + 1] if idx + 1 < len(zones.ZONES) else None
+    return render(request, "inspection/zone.html", _shell(request,
+        active_tab="jobs", pushed=True, hide_nav=True, back_url=f"/inspect/{r.id}",
+        r=r, zone=zone, groups=groups, progress=engine.zone_progress(r, zone),
+        severities=zones.SEVERITIES, next_zone=next_zone,
+        problem_chips=zones.PROBLEM_CHIPS))
+
+
+@inspector_required
+@require_POST
+def insp_cp_save(request, id):
+    r = _get_report(request, id)
+    if not r.editable:
+        return JsonResponse({"ok": False, "error": "locked"}, status=409)
+    key = request.POST.get("key")
+    zone_key = request.POST.get("zone")
+    if not key or key not in {cp["key"] for _z, cp in zones.all_checkpoints()}:
+        return JsonResponse({"ok": False, "error": "bad key"}, status=400)
+
+    before_active = engine.active_zone_key(r)
+    result = request.POST.get("result")          # ok | issue | na | (none for field)
+    kwargs = {"ts": timezone.now().isoformat()}
+    if result == "issue":
+        kwargs.update(result="issue",
+                      severity=request.POST.get("severity") or "moderate",
+                      tags=request.POST.getlist("tags"),
+                      note=request.POST.get("note", ""))
+    elif result in ("ok", "na"):
+        kwargs["result"] = result
+        if request.POST.get("note"):
+            kwargs["note"] = request.POST.get("note")
+    if request.POST.get("value") is not None:
+        kwargs["value"] = request.POST.get("value")
+    engine.save_checkpoint(r, key, **kwargs)
+
+    after_active = engine.active_zone_key(r)
+    zone_done = before_active == zone_key and after_active != zone_key
+    if request.headers.get("X-Requested-With") == "fetch":
+        return JsonResponse({"ok": True, "zone_done": zone_done,
+                             "progress": engine.zone_progress(r, zones.ZONE_BY_KEY[zone_key]) if zone_key in zones.ZONE_BY_KEY else None})
+    if zone_done:
+        return redirect(f"/inspect/{r.id}?unlocked=1")
+    return redirect(f"/inspect/{r.id}/zone/{zone_key}#cp-{key}")
+
+
+@inspector_required
+@require_POST
+def insp_zone_markgood(request, id, zone_key):
+    r = _get_report(request, id)
+    if r.editable and zone_key in zones.ZONE_BY_KEY and engine.can_enter(r, zone_key):
+        before = engine.active_zone_key(r)
+        engine.mark_zone_good(r, zone_key)
+        if before == zone_key and engine.active_zone_key(r) != zone_key:
+            return redirect(f"/inspect/{r.id}?unlocked=1")
+    return redirect(f"/inspect/{r.id}/zone/{zone_key}")
 
 
 @inspector_required
