@@ -2,49 +2,48 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
   <title>Car Friend Inspector · Sign In</title>
-  <link rel="stylesheet" href="{% static 'css/carfriend-brand.css' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/inspector.css' %}">
   <style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-    body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--charcoal);padding:24px;}
-    .card{background:var(--charcoal-2);border:1px solid var(--line-dk);border-radius:20px;padding:36px 28px;width:100%;max-width:360px;box-shadow:var(--shadow-lg);}
-    .logo-block{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:6px;}
-    .logo-icon{width:38px;height:38px;background:var(--green-grad);border-radius:10px;display:flex;align-items:center;justify-content:center;}
-    .logo-icon svg{width:24px;height:24px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;}
-    .brand-name{font-family:var(--font-d);font-weight:700;font-size:20px;color:#fff;}
-    .brand-name span{color:var(--green-2);}
-    .subtitle{text-align:center;font-size:12px;color:#6b7280;margin-bottom:28px;}
-    label{display:block;font-family:var(--font-d);font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;}
-    input{width:100%;background:var(--charcoal-3);border:1px solid var(--line-dk);color:#e8ecf4;border-radius:10px;padding:12px 14px;font-size:14px;font-family:var(--font-b);margin-bottom:16px;}
-    input:focus{outline:none;border-color:var(--green-2);}
-    button{width:100%;background:var(--green);color:#fff;border:none;border-radius:11px;padding:13px;font-family:var(--font-d);font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 8px 20px -10px var(--green-glow);}
-    button:hover{background:var(--green-deep);}
-    .error{background:rgba(229,72,77,.15);border:1px solid var(--red);color:#e5484d;border-radius:9px;padding:10px 14px;margin-bottom:16px;font-size:13px;}
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+    .login-card { width: 100%; max-width: 360px; padding: 32px 26px; }
+    .login-logo { width: 56px; height: 56px; border-radius: 16px; margin: 0 auto 14px; display: grid; place-items: center;
+      background: var(--sage-bg); box-shadow: inset 0 0 0 2px var(--sage-deep); color: var(--sage-deep); }
+    .login-logo svg { width: 30px; height: 30px; }
+    .login-card h1 { font-family: var(--font-d); font-weight: 800; font-size: 22px; text-align: center; margin: 0; }
+    .login-sub { text-align: center; font-size: 12px; color: var(--muted); margin: 4px 0 24px;
+      text-transform: uppercase; letter-spacing: .08em; font-weight: 700; }
+    .login-card label { display: block; font-size: 11px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+    .login-card input { width: 100%; height: 46px; border: 1px solid var(--line); border-radius: var(--r-btn);
+      background: var(--surface); padding: 0 14px; font-family: var(--font-b); font-size: 15px; color: var(--ink); margin-bottom: 16px; }
+    .login-card input:focus { outline: none; border-color: var(--sage-deep); }
+    .login-err { background: var(--alert-bg); border: 1px solid var(--alert-text); color: var(--alert-text);
+      border-radius: 11px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; font-weight: 600; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="logo-block">
-      <div class="logo-icon">
-        <svg viewBox="0 0 20 20">
-          <rect x="2" y="5" width="16" height="9" rx="3"/>
-          <path d="M5 14 Q10 17.5 15 14"/>
-          <circle cx="5.5" cy="14" r="1.4" fill="#fff" stroke="none"/>
-          <circle cx="14.5" cy="14" r="1.4" fill="#fff" stroke="none"/>
-        </svg>
-      </div>
-      <span class="brand-name">Car<span>Friend</span></span>
+  <div class="card login-card">
+    <div class="login-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+        <rect x="2" y="6" width="20" height="11" rx="3"/><path d="M6 17 Q12 22 18 17"/>
+      </svg>
     </div>
-    <div class="subtitle">Inspector Portal</div>
-    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+    <h1>Car Friend</h1>
+    <div class="login-sub">Inspector Portal</div>
+    {% if error %}<div class="login-err">{{ error }}</div>{% endif %}
     <form method="post">
       {% csrf_token %}
       <label>Username</label>
-      <input type="text" name="username" required autofocus/>
+      <input type="text" name="username" required autofocus autocomplete="username"/>
       <label>Password</label>
-      <input type="password" name="password" required/>
-      <button type="submit">Get Car Assistance →</button>
+      <input type="password" name="password" required autocomplete="current-password"/>
+      <button type="submit" class="btn btn-primary block">Sign in</button>
     </form>
   </div>
 </body>

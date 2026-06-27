@@ -519,20 +519,15 @@ def insp_zone_markgood(request, id, zone_key):
 
 @inspector_required
 def insp_visits(request):
-    return render(request, "inspection/visits.html", {
-        "active_tab": "visits",
-        "visits": InspectionVisit.objects.filter(inspector=request.user),
-    })
+    return redirect("/jobs")          # retired — merged into Jobs (v4)
 
 
 @inspector_required
 def insp_visit(request, id):
     v = get_object_or_404(InspectionVisit, id=id, inspector=request.user)
-    return render(request, "inspection/visit.html", {
-        "active_tab": "visits",
-        "v": v,
-        "vehicle": v.vehicle,
-    })
+    return render(request, "inspection/visit.html", _shell(request,
+        active_tab="jobs", pushed=True, hide_nav=True, back_url="/jobs",
+        v=v, vehicle=v.vehicle))
 
 
 @inspector_required
@@ -761,14 +756,10 @@ def insp_report(request, id):
                     "label": part["label"],
                     "urls": urls,
                 })
-    return render(request, "inspection/report.html", {
-        "active_tab": "visits",
-        "r": r,
-        "media": r.media.all(),
-        "dents": r.dents.all(),
-        "schema": CHECKPOINT_SCHEMA,
-        "checkpoint_photo_groups": checkpoint_photo_groups,
-    })
+    return render(request, "inspection/report.html", _shell(request,
+        active_tab="jobs", pushed=True, hide_nav=True, back_url="/jobs",
+        r=r, media=r.media.all(), dents=r.dents.all(),
+        schema=CHECKPOINT_SCHEMA, checkpoint_photo_groups=checkpoint_photo_groups))
 
 
 @inspector_required
@@ -825,12 +816,10 @@ def insp_submit(request, id):
         notify(adm, "insp_assigned",
                title=f"Inspection submitted: {r.visit.vehicle.display_name}",
                body=f"Score {r.score}/100 · awaiting decision")
-    return render(request, "inspection/success.html", {"active_tab": "home", "r": r})
+    return render(request, "inspection/success.html", _shell(request,
+        pushed=True, hide_nav=True, back_url="/", r=r))
 
 
 @inspector_required
 def insp_alerts(request):
-    return render(request, "inspection/alerts.html", {
-        "active_tab": "alerts",
-        "alerts": request.user.notifications.all()[:50],
-    })
+    return redirect("/notifications")     # retired — replaced by Notifications (v4)

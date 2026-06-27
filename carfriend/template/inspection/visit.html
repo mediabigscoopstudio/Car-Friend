@@ -1,77 +1,65 @@
-{% extends "base/base_inspection.html" %}
-{% block title %}{{ vehicle.display_name }} · Inspector{% endblock %}
+{% extends "base/base_v4.html" %}
+{% load cf %}
+{% block title %}{{ vehicle|short_car_name }} · Inspector{% endblock %}
+{% block page_title %}Job{% endblock %}
 {% block content %}
 
-<div class="app-header">
-  <a href="/visits" class="back">←</a>
-  <div style="flex:1;min-width:0">
-    <h1 style="font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ vehicle.display_name }}</h1>
-    <div style="font-size:12px;color:var(--app-txt2);margin-top:1px">{{ vehicle.plate_number }}</div>
+<div class="flow-hd" style="margin-bottom:14px">
+  <div class="ft">
+    <h2>{{ vehicle|short_car_name }}</h2>
+    <div class="s mono">{{ vehicle.plate_number }}</div>
   </div>
-  <span class="pill pill-{{ v.status }}">{{ v.get_status_display }}</span>
+  {% if v.status == 'scheduled' %}<span class="badge pend">Scheduled</span>
+  {% elif v.status == 'inprogress' %}<span class="badge prog">In progress</span>
+  {% elif v.status == 'submitted' %}<span class="badge prog">In review</span>
+  {% elif v.status == 'approved' %}<span class="badge done">Approved</span>
+  {% elif v.status == 'rejected' %}<span class="badge alert">Rejected</span>
+  {% elif v.status == 'reinspect' %}<span class="badge pend">Re-inspect</span>{% endif %}
 </div>
+
+{% if v.status == 'reinspect' %}
+<div class="jobcard alert" style="margin-bottom:12px">
+  <div class="jc-alert" style="margin:0">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+    Previous report rejected — address the noted issues
+  </div>
+</div>
+{% endif %}
 
 <div class="card">
-  <div class="card-hd"><h2>Vehicle Details</h2></div>
-  <div class="info-grid">
-    <div class="info-cell">
-      <div class="ic-lbl">Year</div>
-      <div class="ic-val">{{ vehicle.year }}</div>
-    </div>
-    <div class="info-cell">
-      <div class="ic-lbl">Fuel</div>
-      <div class="ic-val">{{ vehicle.get_fuel_type_display }}</div>
-    </div>
-    <div class="info-cell">
-      <div class="ic-lbl">City</div>
-      <div class="ic-val">{{ vehicle.city|default:"—" }}</div>
-    </div>
-    <div class="info-cell">
-      <div class="ic-lbl">Owner</div>
-      <div class="ic-val">{{ vehicle.owner_name|default:"—" }}</div>
-    </div>
-    <div class="info-cell">
-      <div class="ic-lbl">Odometer</div>
-      <div class="ic-val">{{ vehicle.odometer_km|default:"—" }} km</div>
-    </div>
-    <div class="info-cell">
-      <div class="ic-lbl">Scheduled</div>
-      <div class="ic-val" style="font-size:12px">{{ v.scheduled_at|date:"d M, H:i" }}</div>
-    </div>
-  </div>
-  {% if v.inspection_address %}
-  <div style="padding:10px 14px;border-top:1px solid var(--app-line);font-size:13px;color:var(--app-txt2)">
-    <span style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;font-weight:700;color:var(--app-txt2);display:block;margin-bottom:3px">Address</span>
-    {{ v.inspection_address }}
-  </div>
-  {% endif %}
+  <div class="card-hd"><h2>Vehicle details</h2></div>
+  <div class="info-row"><span class="k">Year</span><span class="v">{{ vehicle.year|default:"—" }}</span></div>
+  <div class="info-row"><span class="k">Fuel</span><span class="v">{% if vehicle.fuel_type %}{{ vehicle.get_fuel_type_display }}{% else %}—{% endif %}</span></div>
+  <div class="info-row"><span class="k">Owner</span><span class="v">{{ vehicle.owner_name|default:"—" }}</span></div>
+  <div class="info-row"><span class="k">Odometer</span><span class="v mono">{{ vehicle.odometer_km|default:"—" }} km</span></div>
+  <div class="info-row"><span class="k">City</span><span class="v">{{ vehicle.city|default:"—" }}</span></div>
+  <div class="info-row"><span class="k">Scheduled</span><span class="v">{{ v.scheduled_at|date:"d M, H:i" }}</span></div>
 </div>
 
-<div style="padding:0 16px 16px">
-  {% if v.status == 'scheduled' %}
-    <a href="/start/{{ v.id }}" class="btn btn-primary">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-      Start Inspection
-    </a>
-  {% elif v.status == 'inprogress' or v.status == 'reinspect' %}
-    {% if v.report %}
-      <a href="/resume/{{ v.report.id }}" class="btn btn-primary">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"/></svg>
-        Continue Inspection
-      </a>
-    {% else %}
-      <a href="/start/{{ v.id }}" class="btn btn-primary">Start Inspection</a>
-    {% endif %}
-  {% elif v.status == 'submitted' or v.status == 'approved' %}
-    {% if v.report %}
-      <a href="/report/{{ v.report.id }}" class="btn btn-secondary">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        View Report
-      </a>
-    {% endif %}
-  {% else %}
-    <div style="text-align:center;padding:8px 0;color:var(--app-txt2);font-size:13px">{{ v.get_status_display }}</div>
-  {% endif %}
+{% if v.inspection_address %}
+<div class="card">
+  <div class="section-label" style="margin:0 0 6px">Address</div>
+  <div style="font-size:14px;color:var(--ink)">{{ v.inspection_address }}</div>
 </div>
+{% endif %}
+
+{% if v.lead.seller.phone %}
+<a class="btn btn-ghost block" href="tel:{{ v.lead.seller.phone }}" style="margin-bottom:10px">
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0122 16.92z"/></svg>
+  Call customer
+</a>
+{% endif %}
+
+{% if v.status == 'scheduled' %}
+  <a href="/start/{{ v.id }}" class="btn btn-primary block">Start inspection</a>
+{% elif v.status == 'inprogress' or v.status == 'reinspect' %}
+  {% if v.report %}
+    <a href="/resume/{{ v.report.id }}" class="btn btn-primary block">Continue inspection</a>
+  {% else %}
+    <a href="/start/{{ v.id }}" class="btn btn-primary block">Start inspection</a>
+  {% endif %}
+{% elif v.status == 'submitted' or v.status == 'approved' or v.status == 'rejected' %}
+  {% if v.report %}<a href="/report/{{ v.report.id }}" class="btn btn-ghost block">View report</a>{% endif %}
+{% endif %}
 
 {% endblock %}
