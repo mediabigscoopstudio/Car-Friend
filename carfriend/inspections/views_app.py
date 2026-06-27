@@ -119,14 +119,77 @@ def insp_jobs(request):
     ))
 
 
+def _day_status(statuses):
+    """Dominant colour meaning for a calendar day (§4.2)."""
+    if "inprogress" in statuses:                       return "prog"
+    if "scheduled" in statuses or "reinspect" in statuses: return "pend"
+    if "rejected" in statuses:                          return "alert"
+    if statuses & {"submitted", "approved"}:            return "done"
+    return ""
+
+
 @inspector_required
 def insp_schedule(request):
-    # Phase 1: routed real screen (a simple grouped agenda). The full month
-    # calendar + day bottom sheet lands in Phase 3.
-    qs = (InspectionVisit.objects.filter(inspector=request.user)
-          .select_related('vehicle').order_by('scheduled_at'))
+    import calendar as _cal
+    today = timezone.localdate()
+    try:
+        year  = int(request.GET.get("y", today.year))
+        month = int(request.GET.get("m", today.month))
+    except (TypeError, ValueError):
+        year, month = today.year, today.month
+    if not (1 <= month <= 12):
+        year, month = today.year, today.month
+
+    weeks_dates = _cal.Calendar(firstweekday=6).monthdatescalendar(year, month)
+    span_start, span_end = weeks_dates[0][0], weeks_dates[-1][6]
+
+    visits = (InspectionVisit.objects.filter(inspector=request.user,
+                scheduled_at__date__range=(span_start, span_end))
+              .select_related("vehicle", "lead__seller", "report").order_by("scheduled_at"))
+    by_day = {}
+    for v in visits:
+        by_day.setdefault(timezone.localtime(v.scheduled_at).date(), []).append(v)
+
+    weeks, sheets, total = [], [], 0
+    for wk in weeks_dates:
+        cells = []
+        for d in wk:
+            in_month = d.month == month and d.year == year
+            day_visits = by_day.get(d, []) if in_month else []
+            if in_month:
+                total += len(day_visits)
+            statuses = {v.status for v in day_visits}
+            cells.append({
+                "day": d.day, "iso": d.isoformat(), "in_month": in_month,
+                "is_today": d == today, "count": len(day_visits),
+                "status": _day_status(statuses),
+            })
+            if day_visits:
+                done = sum(1 for v in day_visits
+                           if v.status in ("submitted", "approved"))
+                sheets.append({
+                    "iso": d.isoformat(),
+                    "title": d.strftime("%A, %d %B"),
+                    "sub": f"{len(day_visits)} inspection{'s' if len(day_visits) != 1 else ''}"
+                           + (f" · {done} done" if done else ""),
+                    "jobs": day_visits,
+                })
+        weeks.append(cells)
+
+    prev_m = (month - 2) % 12 + 1
+    prev_y = year - 1 if month == 1 else year
+    next_m = month % 12 + 1
+    next_y = year + 1 if month == 12 else year
+
     return render(request, "inspection/schedule.html", _shell(request,
-        active_tab="schedule", visits=qs))
+        active_tab="schedule",
+        weeks=weeks, sheets=sheets, total=total,
+        month_name=_cal.month_name[month], year=year,
+        is_current=(year == today.year and month == today.month),
+        prev_url=f"/schedule?y={prev_y}&m={prev_m}",
+        next_url=f"/schedule?y={next_y}&m={next_m}",
+        weekday_headers=["S", "M", "T", "W", "T", "F", "S"],
+    ))
 
 
 @inspector_required
