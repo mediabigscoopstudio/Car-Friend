@@ -141,53 +141,79 @@
 {% if zone.key == 'docs' %}
 {# ---- Wrap-up (Change 2): replaces the old 360 set & sign-off ---- #}
 <div class="cp-group-label">Wrap-up · exterior set</div>
-<div class="wrap-grid">
-  <form method="post" action="/inspect/{{ r.id }}/field-upload" enctype="multipart/form-data" style="margin:0">
-    {% csrf_token %}<input type="hidden" name="field" value="front_photo"><input type="hidden" name="next" value="/inspect/{{ r.id }}/zone/docs">
-    <label class="wrap-cell"><input type="file" accept="image/*" capture="environment" name="file" hidden onchange="this.form.submit()">
-      {% if r.front_photo %}<img src="{{ r.front_photo.url }}" alt=""><span class="wt-ok">✓</span>{% else %}＋ Front{% endif %}</label>
-  </form>
-  <form method="post" action="/inspect/{{ r.id }}/field-upload" enctype="multipart/form-data" style="margin:0">
-    {% csrf_token %}<input type="hidden" name="field" value="rear_photo"><input type="hidden" name="next" value="/inspect/{{ r.id }}/zone/docs">
-    <label class="wrap-cell"><input type="file" accept="image/*" capture="environment" name="file" hidden onchange="this.form.submit()">
-      {% if r.rear_photo %}<img src="{{ r.rear_photo.url }}" alt=""><span class="wt-ok">✓</span>{% else %}＋ Rear{% endif %}</label>
-  </form>
-  <form method="post" action="/inspect/{{ r.id }}/field-upload" enctype="multipart/form-data" style="margin:0">
-    {% csrf_token %}<input type="hidden" name="field" value="left_photo"><input type="hidden" name="next" value="/inspect/{{ r.id }}/zone/docs">
-    <label class="wrap-cell"><input type="file" accept="image/*" capture="environment" name="file" hidden onchange="this.form.submit()">
-      {% if r.left_photo %}<img src="{{ r.left_photo.url }}" alt=""><span class="wt-ok">✓</span>{% else %}＋ Left side{% endif %}</label>
-  </form>
-  <form method="post" action="/inspect/{{ r.id }}/field-upload" enctype="multipart/form-data" style="margin:0">
-    {% csrf_token %}<input type="hidden" name="field" value="right_photo"><input type="hidden" name="next" value="/inspect/{{ r.id }}/zone/docs">
-    <label class="wrap-cell"><input type="file" accept="image/*" capture="environment" name="file" hidden onchange="this.form.submit()">
-      {% if r.right_photo %}<img src="{{ r.right_photo.url }}" alt=""><span class="wt-ok">✓</span>{% else %}＋ Right side{% endif %}</label>
-  </form>
+<div class="wp-grid">
+  <div class="wp-card {% if r.front_photo %}has{% endif %}" data-field="front_photo" data-req="1">
+    <div class="wp-label">Front</div>
+    <label class="wp-area">
+      <input type="file" accept="image/*" capture="environment" hidden class="wp-input">
+      <img class="wp-img" alt="" src="{% if r.front_photo %}{{ r.front_photo.url }}{% endif %}" {% if not r.front_photo %}style="display:none"{% endif %}>
+      <svg class="wp-cam" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" {% if r.front_photo %}style="display:none"{% endif %}><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      <button type="button" class="wp-x" aria-label="Remove">×</button>
+    </label>
+    <div class="wp-status">{% if r.front_photo %}✓ Uploaded{% else %}Not uploaded{% endif %}</div>
+  </div>
+  <div class="wp-card {% if r.rear_photo %}has{% endif %}" data-field="rear_photo" data-req="1">
+    <div class="wp-label">Rear</div>
+    <label class="wp-area">
+      <input type="file" accept="image/*" capture="environment" hidden class="wp-input">
+      <img class="wp-img" alt="" src="{% if r.rear_photo %}{{ r.rear_photo.url }}{% endif %}" {% if not r.rear_photo %}style="display:none"{% endif %}>
+      <svg class="wp-cam" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" {% if r.rear_photo %}style="display:none"{% endif %}><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      <button type="button" class="wp-x" aria-label="Remove">×</button>
+    </label>
+    <div class="wp-status">{% if r.rear_photo %}✓ Uploaded{% else %}Not uploaded{% endif %}</div>
+  </div>
+  <div class="wp-card {% if r.left_photo %}has{% endif %}" data-field="left_photo" data-req="1">
+    <div class="wp-label">Left side</div>
+    <label class="wp-area">
+      <input type="file" accept="image/*" capture="environment" hidden class="wp-input">
+      <img class="wp-img" alt="" src="{% if r.left_photo %}{{ r.left_photo.url }}{% endif %}" {% if not r.left_photo %}style="display:none"{% endif %}>
+      <svg class="wp-cam" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" {% if r.left_photo %}style="display:none"{% endif %}><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      <button type="button" class="wp-x" aria-label="Remove">×</button>
+    </label>
+    <div class="wp-status">{% if r.left_photo %}✓ Uploaded{% else %}Not uploaded{% endif %}</div>
+  </div>
+  <div class="wp-card {% if r.right_photo %}has{% endif %}" data-field="right_photo" data-req="1">
+    <div class="wp-label">Right side</div>
+    <label class="wp-area">
+      <input type="file" accept="image/*" capture="environment" hidden class="wp-input">
+      <img class="wp-img" alt="" src="{% if r.right_photo %}{{ r.right_photo.url }}{% endif %}" {% if not r.right_photo %}style="display:none"{% endif %}>
+      <svg class="wp-cam" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" {% if r.right_photo %}style="display:none"{% endif %}><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      <button type="button" class="wp-x" aria-label="Remove">×</button>
+    </label>
+    <div class="wp-status">{% if r.right_photo %}✓ Uploaded{% else %}Not uploaded{% endif %}</div>
+  </div>
 </div>
 
 <div class="cp-group-label">Walk-around video &amp; engine audio</div>
 <div class="card">
-  <form method="post" action="/inspect/{{ r.id }}/field-upload" enctype="multipart/form-data" class="wrap-media" style="margin:0">
-    {% csrf_token %}<input type="hidden" name="field" value="walkaround_video"><input type="hidden" name="next" value="/inspect/{{ r.id }}/zone/docs">
-    <div class="wm-ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>
-    <div class="wm-body"><div class="wm-title">Walk-around video (exterior + interior)</div>
-      <div class="wm-sub {% if r.walkaround_video %}done{% endif %}">{% if r.walkaround_video %}Uploaded ✓{% else %}mp4 / mov · required{% endif %}</div></div>
-    <label class="cp-btn ok" style="min-width:64px"><input type="file" accept="video/mp4,video/quicktime,.mp4,.mov" name="file" hidden onchange="this.form.submit()">{% if r.walkaround_video %}Replace{% else %}Upload{% endif %}</label>
-  </form>
-  <form method="post" action="/inspect/{{ r.id }}/field-upload" enctype="multipart/form-data" class="wrap-media" style="margin:0">
-    {% csrf_token %}<input type="hidden" name="field" value="engine_audio"><input type="hidden" name="next" value="/inspect/{{ r.id }}/zone/docs">
-    <div class="wm-ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4"/></svg></div>
-    <div class="wm-body"><div class="wm-title">Engine sound recording</div>
-      <div class="wm-sub {% if r.engine_audio %}done{% endif %}">{% if r.engine_audio %}Uploaded ✓{% else %}mp3 / m4a / wav · optional{% endif %}</div></div>
-    <label class="cp-btn ok" style="min-width:64px"><input type="file" accept="audio/*,.mp3,.m4a,.wav" name="file" hidden onchange="this.form.submit()">{% if r.engine_audio %}Replace{% else %}Upload{% endif %}</label>
-  </form>
+  <div class="up-row" data-field="walkaround_video" data-req="1">
+    <div class="up-head">
+      <div class="up-ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>
+      <div class="up-body"><div class="up-title">Walk-around video (exterior + interior)</div>
+        <div class="up-sub {% if r.walkaround_video %}done{% endif %}">{% if r.walkaround_video %}✓ Uploaded{% else %}mp4 / mov · required{% endif %}</div></div>
+      <label class="up-btn"><input type="file" accept="video/mp4,video/quicktime,.mp4,.mov" hidden class="up-input"><span class="up-btn-t">{% if r.walkaround_video %}Replace{% else %}Upload{% endif %}</span></label>
+    </div>
+    <div class="up-progress"><div class="up-fill"></div></div>
+    <div class="up-pct"></div>
+  </div>
+  <div class="up-row" data-field="engine_audio" data-req="0">
+    <div class="up-head">
+      <div class="up-ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4"/></svg></div>
+      <div class="up-body"><div class="up-title">Engine sound recording</div>
+        <div class="up-sub {% if r.engine_audio %}done{% endif %}">{% if r.engine_audio %}✓ Uploaded{% else %}mp3 / m4a / wav · optional{% endif %}</div></div>
+      <label class="up-btn"><input type="file" accept="audio/*,.mp3,.m4a,.wav" hidden class="up-input"><span class="up-btn-t">{% if r.engine_audio %}Replace{% else %}Upload{% endif %}</span></label>
+    </div>
+    <div class="up-progress"><div class="up-fill"></div></div>
+    <div class="up-pct"></div>
+  </div>
 </div>
 
 <form method="post" action="/submit/{{ r.id }}">
   {% csrf_token %}
   <div class="sheet-field"><label>Final inspector notes (optional)</label>
     <textarea name="final_notes" rows="3" placeholder="Anything the admin should know…">{{ r.final_notes }}</textarea></div>
-  <button type="submit" class="btn btn-primary block" {% if not wrap_ready %}disabled{% endif %}>Submit inspection</button>
-  {% if not wrap_ready %}<div class="note-hint" style="text-align:center;margin-top:8px">Upload all 4 photos + the walk-around video to enable submit.</div>{% endif %}
+  <button type="submit" class="btn btn-primary block" id="wrap-submit" {% if not wrap_ready %}disabled{% endif %}>Submit inspection</button>
+  <div class="note-hint" id="wrap-hint" style="text-align:center;margin-top:8px;{% if wrap_ready %}display:none{% endif %}">Upload all 4 photos + the walk-around video to enable submit.</div>
 </form>
 {% endif %}
 
@@ -433,6 +459,110 @@
   {% if request.GET.ocr == 'ok' %}window.cfToast && cfToast('RC scanned — verify the fields');{% endif %}
   var ocrFile = document.getElementById('ocr-file');
   if (ocrFile) ocrFile.addEventListener('change', function () { if (this.files[0]) document.getElementById('ocr-form').submit(); });
+})();
+</script>
+
+<script>
+// ---- Wrap-up uploads: real XHR progress against the existing endpoint ----
+(function () {
+  if (!document.querySelector('.wp-grid')) return;   // docs zone only
+  var RID = document.getElementById('rid').value;
+  var CSRF = document.getElementById('csrf').value;
+  var NEXT = '/inspect/' + RID + '/zone/docs';
+  var submitBtn = document.getElementById('wrap-submit');
+  var hint = document.getElementById('wrap-hint');
+  var REQUIRED = ['front_photo', 'rear_photo', 'left_photo', 'right_photo', 'walkaround_video'];
+  var done = {};
+
+  function refresh() {
+    var ready = REQUIRED.every(function (f) { return done[f]; });
+    if (submitBtn) submitBtn.disabled = !ready;
+    if (hint) hint.style.display = ready ? 'none' : 'block';
+  }
+
+  // XHR upload with real upload.onprogress; the endpoint 302-redirects, which
+  // XHR follows to a 200 — treated as success. cb(state, pct).
+  function xhrUpload(file, field, cb) {
+    var fd = new FormData();
+    fd.append('field', field); fd.append('file', file);
+    fd.append('next', NEXT); fd.append('csrfmiddlewaretoken', CSRF);
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/inspect/' + RID + '/field-upload');
+    xhr.upload.onprogress = function (e) { if (e.lengthComputable) cb('progress', Math.round(e.loaded / e.total * 100)); };
+    xhr.onload = function () { cb(xhr.status >= 200 && xhr.status < 400 ? 'done' : 'error'); };
+    xhr.onerror = function () { cb('error'); };
+    xhr.send(fd);
+  }
+
+  // ---- photo cards ----
+  document.querySelectorAll('.wp-card').forEach(function (card) {
+    var field = card.dataset.field;
+    if (card.classList.contains('has')) done[field] = true;
+    var input = card.querySelector('.wp-input');
+    var img = card.querySelector('.wp-img');
+    var cam = card.querySelector('.wp-cam');
+    var status = card.querySelector('.wp-status');
+    var x = card.querySelector('.wp-x');
+
+    input.addEventListener('change', function () {
+      var f = this.files[0]; if (!f) return;
+      try { img.src = URL.createObjectURL(f); } catch (e) {}
+      img.style.display = 'block'; cam.style.display = 'none';
+      card.classList.add('has'); card.classList.remove('err');
+      status.textContent = 'Uploading…';
+      done[field] = false; refresh();
+      xhrUpload(f, field, function (st) {
+        if (st === 'done') { status.textContent = '✓ Uploaded'; done[field] = true; refresh(); }
+        else if (st === 'error') { card.classList.add('err'); status.textContent = 'Upload failed — tap to retry'; }
+      });
+    });
+
+    x.addEventListener('click', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      input.value = ''; img.src = ''; img.style.display = 'none'; cam.style.display = '';
+      card.classList.remove('has', 'err'); status.textContent = 'Not uploaded';
+      done[field] = false; refresh();
+    });
+  });
+
+  // ---- video / audio rows ----
+  document.querySelectorAll('.up-row').forEach(function (row) {
+    var field = row.dataset.field;
+    if (row.querySelector('.up-sub.done')) done[field] = true;
+    var input = row.querySelector('.up-input');
+    var sub = row.querySelector('.up-sub');
+    var btn = row.querySelector('.up-btn');
+    var btnT = row.querySelector('.up-btn-t');
+    var prog = row.querySelector('.up-progress');
+    var fill = row.querySelector('.up-fill');
+    var pct = row.querySelector('.up-pct');
+
+    input.addEventListener('change', function () {
+      var f = this.files[0]; if (!f) return;
+      btn.classList.add('busy'); btnT.textContent = 'Uploading…';
+      prog.className = 'up-progress show'; fill.style.width = '0%';
+      pct.className = 'up-pct show'; pct.textContent = 'Uploading… 0%';
+      sub.className = 'up-sub';
+      done[field] = false; refresh();
+      this.value = '';
+      xhrUpload(f, field, function (st, p) {
+        if (st === 'progress') { fill.style.width = p + '%'; pct.textContent = 'Uploading… ' + p + '%'; }
+        else if (st === 'done') {
+          prog.className = 'up-progress show done'; fill.style.width = '100%';
+          pct.className = 'up-pct';
+          sub.className = 'up-sub done'; sub.textContent = '✓ Uploaded — ' + f.name;
+          btn.classList.remove('busy'); btnT.textContent = 'Replace';
+          done[field] = true; refresh();
+        } else {
+          prog.className = 'up-progress show err'; pct.className = 'up-pct';
+          sub.className = 'up-sub err'; sub.textContent = 'Upload failed — tap to retry';
+          btn.classList.remove('busy'); btnT.textContent = 'Upload';
+        }
+      });
+    });
+  });
+
+  refresh();
 })();
 </script>
 {% endblock %}

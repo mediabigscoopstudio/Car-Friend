@@ -441,29 +441,56 @@ button { font-family: inherit; cursor: pointer; }
   border-radius: 10px; border: 1.5px solid var(--line); background: var(--surface); color: var(--sage-deep); }
 .cam-mini svg { width: 18px; height: 18px; }
 
-/* ---------- Insurance form + wrap-up section ---------- */
-.ins-input { width: 100%; height: 44px; border: 1px solid var(--line); border-radius: 12px;
-  background: var(--surface); padding: 0 12px; font-family: var(--font-b); font-size: 14px; color: var(--ink); }
-select.ins-input { appearance: none; -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%237C766A' stroke-width='2'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+/* ---------- Insurance form (text inputs + selects share one look) ---------- */
+.ins-input { width: 100%; border: 1px solid var(--line); border-radius: 12px; background: var(--surface);
+  padding: 11px 13px; font-family: var(--font-b); font-size: 14px; color: var(--ink); line-height: 1.35; }
+select.ins-input { appearance: none; -webkit-appearance: none; -moz-appearance: none; cursor: pointer; padding-right: 38px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%237C766A' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 13px center; }
+/* shared focus ring (matches across text inputs, selects, textareas) */
+.ins-input:focus,
+.sheet-field input:focus, .sheet-field select:focus, .sheet-field textarea:focus {
+  outline: none; border-color: var(--sage-deep); box-shadow: 0 0 0 3px rgba(92, 112, 96, .18); }
 .ins-summary { margin-top: 10px; padding: 9px 12px; border-radius: 10px; background: var(--done-bg);
   color: var(--done-text); font-size: 13px; font-weight: 600; text-align: center; }
 
-.wrap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
-.wrap-cell { position: relative; aspect-ratio: 4/3; border-radius: 14px; border: 1.5px dashed var(--line-strong);
-  background: var(--surface); display: grid; place-items: center; cursor: pointer; overflow: hidden;
-  font-family: var(--font-d); font-weight: 700; font-size: 13px; color: var(--sage-deep); text-align: center; }
-.wrap-cell img { width: 100%; height: 100%; object-fit: cover; }
-.wrap-cell .wt-ok { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; border-radius: 50%;
-  background: var(--done-text); color: #fff; display: grid; place-items: center; font-size: 13px; }
-.wrap-media { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); }
-.wrap-media:last-child { border-bottom: none; }
-.wrap-media .wm-ic { width: 40px; height: 40px; border-radius: 11px; background: var(--surface); display: grid; place-items: center; color: var(--sage-deep); flex-shrink: 0; }
-.wrap-media .wm-body { flex: 1; min-width: 0; }
-.wrap-media .wm-title { font-weight: 600; font-size: 14px; }
-.wrap-media .wm-sub { font-size: 12px; color: var(--muted); }
-.wrap-media .wm-sub.done { color: var(--done-text); font-weight: 600; }
+/* ---------- Wrap-up: 4 exterior photo cards (2x2 / stacked) ---------- */
+.wp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+@media (max-width: 380px) { .wp-grid { grid-template-columns: 1fr; } }
+.wp-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px; box-shadow: var(--shadow-sm); }
+.wp-card .wp-label { font-family: var(--font-d); font-weight: 700; font-size: 13px; margin-bottom: 8px; }
+.wp-area { position: relative; aspect-ratio: 4/3; width: 100%; border-radius: 11px; border: 1.5px dashed var(--line-strong);
+  background: var(--surface); display: grid; place-items: center; cursor: pointer; overflow: hidden; color: var(--sage-deep); }
+.wp-area > .wp-img { width: 100%; height: 100%; object-fit: cover; }
+.wp-area > .wp-cam { width: 30px; height: 30px; }
+.wp-x { position: absolute; top: 5px; right: 5px; width: 24px; height: 24px; border-radius: 50%;
+  background: rgba(57,67,63,.72); color: #fff; border: none; place-items: center; font-size: 16px; line-height: 1; z-index: 2; display: none; }
+.wp-card.has .wp-x { display: grid; }
+.wp-status { font-size: 12px; font-weight: 600; margin-top: 8px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+.wp-card.has .wp-status { color: var(--done-text); }
+.wp-card.err .wp-status { color: var(--alert-text); }
+
+/* ---------- Wrap-up: video / audio rows with real upload progress ---------- */
+.up-row { padding: 13px 0; border-bottom: 1px solid var(--line); }
+.up-row:last-child { border-bottom: none; }
+.up-head { display: flex; align-items: center; gap: 12px; }
+.up-ic { width: 40px; height: 40px; border-radius: 11px; background: var(--surface); display: grid; place-items: center; color: var(--sage-deep); flex-shrink: 0; }
+.up-body { flex: 1; min-width: 0; }
+.up-title { font-weight: 600; font-size: 14px; }
+.up-sub { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.up-sub.done { color: var(--done-text); font-weight: 600; }
+.up-sub.err { color: var(--alert-text); font-weight: 600; }
+.up-btn { min-width: 80px; height: 38px; border-radius: 10px; border: 1.5px solid var(--sage-deep); background: #EAF0E8;
+  color: #3E4E43; font-family: var(--font-d); font-weight: 700; font-size: 13px; display: grid; place-items: center; cursor: pointer; flex-shrink: 0; }
+.up-btn.busy { opacity: .6; pointer-events: none; }
+.up-progress { height: 9px; border-radius: 999px; background: #fff; box-shadow: inset 0 0 0 1px var(--line);
+  overflow: hidden; margin-top: 11px; display: none; }
+.up-progress.show { display: block; }
+.up-fill { height: 100%; width: 0; border-radius: 999px; background: var(--sage-deep); transition: width .12s linear; }
+.up-progress.done .up-fill { background: var(--done-text); }
+.up-progress.err .up-fill { background: var(--alert-text); width: 100%; }
+.up-pct { font-size: 11px; color: var(--muted); margin-top: 5px; font-weight: 600; display: none; }
+.up-pct.show { display: block; }
 
 /* ---------- Unlock celebration (§5.6 — the one moment) ---------- */
 .celebrate { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center;
