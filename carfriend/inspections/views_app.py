@@ -267,11 +267,10 @@ def insp_zone(request, id, zone_key):
             media_by_key.setdefault(m.slot, []).append(
                 {"id": m.id, "url": img.url, "masked": m.plate_masked})
 
-    prefill, registry, fraud = {}, None, None
+    prefill, registry = {}, None
     if zone_key == "details":
         prefill = _registry_prefill(r.visit.vehicle)
         registry = VehicleRegistryData.objects.filter(vehicle=r.visit.vehicle).first()
-        fraud = _fraud_flag(r.visit)
 
     groups = []
     for g in zone["groups"]:
@@ -293,7 +292,7 @@ def insp_zone(request, id, zone_key):
         r=r, zone=zone, groups=groups, progress=engine.zone_progress(r, zone),
         severities=zones.SEVERITIES, next_zone=next_zone,
         problem_chips=zones.PROBLEM_CHIPS,
-        registry=registry, fraud=fraud, vehicle=r.visit.vehicle))
+        registry=registry, vehicle=r.visit.vehicle))
 
 
 @inspector_required
@@ -351,18 +350,6 @@ def _registry_prefill(v):
         "fuel_owners": " · ".join(x for x in [(v.get_fuel_type_display() if v.fuel_type else ""),
                                               (f"{v.owner_number} owner" if v.owner_number else "")] if x),
     }
-
-
-def _fraud_flag(visit):
-    """Non-blocking owner≠seller flag (§6.4)."""
-    owner = (visit.vehicle.owner_name or "").strip()
-    seller = visit.lead.seller if (visit.lead_id and visit.lead and visit.lead.seller_id) else visit.vehicle.seller
-    sname = ((seller.get_full_name() if seller else "") or (seller.username if seller else "") or "").strip()
-    if not owner or not sname:
-        return None
-    if set(owner.lower().split()) & set(sname.lower().split()):
-        return None          # shared token → likely the same person
-    return {"owner": owner, "seller": sname}
 
 
 def _attach_photo(r, key, media_id):
