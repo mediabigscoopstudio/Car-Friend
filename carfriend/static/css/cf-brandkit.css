@@ -1,0 +1,145 @@
+/* ════════════════════════════════════════════════════════════
+   CARFRIEND.IN — BRAND KIT OVERRIDE  (warm / cream-sage-gold)
+   Big Scoop Studio · Ref: BSS-2026-CF-DESIGN-001
+   Loaded LAST in www/base.html so it cascades over Bootstrap + the
+   inline blue theme. Restyle only — no markup/URL/text changes.
+   ════════════════════════════════════════════════════════════ */
+
+/* 1. GOOGLE FONTS (also <link>-ed in <head> for speed) */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Outfit:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+/* 2. CSS CUSTOM PROPERTIES — remap the existing --cf-* (blue) tokens to the
+   warm palette so every var()-driven style flips automatically. */
+:root {
+  --cf-azure:       #39433F;   /* forest — dark headers/sections */
+  --cf-azure-700:   #242d2a;   /* deep */
+  --cf-blue:        #c9a96e;   /* warm gold — PRIMARY CTA */
+  --cf-blue-700:    #b8965a;   /* warm gold hover */
+  --cf-blue-100:    #efe4cf;   /* warm tint */
+  --cf-sky:         #8EA28F;   /* sage */
+  --cf-sky-tint:    #E8EEE6;   /* sage tint */
+  --cf-ink:         #111714;
+  --cf-slate:       #5c6660;   /* muted body text */
+  --cf-mist:        #EEE4D6;   /* linen — borders/dividers */
+  --cf-paper:       #FFFAF4;   /* cream — page background */
+  --cf-white:       #FFFFFF;
+  --cf-coral:       #8EA28F;   /* re-point the coral accent → sage */
+  --cf-coral-dark:  #39433F;
+  --cf-coral-tint:  #E8EEE6;
+  --cf-teal:        #8EA28F;   /* re-point teal accent → sage */
+  --cf-teal-dark:   #5C7060;
+  --cf-teal-tint:   #E8EEE6;
+  --cf-danger:      #e84444;   /* keep red for live/urgency only */
+  --cf-danger-tint: #fbe7e7;
+
+  /* brand-kit aliases */
+  --cream:#FFFAF4; --linen:#EEE4D6; --sand:#D8C6A7; --sage:#8EA28F;
+  --forest:#39433F; --deep:#242d2a; --warm:#c9a96e; --muted:#5c6660; --ink:#111714;
+
+  /* typography — display→Cormorant, body/UI→Outfit, data→DM Mono */
+  --cf-font-display: 'Cormorant Garamond', Georgia, serif;
+  --cf-font-sans:    'Outfit', system-ui, sans-serif;
+  --cf-font-brand:   'Cormorant Garamond', Georgia, serif;
+  --cf-ff-mono:      'DM Mono', ui-monospace, monospace;
+  --cf-ease:         cubic-bezier(.22,1,.36,1);
+
+  /* Bootstrap remap so .btn-primary / links lose the default blue */
+  --bs-primary:#c9a96e; --bs-primary-rgb:201,169,110;
+  --bs-link-color:#39433F; --bs-link-hover-color:#c9a96e;
+  --bs-body-font-family:'Outfit', system-ui, sans-serif;
+}
+
+/* 3. GLOBAL RESETS — body, text, links */
+body { font-family: var(--cf-font-sans); color: var(--ink); background: var(--cream);
+  -webkit-font-smoothing: antialiased; }
+a { transition: color .2s var(--cf-ease); }
+.text-primary { color: var(--warm) !important; }
+.bg-primary { background: var(--warm) !important; }
+
+/* Scroll-reveal base state */
+.cf-reveal { opacity: 0; transform: translateY(20px);
+  transition: opacity .6s var(--cf-ease), transform .6s var(--cf-ease); }
+.cf-reveal.cf-in { opacity: 1; transform: translateY(0); }
+
+/* 4. NAVIGATION — frost on scroll (.cf-scrolled added by JS at scrollY>40) */
+.cf-nav { transition: background .3s var(--cf-ease), box-shadow .3s var(--cf-ease); }
+.cf-nav.cf-scrolled, .cf-nav.scrolled {
+  background: rgba(255,250,244,.96) !important; backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px); box-shadow: 0 1px 0 var(--linen); }
+.cf-nav .navbar-brand { font-family: var(--cf-font-display); font-weight: 700; letter-spacing: -.02em; }
+.cf-nav .nav-link { font-family: var(--cf-font-sans); font-weight: 500; color: var(--muted); }
+.cf-nav .nav-link:hover, .cf-nav .nav-link.active { color: var(--forest); }
+
+/* 5. HERO — keep dark, warm the accents (handled via token remap) */
+.hero .section-badge, .hero .eyebrow { color: var(--warm); }
+
+/* 6. SECTION BACKGROUNDS — light sections stay light, just warmer via tokens.
+   Dark CTA/sell section keeps cream text. */
+.sell-section, .trust-section { color: rgba(255,250,244,.85); }
+
+/* 7. HEADINGS — Cormorant Garamond everywhere */
+h1, h2, h3, .section-title, .hero h1, .hero-title {
+  font-family: var(--cf-font-display); letter-spacing: -.02em; }
+h1, .section-title { font-weight: 700; }
+h4, h5, h6 { font-family: var(--cf-font-display); font-weight: 600; }
+
+/* 8. EYEBROWS / BADGES — DM Mono, uppercase, spaced (sage on light) */
+.section-badge {
+  font-family: var(--cf-ff-mono) !important; font-size: .6rem; font-weight: 500;
+  letter-spacing: .2em; text-transform: uppercase; color: var(--sage) !important;
+  background: rgba(142,162,143,.12) !important; border: 1px solid rgba(142,162,143,.2);
+  border-radius: 4px; padding: .28rem .7rem; }
+
+/* 9. BUTTONS — always pill; Outfit; warm primary / forest secondary / sand ghost */
+.btn, .cf-btn-primary, .cf-btn-outline, .btn-estimate, .btn-dash, .view-all {
+  font-family: var(--cf-font-sans) !important; }
+.btn, .cf-btn-primary, .cf-btn-outline, .btn-estimate {
+  border-radius: 99px !important; font-weight: 600;
+  transition: all .22s var(--cf-ease); }
+.cf-btn-primary, .btn-estimate, .btn-primary {
+  background: var(--warm) !important; color: var(--deep) !important; border: none !important; }
+.cf-btn-primary:hover, .btn-estimate:hover, .btn-primary:hover {
+  background: #d9b97e !important; color: var(--deep) !important;
+  transform: translateY(-2px); box-shadow: 0 10px 28px rgba(201,169,110,.30); }
+.cf-btn-outline {
+  background: transparent !important; border: 1.5px solid var(--sand) !important;
+  color: var(--forest) !important; }
+.cf-btn-outline:hover { border-color: var(--forest) !important; background: transparent !important;
+  color: var(--forest) !important; }
+
+/* 10. CARDS — soft warm shadow + hover lift */
+.card, .testimonial-card, .auction-card, .service-card, .hiw-card, .trust-card {
+  border-radius: 14px; border: 1px solid var(--linen);
+  box-shadow: 0 4px 16px rgba(57,67,63,.06);
+  transition: transform .28s var(--cf-ease), box-shadow .28s var(--cf-ease); }
+.card:hover, .testimonial-card:hover, .auction-card:hover, .service-card:hover {
+  transform: translateY(-4px); box-shadow: 0 16px 48px rgba(57,67,63,.12); }
+
+/* 11. FORM INPUTS — linen fill, sand border, warm focus */
+input, select, textarea, .form-control, .plate-input, .field-input {
+  font-family: var(--cf-font-sans); border-radius: 8px; }
+.form-control:focus, input:focus, select:focus, textarea:focus, .plate-input:focus {
+  outline: none; border-color: var(--warm) !important;
+  box-shadow: 0 0 0 3px rgba(201,169,110,.18) !important; }
+
+/* numbers / prices / timers — DM Mono */
+.price, .timer, .stat-num, .mono, .countdown { font-family: var(--cf-ff-mono); }
+
+/* 12. FOOTER — deepest dark */
+footer, .site-footer, .cf-footer { background: var(--deep); }
+footer a { color: rgba(255,250,244,.45); }
+footer a:hover { color: var(--cream); }
+
+/* 13. PAGE-SPECIFIC — seller/dealer dashboards inherit the same tokens. */
+
+/* 14-15. RESPONSIVE — layout is Bootstrap's; brand kit only restyles, so the
+   existing breakpoints carry. Tighten heading sizing on small screens. */
+@media (max-width: 575px) {
+  .section-title, .hero h1 { letter-spacing: -.01em; }
+}
+
+/* 16. REDUCED MOTION */
+@media (prefers-reduced-motion: reduce) {
+  .cf-reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+  .cf-nav, .btn, .card { transition: none !important; }
+}
