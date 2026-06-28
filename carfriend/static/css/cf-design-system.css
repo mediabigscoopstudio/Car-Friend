@@ -1,0 +1,127 @@
+/* ════════════════════════════════════════════════════════════
+   CAR FRIEND — GREEN DESIGN SYSTEM  (BSS-CF-2026-v1.0)
+   Applied to the PUBLIC www site only. Loaded LAST in www/base.html
+   so it cascades over Bootstrap + the inline blue theme. Reskin only —
+   the existing markup, template tags, hrefs, forms and ids are untouched;
+   this turns them green via a token bridge + component classes.
+   ════════════════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Inter:wght@300;400;500;600&display=swap');
+
+/* ── design tokens ── */
+:root{
+  --cf-primary:#166534;--cf-primary-mid:#1a7a3e;--cf-primary-light:#22c55e;--cf-primary-dark:#0d4a24;
+  --cf-accent:#4ade80;--cf-accent-dim:rgba(74,222,128,.15);
+  --cf-dark:#080e08;--cf-dark-2:#0f1a0f;--cf-dark-3:#1a2a1a;
+  --cf-white:#fff;--cf-gray-1:#f5f7f5;--cf-gray-2:#e4e9e4;--cf-gray-3:#9ca39c;
+  --cf-text:#1a2a1a;--cf-text-light:#6b7a6b;
+  --font-h:'Plus Jakarta Sans',sans-serif;--font-b:'Inter',sans-serif;
+  --r-sm:8px;--r-md:16px;--r-lg:24px;--r-xl:32px;--r-2xl:40px;
+}
+
+/* ════════ BRIDGE — remap the site's existing blue --cf-* tokens to GREEN
+   so every var()-driven style on the public pages turns green ════════ */
+:root{
+  --cf-azure:#0f1a0f;--cf-azure-700:#080e08;
+  --cf-blue:#166534;--cf-blue-700:#0d4a24;--cf-blue-100:rgba(34,197,94,.12);
+  --cf-sky:#4ade80;--cf-sky-tint:rgba(74,222,128,.1);
+  --cf-ink:#1a2a1a;--cf-slate:#6b7a6b;--cf-mist:#e4e9e4;--cf-paper:#f5f7f5;
+  --cf-coral:#166534;--cf-coral-dark:#0d4a24;--cf-coral-tint:rgba(34,197,94,.1);
+  --cf-teal:#166534;--cf-teal-dark:#0d4a24;--cf-teal-tint:rgba(34,197,94,.1);
+  --cf-danger:#e84444;--cf-danger-tint:#fbe7e7;
+  --cf-font-display:'Plus Jakarta Sans',sans-serif;
+  --cf-font-sans:'Inter',sans-serif;
+  --cf-font-brand:'Plus Jakarta Sans',sans-serif;
+  --bs-primary:#166534;--bs-primary-rgb:22,101,52;
+  --bs-link-color:#166534;--bs-link-hover-color:#22c55e;
+}
+
+body{font-family:var(--font-b);color:var(--cf-text);}
+h1,h2,h3,h4,h5,h6{font-family:var(--font-h);}
+::selection{background:rgba(22,101,52,.2);}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-thumb{background:var(--cf-primary);border-radius:3px;}
+
+/* ── navbar (frost on scroll, dark green) ── */
+.cf-nav{transition:background .35s ease,box-shadow .35s ease;}
+.cf-nav.cf-scrolled,.cf-nav.scrolled{background:rgba(8,14,8,.94)!important;backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);border-bottom:1px solid rgba(74,222,128,.12);box-shadow:0 4px 24px rgba(0,0,0,.4);}
+.cf-nav .navbar-brand{font-family:var(--font-h);font-weight:800;}
+.cf-nav .nav-link{font-family:var(--font-h);font-weight:500;}
+.cf-nav .nav-link:hover,.cf-nav .nav-link.active{color:var(--cf-primary)!important;}
+
+/* ── buttons → green gradient pills ── */
+.btn,.cf-btn-primary,.cf-btn-outline,.btn-estimate{font-family:var(--font-h)!important;border-radius:50px!important;font-weight:700;transition:all .3s cubic-bezier(.22,1,.36,1);}
+.cf-btn-primary,.btn-estimate,.btn-primary{background:linear-gradient(135deg,#22c55e,#166534)!important;color:#fff!important;border:none!important;}
+.cf-btn-primary:hover,.btn-estimate:hover,.btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(34,197,94,.4);color:#fff!important;}
+.cf-btn-outline{background:transparent!important;border:1.5px solid var(--cf-gray-2)!important;color:var(--cf-primary)!important;}
+.cf-btn-outline:hover{border-color:var(--cf-primary)!important;color:var(--cf-primary)!important;background:rgba(34,197,94,.06)!important;}
+
+/* ── eyebrows / section titles (existing www classes) ── */
+.section-badge{font-family:var(--font-h)!important;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--cf-primary)!important;background:rgba(22,101,52,.08)!important;border:1px solid rgba(22,101,52,.15);border-radius:50px;padding:5px 14px;}
+.section-title{font-family:var(--font-h)!important;font-weight:800;letter-spacing:-.025em;}
+.section-title .highlight,.section-title .hl{color:var(--cf-primary)!important;}
+
+/* ── hero (dark green with glow) ── */
+.hero{background:var(--cf-dark)!important;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 90% 80% at 15% 55%,rgba(22,101,52,.28),transparent 58%),
+  radial-gradient(ellipse 55% 50% at 85% 15%,rgba(34,197,94,.12),transparent 52%);}
+.hero .container{position:relative;z-index:2;}
+.hero__photo{opacity:.12!important;}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(22,101,52,.25)!important;
+  border:1px solid rgba(74,222,128,.25);color:var(--cf-accent)!important;border-radius:50px;font-family:var(--font-h);font-weight:700;text-transform:uppercase;letter-spacing:.1em;}
+.hero h1{font-family:var(--font-h)!important;font-weight:800;color:#fff!important;letter-spacing:-.03em;}
+.hero h1 .highlight{background:linear-gradient(135deg,#86efac,#4ade80,#22c55e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero .lead,.hero p{color:rgba(255,255,255,.58)!important;}
+.hero-trust li{color:rgba(255,255,255,.72)!important;}
+.hero-trust i{color:var(--cf-accent)!important;}
+
+/* hero price card → glass */
+.price-card{background:rgba(255,255,255,.04)!important;backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+  border:1px solid rgba(74,222,128,.18)!important;border-radius:var(--r-2xl)!important;color:#fff;}
+.price-card h2{font-family:var(--font-h);color:#fff!important;font-weight:800;}
+.price-card .sub{color:rgba(255,255,255,.55)!important;}
+.plate-field{background:rgba(255,255,255,.06)!important;border:1.5px solid rgba(255,255,255,.18)!important;border-radius:var(--r-sm)!important;}
+.plate-input{color:#fff!important;background:transparent!important;}
+.plate-input::placeholder{color:rgba(255,255,255,.35)!important;}
+.result-car{color:#fff!important;}
+.view-all{color:var(--cf-accent)!important;}
+
+/* ── ticker (dark green) ── */
+.ticker-strip{background:var(--cf-dark-2)!important;border-top:1px solid rgba(74,222,128,.1);border-bottom:1px solid rgba(74,222,128,.1);}
+.ticker-item{color:rgba(255,255,255,.6)!important;font-family:var(--font-h);}
+.ticker-dot{color:var(--cf-accent)!important;}
+
+/* ── how-it-works / step cards ── */
+.hiw-section{background:var(--cf-gray-1)!important;}
+.step-card{background:#fff!important;border:1px solid var(--cf-gray-2)!important;border-radius:var(--r-xl)!important;transition:all .3s;}
+.step-card:hover{transform:translateY(-8px);box-shadow:0 24px 48px rgba(22,101,52,.1);border-color:rgba(22,101,52,.25)!important;}
+.step-icon{background:linear-gradient(135deg,var(--cf-primary-dark),var(--cf-primary))!important;color:#fff!important;border-radius:var(--r-md);}
+.step-num{color:var(--cf-primary)!important;}
+.step-card h5{font-family:var(--font-h);color:var(--cf-text)!important;}
+
+/* ── live auctions ── */
+.auction-card{background:#fff!important;border:1px solid var(--cf-gray-2)!important;border-radius:var(--r-xl)!important;transition:all .3s;}
+.auction-card:hover{transform:translateY(-6px);box-shadow:0 20px 42px rgba(22,101,52,.1);}
+.live-badge{background:rgba(239,68,68,.92)!important;}
+.grade-pill{background:linear-gradient(135deg,var(--cf-primary-dark),var(--cf-primary))!important;color:#fff!important;}
+.auction-price{color:var(--cf-primary)!important;font-family:var(--font-h);}
+.coming-soon-overlay{background:var(--cf-dark-2)!important;color:rgba(255,255,255,.6)!important;border:1px solid rgba(74,222,128,.14)!important;}
+
+/* ── dark CTA / sell section ── */
+.sell-section{background:linear-gradient(135deg,var(--cf-dark) 0%,var(--cf-primary-dark) 45%,var(--cf-dark) 100%)!important;}
+.trust-section{background:var(--cf-dark-2)!important;}
+
+/* ── testimonials ── */
+.testimonials-section{background:var(--cf-gray-1)!important;}
+
+/* ── form inputs ── */
+.form-control,.form-select{font-family:var(--font-b);border:1.5px solid var(--cf-gray-2);border-radius:var(--r-sm);}
+.form-control:focus,.form-select:focus{border-color:var(--cf-primary)!important;box-shadow:0 0 0 3px rgba(22,101,52,.12)!important;outline:none;}
+
+/* ── footer (deep dark green) ── */
+footer,.site-footer,.cf-footer{background:var(--cf-dark)!important;}
+footer a:hover{color:var(--cf-accent)!important;}
+
+/* ── reduced motion ── */
+@media (prefers-reduced-motion:reduce){.btn,.step-card,.auction-card,.cf-nav{transition:none!important;}}
