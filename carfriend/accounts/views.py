@@ -186,7 +186,22 @@ def logout_page(request):
 def role_redirect(request):
     if not request.user.is_authenticated:
         return redirect("/auth/login/")
-    return redirect(get_dashboard_url(request.user))
+    u = request.user
+    intended = request.session.pop("intended_role", None)
+    # Staff / internal roles keep their existing routing untouched — never
+    # demoted, never shown the choose-role screen.
+    if u.role not in (Role.SELLER, Role.DEALER):
+        return redirect(get_dashboard_url(u))
+    # Public (seller/dealer) user: honour pre-login intent, else the role they
+    # already picked this session, else show the choose-role screen.
+    if intended in ("seller", "dealer"):
+        u.role = Role.DEALER if intended == "dealer" else Role.SELLER
+        u.save(update_fields=["role"])
+        request.session["active_role"] = intended
+        return redirect(get_dashboard_url(u))
+    if request.session.get("active_role") in ("seller", "dealer"):
+        return redirect(get_dashboard_url(u))
+    return redirect("choose_role")
 
 
 def set_role(request):
@@ -197,8 +212,39 @@ def set_role(request):
         if role in [Role.SELLER, Role.DEALER]:
             request.user.role = role
             request.user.save(update_fields=["role"])
+            request.session["active_role"] = role     # session mirror for choose/switch UX
         return redirect(get_dashboard_url(request.user))
     return render(request, "www/auth/set_role.html")
+
+
+@login_required(login_url="/auth/login/")
+def choose_role(request):
+    """Post-login 'Continue as Dealer / Seller' screen for public users. Staff
+    keep their own dashboards. Cards POST to the existing set_role view."""
+    u = request.user
+    if u.role not in (Role.SELLER, Role.DEALER):
+        return redirect(get_dashboard_url(u))
+    return render(request, "www/auth/choose_role.html", {
+        "has_dealer": hasattr(u, "dealer_profile"),
+        "has_seller": hasattr(u, "seller_profile"),
+    })
+
+
+def login_as_dealer(request):
+    """Public 'Dealer Login' CTA: record intent, then Google OAuth (or apply
+    immediately if already signed in)."""
+    request.session["intended_role"] = "dealer"
+    if request.user.is_authenticated:
+        return redirect("role_redirect")
+    return redirect("/accounts/google/login/")
+
+
+def login_as_seller(request):
+    """Public 'Sell your car' CTA: record seller intent, then Google OAuth."""
+    request.session["intended_role"] = "seller"
+    if request.user.is_authenticated:
+        return redirect("role_redirect")
+    return redirect("/accounts/google/login/")
 
 
 # ── Dashboards ────────────────────────────────────────────────────────────────
