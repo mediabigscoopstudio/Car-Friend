@@ -1,5 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 
 from accounts.decorators import admin_required, role_required
 from core.models import log
@@ -43,6 +45,54 @@ def seller_auction_watch(request, auction_id):
         "expected_fmt":      f"{int(vehicle.expected_price):,}" if vehicle.expected_price else None,
         "bid_count":         total,
     })
+
+
+@login_required(login_url="/auth/login/")
+@require_POST
+def seller_decision(request, auction_id):
+    """Seller's post-auction choice. Additive: records a real SellerDecision and
+    only ever sets the VALID 'reauction' status. accept/counter leave the auction
+    'closed' for the CRM/OCB pipeline to act on — no invalid status writes."""
+    from .models import SellerDecision
+
+    auction = get_object_or_404(Auction.objects.select_related("vehicle"), id=auction_id)
+    if auction.vehicle.seller_id != request.user.id:
+        return JsonResponse({"error": "forbidden"}, status=403)
+    if auction.status not in ("closed", "reauction"):
+        return JsonResponse({"error": "This auction is not awaiting a decision."}, status=400)
+    if auction.seller_decisions.exists():
+        return JsonResponse({"error": "A decision has already been made."}, status=400)
+
+    action = request.POST.get("action")
+
+    if action == "accept":
+        if not auction.highest_bid:
+            return JsonResponse({"error": "There are no bids to accept."}, status=400)
+        SellerDecision.objects.create(auction=auction, decision=SellerDecision.Choice.ACCEPT)
+        log(request.user, "auction.seller_accept", auction, request)
+        return JsonResponse({"status": "accepted"})
+
+    if action == "counter":
+        raw = (request.POST.get("counter_price") or "").replace(",", "").replace("₹", "").strip()
+        try:
+            amount = int(raw)
+        except (TypeError, ValueError):
+            return JsonResponse({"error": "Enter a valid counter price."}, status=400)
+        if amount <= 0:
+            return JsonResponse({"error": "Enter a valid counter price."}, status=400)
+        SellerDecision.objects.create(auction=auction, decision=SellerDecision.Choice.COUNTER,
+                                      counter_price=amount)
+        log(request.user, "auction.seller_counter", auction, request, counter=amount)
+        return JsonResponse({"status": "countered", "counter_price": amount})
+
+    if action == "reauction":
+        SellerDecision.objects.create(auction=auction, decision=SellerDecision.Choice.REAUCTION)
+        auction.status = Auction.Status.REAUCTION   # valid choice — flags admin to reactivate
+        auction.save(update_fields=["status"])
+        log(request.user, "auction.seller_reauction", auction, request)
+        return JsonResponse({"status": "reauction_requested"})
+
+    return JsonResponse({"error": "invalid action"}, status=400)
 
 
 @admin_required

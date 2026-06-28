@@ -6,6 +6,12 @@
 .cf-spinner { width:20px;height:20px;border:2px solid rgba(255,255,255,.12);border-top-color:#4ade80;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px; }
 .cf-dash-help a { display:flex;align-items:center;gap:8px;font-size:.85rem;font-weight:600;color:#4ade80;text-decoration:none;margin-top:8px; }
 .cf-dash-help a:first-of-type { margin-top:0; }
+.pd-amount { font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:1rem;color:#fff;margin:12px 0 4px; }
+.pd-note { font-size:.8rem;color:rgba(255,255,255,.5);line-height:1.6;margin-bottom:12px; }
+.pd-lbl { font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:4px; }
+.pd-big { font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:1.4rem;color:var(--cf-accent);line-height:1; }
+.pd-counter-input { background:rgba(255,255,255,.06);border:1px solid rgba(74,222,128,.25);border-radius:8px;color:#fff;padding:9px 12px;font-size:.85rem;max-width:200px; }
+.pd-counter-input:focus { outline:none;border-color:#4ade80; }
 {% endblock %}
 
 {% block content %}
@@ -73,7 +79,61 @@
 
           <div class="cf-dash-card">
             <h5><i class="bi bi-hammer"></i> Pending Auction Decisions</h5>
+            {% if pending_decisions %}
+            {% csrf_token %}
+            <div class="d-flex flex-column gap-3">
+              {% for pd in pending_decisions %}
+              <div class="cf-vehicle-card" style="margin-bottom:0;">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+                  <div>
+                    <div class="cf-vehicle-name">{{ pd.vehicle.display_name }}</div>
+                    <div class="cf-vehicle-meta">Auction #{{ pd.auction.id }} &middot; ended {{ pd.auction.end_at|date:"d M Y, g:i A" }}</div>
+                  </div>
+                  {% if pd.decision %}<span class="cf-status-badge cf-status-approved">{{ pd.decision.get_decision_display }}</span>{% else %}<span class="cf-status-badge cf-status-auction">Decision needed</span>{% endif %}
+                </div>
+
+                {% if pd.decision %}
+                  {% if pd.decision.decision == 'accept' %}
+                    <div class="pd-amount">Bid accepted &middot; <span style="color:var(--cf-accent);">₹{{ pd.highest_fmt }}</span></div>
+                    {% if pd.ocb_signable %}
+                    <div class="pd-note">OCB accepted — ready to finalise the sale.</div>
+                    <div class="cf-vehicle-actions"><a href="https://wa.me/919537186783" target="_blank" rel="noopener" class="cf-action-btn-active-green"><i class="bi bi-pencil-square"></i> Sign Agreement</a></div>
+                    {% else %}
+                    <div class="pd-note">Your Sales Associate is processing the OCB offer.{% if pd.ocb_status %} <span class="cf-status-badge cf-status-submitted">{{ pd.ocb_status }}</span>{% endif %}</div>
+                    {% endif %}
+                  {% elif pd.decision.decision == 'counter' %}
+                    <div class="pd-amount">Counter offer sent &middot; <span style="color:var(--cf-accent);">₹{{ pd.counter_fmt }}</span></div>
+                    <div class="pd-note">Waiting for the response.{% if pd.ocb_status %} <span class="cf-status-badge cf-status-submitted">{{ pd.ocb_status }}</span>{% endif %}</div>
+                  {% else %}
+                    <div class="pd-amount">Re-auction requested</div>
+                    <div class="pd-note">Awaiting admin approval to restart the auction.</div>
+                  {% endif %}
+                {% else %}
+                  {% if pd.highest_bid %}
+                    <div style="display:flex;gap:28px;flex-wrap:wrap;margin:12px 0;">
+                      <div><div class="pd-lbl">Highest bid</div><div class="pd-big">₹{{ pd.highest_fmt }}</div></div>
+                      <div><div class="pd-lbl">Bids received</div><div class="pd-big" style="color:#fff;">{{ pd.bid_count }}</div></div>
+                    </div>
+                    <div class="cf-vehicle-actions">
+                      <button type="button" class="cf-action-btn-active-green" onclick="cfDecision({{ pd.auction.id }},'accept')"><i class="bi bi-check2-circle"></i> Accept Bid</button>
+                      <button type="button" class="cf-action-btn-disabled" style="cursor:pointer;color:#fff;border-color:rgba(74,222,128,.3);" onclick="cfShowCounter({{ pd.auction.id }})"><i class="bi bi-arrow-left-right"></i> Counter Offer</button>
+                      <button type="button" class="cf-action-btn-disabled" style="cursor:pointer;color:rgba(255,255,255,.7);" onclick="cfDecision({{ pd.auction.id }},'reauction')"><i class="bi bi-arrow-repeat"></i> Request Re-Auction</button>
+                    </div>
+                    <div id="counter-{{ pd.auction.id }}" style="display:none;margin-top:12px;gap:8px;align-items:center;">
+                      <input type="text" inputmode="numeric" id="counterval-{{ pd.auction.id }}" class="pd-counter-input" placeholder="Your counter price ₹">
+                      <button type="button" class="cf-action-btn-active-green" onclick="cfSubmitCounter({{ pd.auction.id }})">Send counter</button>
+                    </div>
+                  {% else %}
+                    <div class="pd-note" style="margin:10px 0;">No bids were received in this auction.</div>
+                    <div class="cf-vehicle-actions"><button type="button" class="cf-action-btn-active-green" onclick="cfDecision({{ pd.auction.id }},'reauction')"><i class="bi bi-arrow-repeat"></i> Request Re-Auction</button></div>
+                  {% endif %}
+                {% endif %}
+              </div>
+              {% endfor %}
+            </div>
+            {% else %}
             <div class="cf-dash-empty"><div style="font-size:32px;margin-bottom:10px;">⚡</div>No pending decisions. When your auction closes, you'll see the highest bid here.</div>
+            {% endif %}
           </div>
         </div>
 
@@ -188,5 +248,26 @@ function loadListings() {
     });
 }
 loadListings();
+
+// ── Post-auction seller decisions ──────────────────────
+function cfCsrf() { var t = document.querySelector('[name=csrfmiddlewaretoken]'); return t ? t.value : ''; }
+function cfDecision(id, action, extra) {
+  if (action === 'reauction' && !confirm('Request a re-auction for this car?')) return;
+  if (action === 'accept' && !confirm('Accept the highest bid? Your Sales Associate will then process the offer.')) return;
+  var body = 'action=' + action + (extra ? '&' + extra : '');
+  fetch('/auctions/' + id + '/decision/', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': cfCsrf(), 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body
+  }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+    .then(function (res) { if (res.ok) { location.reload(); } else { alert((res.d && res.d.error) || 'Something went wrong.'); } })
+    .catch(function () { alert('Network error — please try again.'); });
+}
+function cfShowCounter(id) { var el = document.getElementById('counter-' + id); if (el) el.style.display = (el.style.display === 'none' || !el.style.display) ? 'flex' : 'none'; }
+function cfSubmitCounter(id) {
+  var v = document.getElementById('counterval-' + id);
+  if (!v || !v.value.trim()) { alert('Enter a counter price.'); return; }
+  cfDecision(id, 'counter', 'counter_price=' + encodeURIComponent(v.value));
+}
 </script>
 {% endblock %}

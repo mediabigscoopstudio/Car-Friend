@@ -355,8 +355,37 @@ def seller_dashboard(request):
     # rendering the seller page.
     if not request.user.is_seller and not request.user.is_admin:
         return redirect(get_dashboard_url(request.user))
+
+    # Post-auction decisions: closed/ended auctions on this seller's cars, with
+    # any decision already made + the linked OCB status (read-only display of the
+    # real CRM pipeline). Live auctions are not shown here.
+    from auctions.models import Auction, OCBListing
+    pending_decisions = []
+    for a in (Auction.objects.filter(vehicle__seller=request.user,
+                                      status__in=["closed", "reauction", "completed"])
+              .select_related("vehicle").order_by("-end_at")):
+        hb = a.highest_bid
+        ocb = OCBListing.objects.filter(auction=a).order_by("-id").first()
+        pending_decisions.append({
+            "auction":       a,
+            "vehicle":       a.vehicle,
+            "decision":      a.seller_decisions.order_by("-id").first(),
+            "highest_bid":   hb,
+            "highest_fmt":   f"{hb.amount:,}" if hb else None,
+            "counter_fmt":   None,
+            "bid_count":     a.bids.filter(is_voided=False).count(),
+            "ocb":           ocb,
+            "ocb_status":    ocb.get_status_display() if ocb else None,
+            "ocb_signable":  bool(ocb and ocb.status in ("winner_accepted", "seller_accepted", "agreement")),
+        })
+    for pd in pending_decisions:
+        d = pd["decision"]
+        if d and d.counter_price:
+            pd["counter_fmt"] = f"{d.counter_price:,}"
+
     return render(request, "www/dashboard/seller.html", {
         "kyc_status": _seller_kyc_state(request.user),
+        "pending_decisions": pending_decisions,
     })
 
 

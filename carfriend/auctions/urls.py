@@ -12,5 +12,6 @@ urlpatterns = [
     path("ocb/<int:listing_id>/respond/", w.winner_respond_view, name="winner_respond"),
     # Seller watch page — declared before the dealer-room catch-all so it matches.
     path("<int:auction_id>/seller/", views.seller_auction_watch, name="seller_auction_watch"),
+    path("<int:auction_id>/decision/", views.seller_decision, name="seller_decision"),
     path("<int:id>/", d.dealer_auction_room, name="dealer_auction_room"),
 ]
