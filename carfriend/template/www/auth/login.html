@@ -1,5 +1,5 @@
 {% extends 'www/base.html' %}
-{% block title %}Login — CarFriend{% endblock %}
+{% block title %}{% if intended_role == 'dealer' %}Dealer Login{% elif intended_role == 'seller' %}Sell Your Car{% else %}Login{% endif %} — Car Friend{% endblock %}
 
 {% block extra_css %}
 .auth-section {
@@ -84,8 +84,18 @@
         <span class="auth-logo-text">Car<span>Friend</span></span>
       </a>
 
+      {% if intended_role == 'dealer' %}
+      <span class="eyebrow" style="margin-bottom:12px;"><i class="fas fa-store"></i>&nbsp; Dealer Portal</span>
+      <h2>Dealer Login</h2>
+      <p class="sub">For dealerships and car traders. Bid on inspected cars.</p>
+      {% elif intended_role == 'seller' %}
+      <span class="eyebrow" style="margin-bottom:12px;"><i class="fas fa-car"></i>&nbsp; Sell Your Car</span>
+      <h2>Sell Your Car</h2>
+      <p class="sub">Get a free inspection and the best price from 850+ dealers.</p>
+      {% else %}
       <h2>Welcome back</h2>
       <p class="sub">Log in to your CarFriend account to continue</p>
+      {% endif %}
 
       {% if error %}
       <div class="error-box">
@@ -109,7 +119,7 @@
           <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
           <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
         </svg>
-        Continue with Google
+        {% if intended_role == 'dealer' %}Continue with Google as Dealer{% else %}Continue with Google{% endif %}
       </a>
 
       <div class="divider"><hr><span>or log in with email</span><hr></div>
@@ -121,7 +131,7 @@
         <input type="email" name="email" class="cf-field" placeholder="you@example.com" required autocomplete="email">
         <label class="cf-label">Password</label>
         <input type="password" name="password" class="cf-field" placeholder="Your password" required autocomplete="current-password">
-        <button type="submit" class="btn-login">Log In to CarFriend</button>
+        <button type="submit" class="btn-login">{% if intended_role == 'dealer' %}Login as Dealer{% elif intended_role == 'seller' %}Login to Sell My Car{% else %}Log In to CarFriend{% endif %}</button>
       </form>
 
       <p class="auth-footer">

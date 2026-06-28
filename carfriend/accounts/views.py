@@ -135,7 +135,10 @@ def login_page(request):
     # no public www header/footer; the www host keeps the public login.
     host_label = request.get_host().split(":")[0].split(".")[0].lower()
     template = "auth/team_login.html" if host_label in ("teams", "master", "inspection") else "www/auth/login.html"
-    return render(request, template, {"error": error, "next": next_url})
+    return render(request, template, {
+        "error": error, "next": next_url,
+        "intended_role": request.session.get("intended_role", ""),  # dealer/seller heading
+    })
 
 
 def register_page(request):

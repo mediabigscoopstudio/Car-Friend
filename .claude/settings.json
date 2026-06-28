@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git commit -q -m 'Inspector v4 Phase 1: warm design system, app shell, 3-tab nav, Home cockpit *)",
+      "Bash(ls static/)",
+      "Bash(ls -d staticfiles)",
+      "Bash(python3 -m py_compile inspections/plate_masker.py inspections/views_app.py inspections/services.py)",
+      "Bash(python3 -)"
+    ]
+  }
+}
