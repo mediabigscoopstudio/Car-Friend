@@ -207,33 +207,39 @@
 <body>
 
 <!-- ── Navbar ── -->
-<nav class="cf-nav navbar navbar-expand-lg">
+<nav class="navbar navbar-expand-lg cf-navbar" id="cfNav">
   <div class="container">
-    <a class="navbar-brand" href="/" style="gap:10px;">
-      <img src="{% static 'img/brand/logo-green.png' %}" alt="CarFriend" style="display:block;">
-      <span style="font-family:var(--cf-font-display,'Plus Jakarta Sans',sans-serif);font-weight:800;font-size:1.15rem;color:#1a2a1a;letter-spacing:-.02em;">Car<span style="color:#166534;">Friend</span></span>
+
+    <a class="navbar-brand cf-nav-brand" href="/">
+      <img src="{% static 'img/brand/logo-white.png' %}" alt="CarFriend" height="34" class="cf-logo-white">
+      <span class="cf-brand-text">Car<span class="cf-brand-accent">Friend</span></span>
     </a>
-    <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#cfNav">
-      <span class="navbar-toggler-icon"></span>
+
+    <button class="cf-hamburger" id="cfHamburger" aria-label="Menu">
+      <span></span><span></span><span></span>
     </button>
-    <div class="collapse navbar-collapse" id="cfNav">
-      <ul class="navbar-nav mx-auto gap-1">
-        <li class="nav-item"><a class="nav-link {% block nav_home %}{% endblock %}" href="/">Home</a></li>
-        <li class="nav-item"><a class="nav-link {% block nav_how %}{% endblock %}" href="/how-it-works/">How it works</a></li>
-        <li class="nav-item"><a class="nav-link {% block nav_about %}{% endblock %}" href="/about/">About</a></li>
-        <li class="nav-item"><a class="nav-link {% block nav_contact %}{% endblock %}" href="/contact/">Contact</a></li>
+
+    <div class="cf-nav-menu" id="cfNavMenu">
+      <ul class="cf-nav-links">
+        <li><a href="/" class="cf-nav-link">Home</a></li>
+        <li><a href="/how-it-works/" class="cf-nav-link">How it works</a></li>
+        <li><a href="/about/" class="cf-nav-link">About</a></li>
+        <li><a href="/contact/" class="cf-nav-link">Contact</a></li>
       </ul>
-      <div class="d-flex gap-2 mt-2 mt-lg-0">
+
+      <div class="cf-nav-actions">
         {% if request.user.is_authenticated %}
-          <a href="{% if request.user.is_dealer %}{% url 'dealer_dashboard' %}{% else %}{% url 'seller_dashboard' %}{% endif %}" class="cf-btn-primary btn">My dashboard</a>
-          <form method="post" action="/auth/logout/" style="display:inline;margin:0;">{% csrf_token %}
-            <button type="submit" class="cf-btn-outline btn">Logout</button></form>
+          <a href="{% if request.user.is_dealer %}{% url 'dealer_dashboard' %}{% else %}{% url 'seller_dashboard' %}{% endif %}" class="cf-btn-dash">My Dashboard</a>
+          <form method="post" action="/auth/logout/" style="display:inline;">{% csrf_token %}
+            <button type="submit" class="cf-btn-logout">Logout</button>
+          </form>
         {% else %}
-          <a href="{% url 'login_as_dealer' %}" class="cf-btn-outline btn">Join as Dealer</a>
-          <a href="{% url 'login_as_seller' %}" class="cf-btn-primary btn">Sell your car</a>
+          <a href="{% url 'login_as_dealer' %}" class="cf-btn-dealer">Join as Dealer</a>
+          <a href="{% url 'login_as_seller' %}" class="cf-btn-sell">Sell Your Car</a>
         {% endif %}
       </div>
     </div>
+
   </div>
 </nav>
 
@@ -294,6 +300,46 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{% static 'js/cf-design-system.js' %}"></script>
+
+<!-- ── Navbar: scroll frost + mobile menu + active link ── -->
+<script>
+(function () {
+  var nav = document.getElementById('cfNav');
+  function onScroll() {
+    if (!nav) return;
+    nav.classList.toggle('scrolled', window.scrollY > 40);
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  var ham = document.getElementById('cfHamburger');
+  var menu = document.getElementById('cfNavMenu');
+  if (ham && menu) {
+    var closeBtn = document.createElement('button');
+    closeBtn.className = 'cf-nav-close';
+    closeBtn.innerHTML = '✕';
+    closeBtn.setAttribute('aria-label', 'Close menu');
+    menu.appendChild(closeBtn);
+
+    function openMenu() { ham.classList.add('open'); menu.classList.add('open'); document.body.style.overflow = 'hidden'; }
+    function closeMenu() { ham.classList.remove('open'); menu.classList.remove('open'); document.body.style.overflow = ''; }
+
+    ham.addEventListener('click', function () {
+      menu.classList.contains('open') ? closeMenu() : openMenu();
+    });
+    closeBtn.addEventListener('click', closeMenu);
+    menu.querySelectorAll('.cf-nav-link').forEach(function (link) {
+      link.addEventListener('click', closeMenu);
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeMenu(); });
+  }
+
+  var currentPath = window.location.pathname;
+  document.querySelectorAll('.cf-nav-link').forEach(function (link) {
+    if (link.getAttribute('href') === currentPath) link.classList.add('active');
+  });
+})();
+</script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>

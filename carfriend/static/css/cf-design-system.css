@@ -125,3 +125,83 @@ footer a:hover{color:var(--cf-accent)!important;}
 
 /* ── reduced motion ── */
 @media (prefers-reduced-motion:reduce){.btn,.step-card,.auction-card,.cf-nav{transition:none!important;}}
+
+/* ════════════════════════════════════════════════════════════
+   NAVBAR — redesigned (frosted dark glass, animated links, mobile menu)
+   Default is a readable dark-frosted bar (NOT transparent) because this
+   navbar is shared by every public page incl. light ones; sticky (not fixed)
+   so it never overlaps page content. Scroll intensifies the frost.
+   ════════════════════════════════════════════════════════════ */
+.cf-navbar{
+  position:sticky;top:0;left:0;right:0;z-index:1000;
+  padding:16px 0;
+  background:rgba(8,14,8,.85);
+  backdrop-filter:blur(20px) saturate(160%);
+  -webkit-backdrop-filter:blur(20px) saturate(160%);
+  border-bottom:1px solid rgba(74,222,128,.10);
+  transition:all .4s cubic-bezier(.22,1,.36,1);
+}
+.cf-navbar.scrolled{
+  background:rgba(8,14,8,.95);
+  backdrop-filter:blur(24px) saturate(180%);
+  -webkit-backdrop-filter:blur(24px) saturate(180%);
+  padding:10px 0;
+  border-bottom:1px solid rgba(74,222,128,.14);
+  box-shadow:0 4px 32px rgba(0,0,0,.4);
+}
+.cf-navbar .container{display:flex;align-items:center;justify-content:space-between;}
+
+/* brand */
+.cf-nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0;padding:0;}
+.cf-nav-brand img{display:block;height:34px;width:auto;}
+.cf-brand-text{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:1.2rem;letter-spacing:-.02em;color:#fff;transition:color .3s;}
+.cf-brand-accent{color:#4ade80;}
+
+/* nav menu layout */
+.cf-nav-menu{display:flex;align-items:center;gap:32px;flex:1;justify-content:space-between;padding-left:32px;}
+
+/* nav links */
+.cf-nav-links{display:flex;list-style:none;margin:0;padding:0;gap:4px;align-items:center;}
+.cf-nav-link{font-family:'Plus Jakarta Sans',sans-serif;font-weight:500;font-size:.875rem;color:rgba(255,255,255,.78);text-decoration:none;padding:8px 16px;border-radius:8px;letter-spacing:.01em;transition:all .2s;position:relative;}
+.cf-nav-link:hover{color:#fff;background:rgba(255,255,255,.08);}
+.cf-nav-link::after{content:'';position:absolute;bottom:2px;left:16px;right:16px;height:2px;background:#4ade80;border-radius:99px;transform:scaleX(0);transition:transform .2s;}
+.cf-nav-link:hover::after,.cf-nav-link.active::after{transform:scaleX(1);}
+
+/* actions */
+.cf-nav-actions{display:flex;align-items:center;gap:10px;}
+
+.cf-btn-dealer{font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;font-size:.875rem;color:rgba(255,255,255,.88);text-decoration:none;padding:9px 20px;border-radius:50px;border:1.5px solid rgba(255,255,255,.28);background:transparent;transition:all .25s;white-space:nowrap;display:inline-flex;align-items:center;}
+.cf-btn-dealer:hover{color:#4ade80;border-color:#4ade80;background:rgba(74,222,128,.08);}
+
+.cf-btn-sell{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:.875rem;color:#fff;padding:9px 22px;border-radius:50px;border:none;background:linear-gradient(135deg,#22c55e,#166534);cursor:pointer;transition:all .25s;white-space:nowrap;display:inline-flex;align-items:center;text-decoration:none;letter-spacing:.02em;}
+.cf-btn-sell:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(34,197,94,.4);color:#fff;}
+
+.cf-btn-dash{font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;font-size:.875rem;color:rgba(255,255,255,.88);text-decoration:none;padding:9px 20px;border-radius:50px;border:1.5px solid rgba(74,222,128,.35);background:rgba(74,222,128,.08);transition:all .25s;white-space:nowrap;display:inline-flex;align-items:center;}
+.cf-btn-dash:hover{color:#fff;border-color:#4ade80;background:rgba(74,222,128,.15);}
+
+.cf-btn-logout{font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;font-size:.875rem;color:rgba(255,255,255,.6);padding:9px 18px;border-radius:50px;border:1.5px solid rgba(255,255,255,.18);background:transparent;cursor:pointer;transition:all .25s;white-space:nowrap;}
+.cf-btn-logout:hover{color:rgba(255,255,255,.9);border-color:rgba(255,255,255,.35);}
+
+/* hamburger */
+.cf-hamburger{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:8px;border-radius:8px;transition:background .2s;}
+.cf-hamburger:hover{background:rgba(255,255,255,.08);}
+.cf-hamburger span{display:block;width:22px;height:2px;background:#fff;border-radius:99px;transition:all .3s;}
+.cf-hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+.cf-hamburger.open span:nth-child(2){opacity:0;transform:scaleX(0);}
+.cf-hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+
+/* responsive */
+@media (max-width:992px){
+  .cf-hamburger{display:flex;}
+  .cf-nav-menu{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(8,14,8,.98);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);flex-direction:column;justify-content:center;align-items:center;gap:0;padding:80px 32px 40px;z-index:999;}
+  .cf-nav-menu.open{display:flex;}
+  .cf-nav-links{flex-direction:column;gap:0;width:100%;margin-bottom:40px;}
+  .cf-nav-link{font-size:1.5rem;font-weight:700;padding:14px 20px;border-radius:12px;color:rgba(255,255,255,.75);display:block;text-align:center;}
+  .cf-nav-link:hover{color:#fff;background:rgba(255,255,255,.06);}
+  .cf-nav-link::after{display:none;}
+  .cf-nav-actions{flex-direction:column;width:100%;gap:12px;}
+  .cf-btn-dealer,.cf-btn-sell,.cf-btn-dash,.cf-btn-logout{width:100%;justify-content:center;text-align:center;padding:14px 24px;font-size:1rem;border-radius:12px;}
+  .cf-nav-actions form{width:100%;}
+  .cf-nav-close{position:absolute;top:20px;right:20px;background:rgba(255,255,255,.08);border:none;color:#fff;font-size:1.4rem;width:40px;height:40px;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;}
+  .cf-nav-close:hover{background:rgba(255,255,255,.15);}
+}
