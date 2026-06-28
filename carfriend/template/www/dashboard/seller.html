@@ -2,230 +2,135 @@
 {% block title %}Seller Dashboard — CarFriend{% endblock %}
 
 {% block extra_css %}
-.dash-hero { background: var(--cf-azure); padding: 36px 0 32px; border-bottom: 1px solid rgba(255,255,255,.06); }
-.dash-hero h1 { font-family: var(--cf-font-display); font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 4px; }
-.dash-hero p { font-size: 14px; color: rgba(255,255,255,.55); margin: 0; }
-.dash-body { background: var(--cf-paper); padding: 40px 0 80px; }
-.stat-card { background: #fff; border: 1px solid var(--cf-mist); border-radius: 12px; padding: 20px; height: 100%; }
-.stat-card .lbl { font-size: 12px; font-weight: 600; color: var(--cf-slate); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
-.stat-card .val { font-family: var(--cf-font-display); font-size: 26px; font-weight: 800; color: var(--cf-ink); }
-.stat-card .sub { font-size: 12px; color: var(--cf-slate); margin-top: 4px; }
-.section-card { background: #fff; border: 1px solid var(--cf-mist); border-radius: 14px; padding: 24px; margin-bottom: 20px; }
-.section-card h5 { font-family: var(--cf-font-display); font-size: 15px; font-weight: 700; color: var(--cf-azure); margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--cf-mist); }
-.empty-state { text-align: center; padding: 40px 20px; color: var(--cf-slate); font-size: 14px; }
-.empty-state .icon { font-size: 36px; margin-bottom: 12px; }
-.btn-dash { background: var(--cf-blue); color: #fff; border: none; border-radius: 8px; font-family: var(--cf-font-sans); font-size: 13px; font-weight: 600; padding: 10px 22px; cursor: pointer; text-decoration: none; display: inline-block; transition: background .2s; }
-.btn-dash:hover { background: var(--cf-blue-700); color: #fff; }
-.badge-status { font-size: 11px; font-weight: 600; font-family: var(--cf-font-sans); padding: 4px 10px; border-radius: 100px; }
-.badge-pending { background: var(--cf-coral-tint); color: var(--cf-coral-dark); }
-.badge-active  { background: var(--cf-teal-tint); color: var(--cf-teal-dark); }
-.kyc-banner { background: var(--cf-coral-tint); border: 1px solid var(--cf-coral); border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; gap: 12px; margin-bottom: 24px; font-size: 13px; color: var(--cf-coral-dark); }
-.kyc-banner i { font-size: 18px; flex-shrink: 0; }
-.kyc-banner a { color: var(--cf-coral-dark); font-weight: 700; }
-.step-num { width: 24px; height: 24px; background: var(--cf-sky-tint); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--cf-blue); flex-shrink: 0; }
-
-/* ── Listing cards ── */
-:root { --cf-line: #DCE6F2; --cf-txt: #0E1B2E; --cf-txt2: #51637B; --cf-txt3: #51637B; --cf-mist: #F6F9FE; --cf-green-deep: #122E5A; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.listing-card { border: 1px solid var(--cf-line); border-radius: 12px; padding: 16px; margin-bottom: 12px; background: #fff; transition: box-shadow .2s; }
-.listing-card:hover { box-shadow: 0 2px 12px rgba(45,108,223,.08); }
-.listing-card:last-child { margin-bottom: 0; }
-.lc-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
-.lc-name { font-family: var(--cf-font-display); font-weight: 700; font-size: 15px; color: var(--cf-txt); margin-bottom: 3px; }
-.lc-meta { font-size: 12px; color: var(--cf-txt2); }
-.lc-price { font-family: var(--cf-font-display); font-weight: 700; font-size: 14px; color: var(--cf-blue); }
-.lc-status { font-size: 11px; font-weight: 700; font-family: var(--cf-font-sans); padding: 4px 10px; border-radius: 100px; white-space: nowrap; flex-shrink: 0; }
-.status-submitted   { background: var(--cf-sky-tint); color: var(--cf-azure); }
-.status-inspection  { background: var(--cf-sky-tint); color: var(--cf-azure); }
-.status-approved    { background: var(--cf-teal-tint); color: var(--cf-teal-dark); }
-.status-in_auction  { background: var(--cf-coral-tint); color: var(--cf-coral-dark); }
-.status-sold        { background: var(--cf-teal-tint); color: var(--cf-teal-dark); }
-.status-draft       { background: var(--cf-sky-tint); color: var(--cf-slate); }
-.lc-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--cf-line); }
-.btn-lc-action { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 7px; font-family: var(--cf-font-sans); font-size: 12px; font-weight: 600; cursor: pointer; border: none; text-decoration: none; transition: all .2s; }
-.btn-lc-active { background: var(--cf-blue); color: #fff; }
-.btn-lc-active:hover { background: var(--cf-green-deep); color: #fff; }
-.btn-lc-inactive { background: var(--cf-mist); color: var(--cf-txt3); cursor: not-allowed; border: 1px solid var(--cf-line); }
+.cf-spinner { width:20px;height:20px;border:2px solid rgba(255,255,255,.12);border-top-color:#4ade80;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px; }
+.cf-dash-help a { display:flex;align-items:center;gap:8px;font-size:.85rem;font-weight:600;color:#4ade80;text-decoration:none;margin-top:8px; }
+.cf-dash-help a:first-of-type { margin-top:0; }
 {% endblock %}
 
 {% block content %}
+<div class="cf-dash">
 
-<div class="dash-hero">
-  <div class="container">
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-      <div>
-        <h1>Good to see you, {{ request.user.first_name|default:request.user.email }} 👋</h1>
-        <p>Here's what's happening with your car listings</p>
-      </div>
-      <a href="/vehicles/list-car/" class="btn-dash">
-        <i class="bi bi-plus-lg me-2"></i>List a New Car
-      </a>
-    </div>
-  </div>
-</div>
-
-<div class="dash-body">
-  <div class="container">
-
-    {% if kyc_status == 'verified' %}
-    <div class="kyc-banner" style="background:var(--cf-teal-tint);border-color:var(--cf-teal);color:var(--cf-teal-dark)">
-      <i class="bi bi-patch-check-fill"></i>
-      <div><strong>Identity verified.</strong> Your Aadhaar &amp; PAN are confirmed — you're all set.</div>
-    </div>
-    {% elif kyc_status == 'failed' %}
-    <div class="kyc-banner">
-      <i class="bi bi-exclamation-triangle"></i>
-      <div>
-        <strong>Verification couldn't be completed.</strong>
-        Please retry your Aadhaar &amp; PAN verification.
-        <a href="/kyc/">Retry verification →</a>
-      </div>
-    </div>
-    {% else %}
-    <div class="kyc-banner">
-      <i class="bi bi-shield-exclamation"></i>
-      <div>
-        <strong>Verify your identity.</strong>
-        A quick one-time Aadhaar &amp; PAN check is needed before your inspection is scheduled.
-        <a href="/kyc/">Verify Aadhaar &amp; PAN →</a>
-      </div>
-    </div>
-    {% endif %}
-
-    <div class="row g-3 mb-4">
-      <div class="col-6 col-md-3">
-        <div class="stat-card">
-          <div class="lbl">Active Listings</div>
-          <div class="val" id="statListings">0</div>
-          <div class="sub">Cars listed for sale</div>
+  <div class="cf-dashboard-header">
+    <div class="container">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div>
+          <h1>Good to see you, {{ request.user.first_name|default:request.user.email }} 👋</h1>
+          <p>Here's what's happening with your car listings</p>
         </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="stat-card">
-          <div class="lbl">Inspections</div>
-          <div class="val">0</div>
-          <div class="sub">Scheduled or completed</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="stat-card">
-          <div class="lbl">Live Auctions</div>
-          <div class="val">0</div>
-          <div class="sub">Currently running</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="stat-card">
-          <div class="lbl">Deals Closed</div>
-          <div class="val">0</div>
-          <div class="sub">Successfully sold</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="row g-4">
-      <div class="col-12 col-lg-8">
-        <div class="section-card">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--cf-line);">
-            <h5 style="margin:0;font-size:15px;font-weight:700;color:var(--cf-txt);">
-              <i class="bi bi-car-front me-2"></i>My Car Listings
-            </h5>
-            <a href="/vehicles/list-car/" class="btn-dash" style="padding:8px 16px;font-size:12px;">
-              <i class="bi bi-plus-lg me-1"></i>List a Car
-            </a>
-          </div>
-
-          <div id="carsLoading" style="text-align:center;padding:32px;color:var(--cf-txt2);font-size:14px;">
-            <div style="width:20px;height:20px;border:2px solid var(--cf-mist);border-top-color:var(--cf-blue);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px;"></div>
-            Loading your listings...
-          </div>
-
-          <div id="carsEmpty" style="display:none;text-align:center;padding:40px 20px;color:var(--cf-txt2);">
-            <div style="font-size:36px;margin-bottom:12px;"><svg viewBox="0 0 20 20" width="36" height="36" fill="none" stroke="#166534" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><rect x="2" y="5" width="16" height="9" rx="3"/><path d="M5 14 Q10 17.5 15 14"/><circle cx="5.5" cy="14" r="1.3" fill="#166534" stroke="none"/><circle cx="14.5" cy="14" r="1.3" fill="#166534" stroke="none"/></svg></div>
-            <p style="margin-bottom:16px;">You haven't listed any cars yet.</p>
-            <a href="/vehicles/list-car/" class="btn-dash" style="font-size:13px;padding:9px 20px;">List My First Car →</a>
-          </div>
-
-          <div id="carsList"></div>
-        </div>
-        <div class="section-card">
-          <h5><i class="bi bi-hammer me-2"></i>Pending Auction Decisions</h5>
-          <div class="empty-state">
-            <div class="icon">⚡</div>
-            <p>No pending decisions. When your auction closes, you'll see the highest bid here.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-12 col-lg-4">
-        <div class="section-card">
-          <h5><i class="bi bi-person-check me-2"></i>Account Status</h5>
-          <div class="d-flex flex-column gap-2">
-            <div class="d-flex align-items-center justify-content-between">
-              <span style="font-size:13px;color:var(--cf-slate);">KYC Verification</span>
-              {% if request.user.is_kyc_done %}
-              <span class="badge-status badge-active">✓ Verified</span>
-              {% else %}
-              <span class="badge-status badge-pending">Pending</span>
-              {% endif %}
-            </div>
-            <div class="d-flex align-items-center justify-content-between">
-              <span style="font-size:13px;color:var(--cf-slate);">Account Type</span>
-              <span class="badge-status badge-active">Seller</span>
-            </div>
-            <div class="d-flex align-items-center justify-content-between">
-              <span style="font-size:13px;color:var(--cf-slate);">Email</span>
-              <span style="font-size:12px;color:var(--cf-ink);">{{ request.user.email }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="section-card">
-          <h5><i class="bi bi-question-circle me-2"></i>Need Help?</h5>
-          <p style="font-size:13px;color:var(--cf-slate);line-height:1.7;margin-bottom:14px;">Our team is here to help you list your car or resolve any issue.</p>
-          <a href="https://wa.me/919537186783" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--cf-blue);text-decoration:none;">
-            <i class="bi bi-whatsapp" style="color:#25D366;"></i>+91 9537186783
-          </a>
-          <a href="mailto:support@carfriend.in" style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--cf-blue);text-decoration:none;margin-top:8px;">
-            <i class="bi bi-envelope"></i>support@carfriend.in
-          </a>
-        </div>
-
-        <div class="section-card">
-          <h5><i class="bi bi-signpost-split me-2"></i>What's Next?</h5>
-          <div class="d-flex flex-column gap-3">
-            <div class="d-flex gap-2 align-items-start">
-              <div class="step-num">1</div>
-              <div style="font-size:13px;color:var(--cf-slate);line-height:1.5;">Complete KYC (Aadhaar + PAN)</div>
-            </div>
-            <div class="d-flex gap-2 align-items-start">
-              <div class="step-num">2</div>
-              <div style="font-size:13px;color:var(--cf-slate);line-height:1.5;">List your car with details &amp; photos</div>
-            </div>
-            <div class="d-flex gap-2 align-items-start">
-              <div class="step-num">3</div>
-              <div style="font-size:13px;color:var(--cf-slate);line-height:1.5;">Schedule your free home inspection</div>
-            </div>
-            <div class="d-flex gap-2 align-items-start">
-              <div class="step-num">4</div>
-              <div style="font-size:13px;color:var(--cf-slate);line-height:1.5;">Watch the live auction &amp; accept the best bid</div>
-            </div>
-          </div>
-        </div>
+        <a href="/vehicles/list-car/" class="btn-nav-sell"><i class="bi bi-plus-lg"></i> List a New Car</a>
       </div>
     </div>
   </div>
-</div>
 
+  <div class="cf-dash-body">
+    <div class="container">
+
+      {% if kyc_status == 'verified' %}
+      <div class="cf-dash-banner ok">
+        <i class="bi bi-patch-check-fill"></i>
+        <div><strong>Identity verified.</strong> Your Aadhaar &amp; PAN are confirmed — you're all set.</div>
+      </div>
+      {% elif kyc_status == 'failed' %}
+      <div class="cf-dash-banner err">
+        <i class="bi bi-exclamation-triangle"></i>
+        <div><strong>Verification couldn't be completed.</strong> Please retry your Aadhaar &amp; PAN verification. <a href="/kyc/">Retry verification →</a></div>
+      </div>
+      {% else %}
+      <div class="cf-dash-banner warn">
+        <i class="bi bi-shield-exclamation"></i>
+        <div><strong>Verify your identity.</strong> A quick one-time Aadhaar &amp; PAN check is needed before your inspection is scheduled. <a href="/kyc/">Verify Aadhaar &amp; PAN →</a></div>
+      </div>
+      {% endif %}
+
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3"><div class="cf-dash-stat"><div class="lbl">Active Listings</div><div class="val" id="statListings">0</div><div class="sub">Cars listed for sale</div></div></div>
+        <div class="col-6 col-md-3"><div class="cf-dash-stat"><div class="lbl">Inspections</div><div class="val" id="statInspections">0</div><div class="sub">Scheduled or completed</div></div></div>
+        <div class="col-6 col-md-3"><div class="cf-dash-stat"><div class="lbl">Live Auctions</div><div class="val" id="statAuctions">0</div><div class="sub">Currently running</div></div></div>
+        <div class="col-6 col-md-3"><div class="cf-dash-stat"><div class="lbl">Deals Closed</div><div class="val" id="statSold">0</div><div class="sub">Successfully sold</div></div></div>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-12 col-lg-8">
+          <div class="cf-dash-card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.07);">
+              <h5 style="margin:0;padding:0;border:none;"><i class="bi bi-car-front"></i> My Car Listings</h5>
+              <a href="/vehicles/list-car/" class="cf-action-btn-active-green"><i class="bi bi-plus-lg"></i> List a Car</a>
+            </div>
+
+            <div id="carsLoading" style="text-align:center;padding:32px;color:rgba(255,255,255,.45);font-size:.85rem;">
+              <div class="cf-spinner"></div>Loading your listings...
+            </div>
+
+            <div id="carsEmpty" style="display:none;" class="cf-dash-empty">
+              <div style="margin-bottom:12px;"><svg viewBox="0 0 20 20" width="38" height="38" fill="none" stroke="#4ade80" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="16" height="9" rx="3"/><path d="M5 14 Q10 17.5 15 14"/><circle cx="5.5" cy="14" r="1.3" fill="#4ade80" stroke="none"/><circle cx="14.5" cy="14" r="1.3" fill="#4ade80" stroke="none"/></svg></div>
+              <p style="margin-bottom:16px;">You haven't listed any cars yet.</p>
+              <a href="/vehicles/list-car/" class="cf-action-btn-active-green">List My First Car →</a>
+            </div>
+
+            <div id="carsList"></div>
+          </div>
+
+          <div class="cf-dash-card">
+            <h5><i class="bi bi-hammer"></i> Pending Auction Decisions</h5>
+            <div class="cf-dash-empty"><div style="font-size:32px;margin-bottom:10px;">⚡</div>No pending decisions. When your auction closes, you'll see the highest bid here.</div>
+          </div>
+        </div>
+
+        <div class="col-12 col-lg-4">
+          <div class="cf-dash-card">
+            <h5><i class="bi bi-person-check"></i> Account Status</h5>
+            <div class="d-flex flex-column gap-2">
+              <div class="d-flex align-items-center justify-content-between">
+                <span style="font-size:.82rem;color:rgba(255,255,255,.55);">KYC Verification</span>
+                {% if request.user.is_kyc_done %}
+                <span class="cf-status-badge cf-status-approved">✓ Verified</span>
+                {% else %}
+                <span class="cf-status-badge cf-status-pending">Pending</span>
+                {% endif %}
+              </div>
+              <div class="d-flex align-items-center justify-content-between">
+                <span style="font-size:.82rem;color:rgba(255,255,255,.55);">Account Type</span>
+                <span class="cf-status-badge cf-status-submitted">Seller</span>
+              </div>
+              <div class="d-flex align-items-center justify-content-between">
+                <span style="font-size:.82rem;color:rgba(255,255,255,.55);">Email</span>
+                <span style="font-size:.78rem;color:rgba(255,255,255,.8);">{{ request.user.email }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="cf-dash-card cf-dash-help">
+            <h5><i class="bi bi-question-circle"></i> Need Help?</h5>
+            <p class="muted" style="line-height:1.7;margin-bottom:14px;">Our team is here to help you list your car or resolve any issue.</p>
+            <a href="https://wa.me/919537186783" target="_blank" rel="noopener"><i class="bi bi-whatsapp" style="color:#25D366;"></i>+91 9537186783</a>
+            <a href="mailto:support@carfriend.in"><i class="bi bi-envelope"></i>support@carfriend.in</a>
+          </div>
+
+          <div class="cf-dash-card">
+            <h5><i class="bi bi-signpost-split"></i> What's Next?</h5>
+            <div class="d-flex flex-column gap-3">
+              <div class="d-flex gap-2 align-items-start"><div class="cf-dash-step">1</div><div class="muted" style="line-height:1.5;">Complete KYC (Aadhaar + PAN)</div></div>
+              <div class="d-flex gap-2 align-items-start"><div class="cf-dash-step">2</div><div class="muted" style="line-height:1.5;">List your car with details &amp; photos</div></div>
+              <div class="d-flex gap-2 align-items-start"><div class="cf-dash-step">3</div><div class="muted" style="line-height:1.5;">Schedule your free home inspection</div></div>
+              <div class="d-flex gap-2 align-items-start"><div class="cf-dash-step">4</div><div class="muted" style="line-height:1.5;">Watch the live auction &amp; accept the best bid</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 function getStatusClass(s) {
-  return { submitted:'status-submitted', draft:'status-draft',
-    inspection_scheduled:'status-inspection', inspection_done:'status-inspection',
-    approved:'status-approved', in_auction:'status-in_auction',
-    sold:'status-sold', rejected:'status-draft' }[s] || 'status-draft';
+  return { submitted:'cf-status-submitted', draft:'cf-status-pending',
+    inspection_scheduled:'cf-status-inspection', inspection_done:'cf-status-inspection',
+    approved:'cf-status-approved', in_auction:'cf-status-auction',
+    sold:'cf-status-sold', rejected:'cf-status-rejected' }[s] || 'cf-status-pending';
 }
 function formatPrice(p) {
   if (!p) return '';
@@ -234,34 +139,45 @@ function formatPrice(p) {
   if (n >= 100000)   return '&#8377;' + (n/100000).toFixed(1) + ' L';
   return '&#8377;' + n.toLocaleString('en-IN');
 }
+function setText(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
 function loadListings() {
   fetch('/vehicles/my-cars/')
     .then(function(r) { return r.json(); })
     .then(function(data) {
       document.getElementById('carsLoading').style.display = 'none';
       var vehicles = data.vehicles || [];
-      var active = vehicles.filter(function(v) {
+      setText('statListings', vehicles.filter(function(v) {
         return ['submitted','inspection_scheduled','inspection_done','approved','in_auction'].includes(v.status);
-      }).length;
-      var el = document.getElementById('statListings');
-      if (el) el.textContent = active;
+      }).length);
+      setText('statInspections', vehicles.filter(function(v) { return v.inspection_report_ready; }).length);
+      setText('statAuctions', vehicles.filter(function(v) { return v.auction_status === 'live'; }).length);
+      setText('statSold', vehicles.filter(function(v) { return v.status === 'sold'; }).length);
+
       if (vehicles.length === 0) { document.getElementById('carsEmpty').style.display = 'block'; return; }
       var html = vehicles.map(function(v) {
-        var reportBtn = v.inspection_report_ready
-          ? '<a href="#" class="btn-lc-action btn-lc-active"><i class="bi bi-file-earmark-check"></i> Inspection Report</a>'
-          : '<button class="btn-lc-action btn-lc-inactive" disabled><i class="bi bi-file-earmark-check"></i> Inspection Report</button>';
-        var auctionBtn = v.auction_active
-          ? '<a href="#" class="btn-lc-action btn-lc-active" style="background:var(--cf-coral);"><i class="bi bi-broadcast"></i> Go to Auction</a>'
-          : '<button class="btn-lc-action btn-lc-inactive" disabled><i class="bi bi-broadcast"></i> Go to Auction</button>';
+        var reportBtn = (v.inspection_report_ready && v.report_url)
+          ? '<a href="'+v.report_url+'" target="_blank" rel="noopener" class="cf-action-btn-active-green"><i class="bi bi-file-earmark-check"></i> Inspection Report</a>'
+          : '<span class="cf-action-btn-disabled"><i class="bi bi-file-earmark-check"></i> Pending inspection</span>';
+        var auctionBtn;
+        if (v.auction_status === 'live' && v.auction_id) {
+          auctionBtn = '<a href="/auctions/'+v.auction_id+'/" class="cf-action-btn-active-red"><span class="cf-pulse-dot"></span> Go to Auction</a>';
+        } else if (v.auction_status === 'ended') {
+          auctionBtn = '<span class="cf-action-btn-disabled"><i class="bi bi-broadcast"></i> Auction ended</span>';
+        } else {
+          auctionBtn = '<span class="cf-action-btn-disabled"><i class="bi bi-broadcast"></i> Awaiting auction</span>';
+        }
         var meta = [v.year, v.fuel_type, v.odometer_km ? v.odometer_km.toLocaleString('en-IN')+' km' : '', v.city].filter(Boolean).join(' &middot; ');
-        return '<div class="listing-card">'
-          + '<div class="lc-top"><div>'
-          + '<div class="lc-name">'+v.display_name+'</div>'
-          + '<div class="lc-meta">'+v.plate_number+(meta?' &middot; '+meta:'')+'</div>'
-          + (v.expected_price ? '<div class="lc-price">'+formatPrice(v.expected_price)+' expected</div>' : '')
-          + '</div><span class="lc-status '+getStatusClass(v.status)+'">'+v.status_label+'</span></div>'
-          + '<div class="lc-actions">'+reportBtn+auctionBtn
-          + '<span style="margin-left:auto;font-size:11px;color:var(--cf-txt3);align-self:center;">Listed '+v.created_at+'</span>'
+        return '<div class="cf-vehicle-card">'
+          + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">'
+          + '<div>'
+          + '<div class="cf-vehicle-name">'+v.display_name+'</div>'
+          + '<div class="cf-vehicle-meta">'+v.plate_number+(meta?' &middot; '+meta:'')+'</div>'
+          + (v.expected_price ? '<div class="cf-vehicle-price">'+formatPrice(v.expected_price)+' expected</div>' : '')
+          + '</div>'
+          + '<span class="cf-status-badge '+getStatusClass(v.status)+'">'+v.status_label+'</span>'
+          + '</div>'
+          + '<div class="cf-vehicle-actions">'+reportBtn+auctionBtn
+          + '<span style="margin-left:auto;font-size:.7rem;color:rgba(255,255,255,.35);align-self:center;">Listed '+v.created_at+'</span>'
           + '</div></div>';
       }).join('');
       document.getElementById('carsList').innerHTML = html;

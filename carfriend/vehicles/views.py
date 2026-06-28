@@ -174,23 +174,66 @@ def list_car(request):
 @login_required(login_url='/auth/login/')
 def my_cars(request):
     # Pull in any guest cars that match this account's verified phone.
+    from django.utils import timezone
+    from inspections.models import InspectionReport
+    from auctions.models import Auction
+
     merge_guest_cars_into(request.user)
-    vehicles = Vehicle.objects.filter(seller=request.user)
-    data = [{
-        'id':                      v.id,
-        'display_name':            v.display_name,
-        'plate_number':            v.plate_number,
-        'year':                    v.year,
-        'fuel_type':               v.get_fuel_type_display(),
-        'odometer_km':             v.odometer_km,
-        'city':                    v.city,
-        'status':                  v.status,
-        'status_label':            v.status_label,
-        'expected_price':          str(v.expected_price) if v.expected_price else None,
-        'inspection_report_ready': v.inspection_report_ready,
-        'auction_active':          v.auction_active,
-        'created_at':              v.created_at.strftime('%d %b %Y'),
-    } for v in vehicles]
+    vehicles = list(Vehicle.objects.filter(seller=request.user))
+    vids = [v.id for v in vehicles]
+
+    # Inspection report is "ready" for the seller when admin has APPROVED it
+    # (InspectionReport.decision == 'approved') and a viewable PDF exists. The
+    # internal inspector report page is inspector-only, so we link the seller to
+    # the report PDF (served from /media/), which they can open.
+    report_url_by_vehicle = {}
+    for r in (InspectionReport.objects
+              .filter(visit__vehicle_id__in=vids, decision='approved')
+              .select_related('visit')
+              .order_by('visit__vehicle_id', '-id')):
+        vid = r.visit.vehicle_id
+        if vid not in report_url_by_vehicle and r.pdf:
+            report_url_by_vehicle[vid] = r.pdf.url
+
+    # Auctions: a live one (status 'live' inside its window) → "Go to Auction";
+    # otherwise, if any auction has finished → "ended".
+    now = timezone.now()
+    live_auction_id = {}
+    ended_vehicles = set()
+    for a in Auction.objects.filter(vehicle_id__in=vids):
+        if a.status == 'live' and a.start_at <= now < a.end_at:
+            live_auction_id.setdefault(a.vehicle_id, a.id)
+        elif a.end_at <= now or a.status in ('ended', 'closed'):
+            ended_vehicles.add(a.vehicle_id)
+
+    data = []
+    for v in vehicles:
+        report_url = report_url_by_vehicle.get(v.id)
+        auction_id = live_auction_id.get(v.id)
+        if auction_id:
+            auction_status = 'live'
+        elif v.id in ended_vehicles:
+            auction_status = 'ended'
+        else:
+            auction_status = None
+        data.append({
+            'id':                      v.id,
+            'display_name':            v.display_name,
+            'plate_number':            v.plate_number,
+            'year':                    v.year,
+            'fuel_type':               v.get_fuel_type_display(),
+            'odometer_km':             v.odometer_km,
+            'city':                    v.city,
+            'status':                  v.status,
+            'status_label':            v.status_label,
+            'expected_price':          str(v.expected_price) if v.expected_price else None,
+            'inspection_report_ready': bool(report_url),
+            'report_url':              report_url,
+            'auction_active':          bool(auction_id),
+            'auction_id':              auction_id,
+            'auction_status':          auction_status,
+            'created_at':              v.created_at.strftime('%d %b %Y'),
+        })
     return JsonResponse({'vehicles': data})
 
 
