@@ -1,4 +1,5 @@
 {% extends 'www/base.html' %}
+{% load static %}
 {% block title %}{% if intended_role == 'dealer' %}Dealer Login{% elif intended_role == 'seller' %}Sell Your Car{% else %}Login{% endif %} — Car Friend{% endblock %}
 
 {% block extra_css %}
@@ -74,14 +75,7 @@
     <div class="auth-card">
 
       <a class="auth-logo" href="/">
-        <div class="auth-logo-icon">
-          <svg viewBox="0 0 20 20" fill="none">
-            <path d="M3 13h14M5 13L6.5 8h7L15 13" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="6.5" cy="15.5" r="1.5" fill="#fff"/>
-            <circle cx="13.5" cy="15.5" r="1.5" fill="#fff"/>
-          </svg>
-        </div>
-        <span class="auth-logo-text">Car<span>Friend</span></span>
+        <img src="{% static 'img/brand/carfriend-logo.png' %}" alt="Car Friend" height="34" style="display:block;">
       </a>
 
       {% if intended_role == 'dealer' %}
