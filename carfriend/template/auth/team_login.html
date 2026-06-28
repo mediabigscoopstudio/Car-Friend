@@ -29,7 +29,10 @@
 </head>
 <body>
   <div class="card">
-    <img class="logo" src="{% static 'img/brand/carfriend-logo.svg' %}" alt="Car Friend">
+    <a href="/" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;justify-content:center;margin-bottom:6px;">
+      <img src="{% static 'img/brand/logo-green.png' %}" alt="CarFriend" height="34" style="display:block;">
+      <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:1.2rem;color:#1a2a1a;letter-spacing:-.02em;">Car<span style="color:#166534;">Friend</span></span>
+    </a>
     <p class="tagline">Internal Team Portal</p>
     {% if error %}<div class="error">{{ error }}</div>{% endif %}
     <form method="post">

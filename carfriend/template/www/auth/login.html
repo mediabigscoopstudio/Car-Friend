@@ -74,8 +74,9 @@
   <div class="container px-3">
     <div class="auth-card">
 
-      <a class="auth-logo" href="/">
-        <img src="{% static 'img/brand/carfriend-logo.svg' %}" alt="Car Friend" height="34" style="display:block;">
+      <a class="auth-logo" href="/" style="gap:10px;justify-content:center;">
+        <img src="{% static 'img/brand/logo-green.png' %}" alt="CarFriend" height="34" style="display:block;">
+        <span style="font-family:var(--cf-font-display,'Plus Jakarta Sans',sans-serif);font-weight:800;font-size:1.2rem;color:#1a2a1a;letter-spacing:-.02em;">Car<span style="color:#166534;">Friend</span></span>
       </a>
 
       {% if intended_role == 'dealer' %}
