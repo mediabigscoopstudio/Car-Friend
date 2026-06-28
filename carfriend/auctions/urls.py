@@ -1,5 +1,6 @@
 from django.urls import path
 
+from . import views
 from . import views_dealer as d
 from . import views_winner as w
 
@@ -9,5 +10,7 @@ urlpatterns = [
     path("", d.dealer_auction_list, name="dealer_auction_list"),
     path("ocb/offers/", w.winner_ocb_list, name="winner_ocb_list"),
     path("ocb/<int:listing_id>/respond/", w.winner_respond_view, name="winner_respond"),
+    # Seller watch page — declared before the dealer-room catch-all so it matches.
+    path("<int:auction_id>/seller/", views.seller_auction_watch, name="seller_auction_watch"),
     path("<int:id>/", d.dealer_auction_room, name="dealer_auction_room"),
 ]

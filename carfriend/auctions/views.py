@@ -1,9 +1,48 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
 
 from accounts.decorators import admin_required, role_required
 from core.models import log
 from notifications.services import notify
 from .models import Auction, Bid
+
+
+# ── Seller-facing live auction watch page (read-only) ─────────────────────────
+# A seller watches their own car's auction: masked dealer identities, live bid
+# feed over the existing WS, countdown. No bidding, no mutation.
+
+@login_required(login_url="/auth/login/")
+def seller_auction_watch(request, auction_id):
+    auction = get_object_or_404(Auction.objects.select_related("vehicle"), id=auction_id)
+    vehicle = auction.vehicle
+    # Only the seller who owns this car may watch it.
+    if vehicle.seller_id != request.user.id:
+        return redirect("/auth/seller/dashboard/")
+
+    bids = list(auction.bids.filter(is_voided=False).order_by("-amount")[:50])
+    total = auction.bids.filter(is_voided=False).count()
+    bid_list = [{
+        "amount":     b.amount,
+        "amount_fmt": f"{b.amount:,}",
+        "label":      f"Dealer #{i + 1}",   # masked — identity never exposed
+        "created_at": b.created_at,
+        "is_highest": i == 0,
+    } for i, b in enumerate(bids)]
+    hb = bids[0] if bids else None
+
+    return render(request, "www/auctions/seller_watch.html", {
+        "auction":           auction,
+        "vehicle":           vehicle,
+        "bids":              bid_list,
+        "highest_bid":       hb,
+        "highest_fmt":       f"{hb.amount:,}" if hb else None,
+        "reserve_fmt":       f"{auction.reserve_price:,}",
+        "min_increment_fmt": f"{auction.min_increment:,}",
+        "net_fmt":           f"{int(hb.amount * 0.98):,}" if hb else None,
+        "fee_fmt":           f"{int(hb.amount * 0.02):,}" if hb else None,
+        "expected_fmt":      f"{int(vehicle.expected_price):,}" if vehicle.expected_price else None,
+        "bid_count":         total,
+    })
 
 
 @admin_required

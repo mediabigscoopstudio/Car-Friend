@@ -160,7 +160,7 @@ function loadListings() {
           : '<span class="cf-action-btn-disabled"><i class="bi bi-file-earmark-check"></i> Pending inspection</span>';
         var auctionBtn;
         if (v.auction_status === 'live' && v.auction_id) {
-          auctionBtn = '<a href="/auctions/'+v.auction_id+'/" class="cf-action-btn-active-red"><span class="cf-pulse-dot"></span> Go to Auction</a>';
+          auctionBtn = '<a href="/auctions/'+v.auction_id+'/seller/" class="cf-action-btn-active-red"><span class="cf-pulse-dot"></span> Go to Auction</a>';
         } else if (v.auction_status === 'ended') {
           auctionBtn = '<span class="cf-action-btn-disabled"><i class="bi bi-broadcast"></i> Auction ended</span>';
         } else {
