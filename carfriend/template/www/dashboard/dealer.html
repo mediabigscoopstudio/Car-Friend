@@ -155,20 +155,6 @@
         </div>
 
         <div class="section-card">
-          <h5><i class="bi bi-arrow-left-right me-2"></i>Switch Account Mode</h5>
-          <p style="font-size:13px;color:var(--cf-slate);line-height:1.7;margin-bottom:14px;">
-            Want to list a car for sale instead? Switch to seller mode.
-          </p>
-          <form method="POST" action="/auth/switch-role/">
-            {% csrf_token %}
-            <input type="hidden" name="target_role" value="seller">
-            <button type="submit" class="btn-dash" style="width:100%;font-size:13px;background:var(--cf-azure);">
-              <i class="bi bi-car-front me-2"></i>Switch to Seller Dashboard
-            </button>
-          </form>
-        </div>
-
-        <div class="section-card">
           <h5><i class="bi bi-question-circle me-2"></i>Need Help?</h5>
           <p style="font-size:13px;color:var(--cf-slate);line-height:1.7;margin-bottom:14px;">Questions about verification, bidding, or a specific car?</p>
           <a href="https://wa.me/919537186783" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--cf-blue);text-decoration:none;">

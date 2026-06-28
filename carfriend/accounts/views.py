@@ -180,6 +180,7 @@ def register_page(request):
 
 def logout_page(request):
     logout(request)
+    request.session.flush()      # clear active_role/intended_role + any stale session
     return redirect("/")
 
 
@@ -188,20 +189,16 @@ def role_redirect(request):
         return redirect("/auth/login/")
     u = request.user
     intended = request.session.pop("intended_role", None)
-    # Staff / internal roles keep their existing routing untouched — never
-    # demoted, never shown the choose-role screen.
+    # Staff / internal roles keep their existing routing untouched — never demoted.
     if u.role not in (Role.SELLER, Role.DEALER):
         return redirect(get_dashboard_url(u))
-    # Public (seller/dealer) user: honour pre-login intent, else the role they
-    # already picked this session, else show the choose-role screen.
+    # Public user: a pre-login 'Join as Dealer' / 'Sell your car' intent locks the
+    # role for this account. To use the other role they log out and pick the
+    # other entry (hard wall — no in-app switch).
     if intended in ("seller", "dealer"):
         u.role = Role.DEALER if intended == "dealer" else Role.SELLER
         u.save(update_fields=["role"])
-        request.session["active_role"] = intended
-        return redirect(get_dashboard_url(u))
-    if request.session.get("active_role") in ("seller", "dealer"):
-        return redirect(get_dashboard_url(u))
-    return redirect("choose_role")
+    return redirect(get_dashboard_url(u))
 
 
 def set_role(request):
@@ -212,39 +209,25 @@ def set_role(request):
         if role in [Role.SELLER, Role.DEALER]:
             request.user.role = role
             request.user.save(update_fields=["role"])
-            request.session["active_role"] = role     # session mirror for choose/switch UX
         return redirect(get_dashboard_url(request.user))
     return render(request, "www/auth/set_role.html")
 
 
-@login_required(login_url="/auth/login/")
-def choose_role(request):
-    """Post-login 'Continue as Dealer / Seller' screen for public users. Staff
-    keep their own dashboards. Cards POST to the existing set_role view."""
-    u = request.user
-    if u.role not in (Role.SELLER, Role.DEALER):
-        return redirect(get_dashboard_url(u))
-    return render(request, "www/auth/choose_role.html", {
-        "has_dealer": hasattr(u, "dealer_profile"),
-        "has_seller": hasattr(u, "seller_profile"),
-    })
-
-
 def login_as_dealer(request):
-    """Public 'Dealer Login' CTA: record intent, then Google OAuth (or apply
-    immediately if already signed in)."""
+    """Public 'Join as Dealer' CTA: lock dealer intent, then go to the login
+    page (Google or email). role_redirect applies the role after sign-in."""
     request.session["intended_role"] = "dealer"
     if request.user.is_authenticated:
         return redirect("role_redirect")
-    return redirect("/accounts/google/login/")
+    return redirect("/auth/login/?next=/auth/role-redirect/")
 
 
 def login_as_seller(request):
-    """Public 'Sell your car' CTA: record seller intent, then Google OAuth."""
+    """Public 'Sell your car' CTA: lock seller intent, then go to the login page."""
     request.session["intended_role"] = "seller"
     if request.user.is_authenticated:
         return redirect("role_redirect")
-    return redirect("/accounts/google/login/")
+    return redirect("/auth/login/?next=/auth/role-redirect/")
 
 
 # ── Dashboards ────────────────────────────────────────────────────────────────

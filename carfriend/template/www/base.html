@@ -224,10 +224,10 @@
       <div class="d-flex gap-2 mt-2 mt-lg-0">
         {% if request.user.is_authenticated %}
           <a href="{% if request.user.is_dealer %}{% url 'dealer_dashboard' %}{% else %}{% url 'seller_dashboard' %}{% endif %}" class="cf-btn-primary btn">My dashboard</a>
-          {% if request.user.is_seller or request.user.is_dealer %}<a href="{% url 'choose_role' %}" class="cf-btn-outline btn">Switch</a>{% endif %}
-          <a href="/auth/logout/" class="cf-btn-outline btn">Logout</a>
+          <form method="post" action="/auth/logout/" style="display:inline;margin:0;">{% csrf_token %}
+            <button type="submit" class="cf-btn-outline btn">Logout</button></form>
         {% else %}
-          <a href="/auth/login/" class="cf-btn-outline btn">Login</a>
+          <a href="{% url 'login_as_dealer' %}" class="cf-btn-outline btn">Join as Dealer</a>
           <a href="{% url 'login_as_seller' %}" class="cf-btn-primary btn">Sell your car</a>
         {% endif %}
       </div>
