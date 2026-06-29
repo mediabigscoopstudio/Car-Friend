@@ -54,6 +54,8 @@ def seller_decision(request, auction_id):
     only ever sets the VALID 'reauction' status. accept/counter leave the auction
     'closed' for the CRM/OCB pipeline to act on — no invalid status writes."""
     from .models import SellerDecision
+    from .utils import auto_close_expired_auctions
+    auto_close_expired_auctions()
 
     auction = get_object_or_404(Auction.objects.select_related("vehicle"), id=auction_id)
     if auction.vehicle.seller_id != request.user.id:

@@ -356,6 +356,10 @@ def seller_dashboard(request):
     if not request.user.is_seller and not request.user.is_admin:
         return redirect(get_dashboard_url(request.user))
 
+    # Close any auctions whose timer has expired so they surface below.
+    from auctions.utils import auto_close_expired_auctions
+    auto_close_expired_auctions()
+
     # Post-auction decisions: closed/ended auctions on this seller's cars, with
     # any decision already made + the linked OCB status (read-only display of the
     # real CRM pipeline). Live auctions are not shown here.
@@ -396,17 +400,44 @@ def dealer_dashboard(request):
     latest = latest_dealer_verification(request.user)
     from django.utils import timezone
     from auctions.models import Auction, Bid
+    from auctions.utils import auto_close_expired_auctions
+    auto_close_expired_auctions()
     now = timezone.now()
     live_count = Auction.objects.filter(status="live", start_at__lte=now, end_at__gt=now).count()
     my_active_bids = (Bid.objects.filter(dealer=request.user, is_voided=False,
                                          auction__status="live", auction__end_at__gt=now)
                       .values("auction").distinct().count())
+
+    # Bid history — one row per auction this dealer bid on, newest first, with
+    # won/lost outcome. vehicle make/model/year only (no PII), as shown in-room.
+    bid_history, seen = [], set()
+    for bid in (Bid.objects.filter(dealer=request.user)
+                .select_related("auction", "auction__vehicle").order_by("-created_at")):
+        a = bid.auction
+        if a.id in seen:
+            continue
+        seen.add(a.id)
+        highest = a.bids.filter(is_voided=False).order_by("-amount").first()
+        my_highest = a.bids.filter(dealer=request.user, is_voided=False).order_by("-amount").first()
+        is_live = a.status == "live" and a.end_at > now
+        is_closed = a.status in ("closed", "completed", "reauction")
+        i_won = bool(is_closed and highest and my_highest and highest.id == my_highest.id)
+        bid_history.append({
+            "auction": a, "vehicle": a.vehicle,
+            "my_amount": my_highest.amount if my_highest else None,
+            "top_amount": highest.amount if highest else None,
+            "is_live": is_live, "i_won": i_won, "i_lost": is_closed and not i_won,
+        })
+        if len(bid_history) >= 25:
+            break
+
     return render(request, "www/dashboard/dealer.html", {
         "verification_status": latest.status if latest else None,  # None/pending/approved/rejected
         "reject_reason": latest.reject_reason if latest else "",
         "can_bid": dealer_can_bid(request.user),
         "live_count": live_count,
         "my_active_bids": my_active_bids,
+        "bid_history": bid_history,
     })
 
 
