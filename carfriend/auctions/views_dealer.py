@@ -93,51 +93,104 @@ def _hero_url(report):
     return photos[0] if photos else None
 
 
-def _walk_to_section(zone):
-    """Map one walk-around zone (engine.report_context) to the dealer section shape
-    the room template renders. Condition + notes only — no PII, no raw photos."""
-    filled = []
-    ok = issue = 0
-    for g in zone.get("groups", []):
-        rows = []
-        for r in g.get("rows", []):
-            st = r.get("result") or ""
-            if st == "ok":
-                ok += 1
-            elif st == "issue":
-                issue += 1
-            note = r.get("note") or r.get("value") or ""
-            if st or note:
-                rows.append({"label": r.get("label", ""), "status": st,
-                             "condition": note, "value": r.get("value", "")})
-        if rows:
-            filled.append({"label": g.get("label", ""), "kind": "", "unit": "",
-                           "rows": rows, "photos": []})
-    return {"label": zone.get("title", ""), "filled": filled,
-            "ok_count": ok, "issue_count": issue}
+# Font-Awesome icon per walk-around zone (zones.py keys).
+_ZONE_ICONS = {"details": "fa-id-card", "left": "fa-car-side", "front": "fa-gear",
+               "right": "fa-car-side", "rear": "fa-car-rear", "inside": "fa-couch",
+               "docs": "fa-file-lines"}
+# Identity hints redacted from the registry/docs zones (never shown to dealers).
+_REDACT_HINTS = ("chassis", "registration", "reg no", "reg number", "plate",
+                 "number plate", "owner", "vin", "engine number", "engine no")
+
+
+def _sev_rank(severity):
+    if severity in ("major", "critical", "severe"):
+        return 2
+    return 1 if severity == "minor" else 0
+
+
+def _media_by_section(report):
+    """Masked condition photos grouped by their section tag (dealer-safe)."""
+    out = {}
+    for m in report.media.filter(kind="photo").order_by("id"):
+        img = m.masked_file or m.webp_file or m.file
+        if img:
+            out.setdefault((m.section or "").strip().lower(), []).append(img.url)
+    return out
 
 
 def dealer_inspection(report):
-    """Redacted inspection data: condition only — never seller/PII.
-
-    Walk-around (v4) reports namespace results under checkpoints['walk'] and are
-    invisible to the legacy build_report_data() section builder — so use the walk
-    engine renderer for those, and the legacy builder otherwise."""
+    """Redacted, render-ready inspection for the dealer room: per-zone accordion
+    sections (condition only), masked photos, grade/score, challan flag and engine
+    audio. NEVER seller PII, registry identity values, or the unmasked walk video."""
     if not report:
         return None
     from inspections import engine
+
+    photos_by_sec = _media_by_section(report)
+    sections = []
+
     if engine.is_walk_inspection(report):
         ctx = engine.report_context(report)          # pure read; no save
-        sections = [s for s in (_walk_to_section(z) for z in ctx.get("zones", [])) if s["filled"]]
         grade = ctx.get("grade") or report.condition_grade
+        score = ctx.get("score") or report.score
+        for z in ctx.get("zones", []):
+            zkey = z.get("key", "")
+            identity_zone = zkey in ("details", "docs")
+            items, ok, issue = [], 0, 0
+            for g in z.get("groups", []):
+                for r in g.get("rows", []):
+                    label = r.get("label", "")
+                    note = r.get("note") or r.get("value") or ""
+                    st = r.get("result") or ""
+                    if identity_zone and any(h in (label + " " + note).lower() for h in _REDACT_HINTS):
+                        continue                     # hide registry identity rows
+                    if not st and not note:
+                        continue
+                    if st == "ok": ok += 1
+                    elif st == "issue": issue += 1
+                    items.append({"label": label, "val": st, "sev": _sev_rank(r.get("severity")),
+                                  "note": note, "is_ok": st == "ok", "is_issue": st == "issue"})
+            if items:
+                sections.append({"key": zkey, "label": z.get("title", ""),
+                                 "icon": _ZONE_ICONS.get(zkey, "fa-circle-check"),
+                                 "items": items, "item_count": len(items),
+                                 "ok_count": ok, "issue_count": issue,
+                                 "photos": photos_by_sec.get(zkey, [])})
     else:
-        sections = build_report_data(report).get("sections", [])
-        grade = report.condition_grade
+        grade, score = report.condition_grade, report.score
+        for s in build_report_data(report).get("sections", []):
+            if not s.get("filled"):
+                continue
+            items, ok, issue = [], 0, 0
+            for part in s["filled"]:
+                for row in part.get("rows", []):
+                    st = row.get("status") or ""
+                    note = row.get("condition") or row.get("value") or ""
+                    if not st and not note:
+                        continue
+                    if st == "ok": ok += 1
+                    elif st == "issue": issue += 1
+                    plabel = part.get("label", "")
+                    if row.get("label"):
+                        plabel = f"{plabel} · {row['label']}"
+                    items.append({"label": plabel, "val": st, "sev": 2 if st == "issue" else 0,
+                                  "note": note, "is_ok": st == "ok", "is_issue": st == "issue"})
+            if items:
+                key = s.get("key", "sec")
+                sections.append({"key": key, "label": s.get("label", ""),
+                                 "icon": _ZONE_ICONS.get(key, "fa-circle-check"),
+                                 "items": items, "item_count": len(items),
+                                 "ok_count": ok, "issue_count": issue,
+                                 "photos": photos_by_sec.get(key, [])})
+
     return {
         "grade": grade,
+        "score": score,
         "sections": sections,
-        "photos": _photo_urls(report),
-        "hero": _hero_url(report),                   # hero shot, not the first random photo
+        "hero": _hero_url(report),
+        "has_challans": (report.challan_count or 0) > 0,
+        "audio_url": report.engine_audio.url if report.engine_audio else None,
+        # walkaround_video intentionally omitted — it is NOT plate-masked.
         "report": report,
     }
 

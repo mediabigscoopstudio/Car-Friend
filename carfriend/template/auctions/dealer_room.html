@@ -83,6 +83,23 @@
 .iph { display:flex; flex-wrap:wrap; gap:7px; margin:4px 0 14px; }
 .iph img { width:96px; height:72px; object-fit:cover; border-radius:9px; border:1px solid #e5e7eb; }
 .cp-th { width:70px; height:54px; object-fit:cover; border-radius:6px; border:1px solid #e5e7eb; margin:4px 4px 0 0; }
+
+/* per-section inspection accordion */
+.insp-sec-btn { width:100%; background:none; border:none; cursor:pointer; padding:14px 20px; display:flex; align-items:center; justify-content:space-between; text-align:left; transition:background .15s; }
+.insp-sec-btn:hover { background:rgba(0,0,0,.02); }
+.insp-ico { width:34px; height:34px; border-radius:9px; flex-shrink:0; background:rgba(22,101,52,.08); display:flex; align-items:center; justify-content:center; color:#166534; font-size:.82rem; }
+.insp-chev { color:#94a3b8; font-size:.82rem; transition:transform .2s; flex-shrink:0; }
+.insp-chev.open { transform:rotate(180deg); }
+.insp-body { display:none; background:#f5f7f5; border-top:1px solid #e5e7eb; }
+.insp-body.open { display:block; }
+.ip-pill { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:.68rem; font-weight:700; white-space:nowrap; }
+.ip-ok { background:rgba(22,101,52,.08); color:#166534; }
+.ip-issue { background:rgba(239,68,68,.08); color:#dc2626; }
+.ip-na { background:rgba(0,0,0,.05); color:#94a3b8; }
+#photoModal { display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.9); align-items:center; justify-content:center; cursor:zoom-out; }
+#photoModal.open { display:flex; }
+#photoModal img { max-width:92vw; max-height:88vh; border-radius:10px; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+.pm-close { position:absolute; top:16px; right:20px; background:rgba(255,255,255,.12); border:none; color:#fff; font-size:1.3rem; width:40px; height:40px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; }
 {% endblock %}
 
 {% block content %}
@@ -128,45 +145,92 @@
           </div>
         </div>
 
-        <!-- Inspection accordion (open by default) -->
-        {% if inspection %}
+        <!-- Inspection report — per-section accordion -->
+        {% if inspection and inspection.sections %}
         <div class="dr2-card">
-          <button type="button" class="dr2-acc-btn" onclick="drToggle('insp')">
-            <span class="t">Inspection Report {% if inspection.grade %}<span class="insp-grade g-{{ inspection.grade }}">{{ inspection.grade }}</span>{% endif %}</span>
-            <span class="dr2-chev" id="insp-chev" style="transform:rotate(180deg);">▼</span>
-          </button>
-          <div class="dr2-acc-body" id="insp-body" style="display:block;">
-            <div class="dr2-card-pad">
-              {% if inspection.photos %}
-              <div class="iph">{% for url in inspection.photos %}<img src="{{ url }}" alt="condition photo" loading="lazy">{% endfor %}</div>
-              {% endif %}
-
-              {% for sec in inspection.sections %}
-                {% if sec.filled %}
-                <div class="isec">
-                  <div class="isec-h">{{ sec.label }} <span style="color:#94a3b8;font-weight:500;font-size:.72rem">· {{ sec.ok_count }} OK · {{ sec.issue_count }} issue</span></div>
-                  <table class="itab">
-                    <thead><tr><th style="width:34%">Part</th><th style="width:18%">Sub</th><th style="width:16%">Status</th><th>Note / Reading</th></tr></thead>
-                    <tbody>
-                      {% for part in sec.filled %}
-                        {% for row in part.rows %}
-                        <tr>
-                          <td>{% if forloop.first %}<strong>{{ part.label }}</strong>{% endif %}</td>
-                          <td>{{ row.label|default:"—" }}</td>
-                          <td>{% if row.status == 'ok' %}<span class="s-ok">✓ OK</span>{% elif row.status == 'issue' %}<span class="s-issue">✗ Issue</span>{% else %}<span class="s-na">—</span>{% endif %}</td>
-                          <td>{% if part.kind == 'measure' or part.kind == 'count' %}{{ row.value|default:"—" }}{% if part.unit %} {{ part.unit }}{% endif %}{% else %}{{ row.condition|default:"" }}{% endif %}</td>
-                        </tr>
-                        {% endfor %}
-                        {% if part.photos %}<tr><td colspan="4">{% for ph in part.photos %}<img class="cp-th" src="{{ ph.image.url }}" alt="" loading="lazy">{% endfor %}</td></tr>{% endif %}
-                      {% endfor %}
-                    </tbody>
-                  </table>
-                </div>
-                {% endif %}
-              {% endfor %}
-
-              {% include "inspection/_challan_block.html" with r=inspection.report %}
+          <div style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span style="font-family:var(--font-h);font-weight:700;color:#0f172a;font-size:.92rem;">Inspection Report</span>
+              {% if inspection.grade %}<span class="insp-grade g-{{ inspection.grade }}">Grade {{ inspection.grade }}</span>{% endif %}
+              {% if inspection.score %}<span style="color:#64748b;font-size:.78rem;font-weight:500;">{{ inspection.score }}/100</span>{% endif %}
             </div>
+            <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:.72rem;font-weight:700;{% if inspection.has_challans %}background:rgba(239,68,68,.08);color:#dc2626;border:1px solid rgba(239,68,68,.2);{% else %}background:rgba(22,101,52,.08);color:#166534;border:1px solid rgba(22,101,52,.15);{% endif %}">{% if inspection.has_challans %}⚠ Pending Challans{% else %}✓ No Challans{% endif %}</span>
+          </div>
+
+          {% if inspection.score %}
+          <div style="padding:0 20px 14px;">
+            <div style="background:#e5e7eb;border-radius:99px;height:6px;overflow:hidden;">
+              <div style="height:100%;border-radius:99px;width:{{ inspection.score }}%;background:{% if inspection.score >= 80 %}linear-gradient(90deg,#22c55e,#166534){% elif inspection.score >= 60 %}linear-gradient(90deg,#f59e0b,#d97706){% else %}linear-gradient(90deg,#ef4444,#b91c1c){% endif %};"></div>
+            </div>
+          </div>
+          {% endif %}
+
+          <div style="border-top:1px solid #e5e7eb;">
+            {% for section in inspection.sections %}
+            <div class="insp-section" style="border-bottom:1px solid #e5e7eb;">
+              <button type="button" class="insp-sec-btn" onclick="toggleSection('{{ section.key }}')">
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <div class="insp-ico"><i class="fas {{ section.icon }}"></i></div>
+                  <div>
+                    <div style="font-family:var(--font-h);font-weight:700;color:#0f172a;font-size:.88rem;">{{ section.label }}</div>
+                    <div style="font-size:.7rem;color:#64748b;margin-top:2px;">{{ section.ok_count }} OK{% if section.issue_count %} · <span style="color:#dc2626;">{{ section.issue_count }} issue{{ section.issue_count|pluralize }}</span>{% endif %}</div>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="background:rgba(22,101,52,.1);color:#166534;padding:2px 9px;border-radius:20px;font-size:.66rem;font-weight:700;">{{ section.ok_count }} ✓</span>
+                  {% if section.issue_count %}<span style="background:rgba(239,68,68,.1);color:#dc2626;padding:2px 9px;border-radius:20px;font-size:.66rem;font-weight:700;">{{ section.issue_count }} ✗</span>{% endif %}
+                  <span id="{{ section.key }}-chev" class="insp-chev"><i class="fas fa-chevron-down"></i></span>
+                </div>
+              </button>
+              <div id="{{ section.key }}-body" class="insp-body">
+                <div style="padding:8px 16px;">
+                  {% for item in section.items %}
+                  <div style="padding:10px 4px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid rgba(0,0,0,.04);">
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-size:.82rem;font-weight:500;color:#0f172a;">{{ item.label }}</div>
+                      {% if item.note %}<div style="font-size:.72rem;color:#64748b;margin-top:3px;line-height:1.5;">{{ item.note }}</div>{% endif %}
+                    </div>
+                    <div style="flex-shrink:0;margin-top:1px;">
+                      {% if item.is_ok %}<span class="ip-pill ip-ok"><i class="fas fa-check" style="font-size:.6rem;"></i> OK</span>
+                      {% elif item.is_issue %}<span class="ip-pill ip-issue"><i class="fas fa-exclamation" style="font-size:.6rem;"></i> {% if item.sev == 1 %}Minor{% elif item.sev >= 2 %}Major{% else %}Issue{% endif %}</span>
+                      {% else %}<span class="ip-pill ip-na">N/A</span>{% endif %}
+                    </div>
+                  </div>
+                  {% endfor %}
+                  {% if section.photos %}
+                  <div style="padding:12px 0 4px;">
+                    <div style="font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#64748b;margin-bottom:8px;">Photos</div>
+                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+                      {% for url in section.photos %}<div style="border-radius:8px;overflow:hidden;aspect-ratio:4/3;background:#e5e7eb;"><img src="{{ url }}" alt="" loading="lazy" onclick="openPhotoModal('{{ url }}')" style="width:100%;height:100%;object-fit:cover;display:block;cursor:pointer;"></div>{% endfor %}
+                    </div>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+
+            <!-- Challan block -->
+            <div style="padding:14px 20px;display:flex;align-items:center;gap:12px;{% if inspection.has_challans %}background:rgba(239,68,68,.04);{% else %}background:rgba(22,101,52,.03);{% endif %}border-bottom:1px solid #e5e7eb;">
+              <div style="width:34px;height:34px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.9rem;{% if inspection.has_challans %}background:rgba(239,68,68,.12);{% else %}background:rgba(22,101,52,.1);{% endif %}">{% if inspection.has_challans %}⚠️{% else %}✅{% endif %}</div>
+              <div>
+                <div style="font-family:var(--font-h);font-weight:700;font-size:.85rem;color:{% if inspection.has_challans %}#dc2626{% else %}#166534{% endif %};">Challan / Traffic Violations</div>
+                <div style="font-size:.72rem;color:#64748b;margin-top:2px;">{% if inspection.has_challans %}Pending challans detected — verify before purchase{% else %}No pending challans found on this vehicle{% endif %}</div>
+              </div>
+            </div>
+
+            {% if inspection.audio_url %}
+            <div style="padding:16px 20px;">
+              <div style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#64748b;margin-bottom:12px;">Inspection Media</div>
+              <div style="background:#f5f7f5;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+                  <div style="width:38px;height:38px;border-radius:9px;flex-shrink:0;background:rgba(22,101,52,.1);display:flex;align-items:center;justify-content:center;color:#166534;font-size:.9rem;"><i class="fas fa-wave-square"></i></div>
+                  <div><div style="font-family:var(--font-h);font-weight:700;color:#0f172a;font-size:.85rem;">Engine Sound</div><div style="font-size:.72rem;color:#64748b;">Recorded during the inspection</div></div>
+                </div>
+                <audio controls style="width:100%;height:36px;"><source src="{{ inspection.audio_url }}"></audio>
+              </div>
+            </div>
+            {% endif %}
           </div>
         </div>
         {% endif %}
@@ -220,19 +284,41 @@
     </div>
   </div>
 </div>
+
+<!-- Fullscreen photo viewer -->
+<div id="photoModal" onclick="closePhotoModal()">
+  <img id="photoModalImg" src="" alt="Inspection photo">
+  <button type="button" class="pm-close" onclick="closePhotoModal()">✕</button>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Accordion toggle (additive — independent of the bid socket below).
-function drToggle(id) {
-  var body = document.getElementById(id + '-body');
-  var chev = document.getElementById(id + '-chev');
+// Inspection accordion + photo modal (additive — independent of the bid socket).
+function toggleSection(key) {
+  var body = document.getElementById(key + '-body');
+  var chev = document.getElementById(key + '-chev');
   if (!body) return;
-  var open = body.style.display !== 'none';
-  body.style.display = open ? 'none' : 'block';
-  if (chev) chev.style.transform = open ? '' : 'rotate(180deg)';
+  var isOpen = body.classList.contains('open');
+  document.querySelectorAll('.insp-body.open').forEach(function (el) { el.classList.remove('open'); });
+  document.querySelectorAll('.insp-chev.open').forEach(function (el) { el.classList.remove('open'); });
+  if (!isOpen) {
+    body.classList.add('open');
+    if (chev) chev.classList.add('open');
+    setTimeout(function () { body.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 50);
+  }
 }
+function openPhotoModal(url) {
+  var m = document.getElementById('photoModal'), i = document.getElementById('photoModalImg');
+  if (!m || !i) return;
+  i.src = url; m.classList.add('open'); document.body.style.overflow = 'hidden';
+}
+function closePhotoModal() {
+  var m = document.getElementById('photoModal');
+  if (m) m.classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePhotoModal(); });
 </script>
 <script>
 (function () {
