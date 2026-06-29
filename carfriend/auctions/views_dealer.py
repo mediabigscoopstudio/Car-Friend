@@ -79,17 +79,65 @@ def _photo_urls(report):
     return urls
 
 
-def dealer_inspection(report):
-    """Redacted inspection data: condition only — never seller/PII."""
+def _hero_url(report):
+    """Dealer cover image: the pre-inspection HERO shot (3/4 front, plate-masked),
+    then a wrap-up front photo, then the first masked condition photo. NEVER a
+    document/insurance image."""
     if not report:
         return None
-    sections = build_report_data(report).get("sections", [])   # statuses + notes (+ checkpoint photos)
-    photos = _photo_urls(report)
+    if report.auction_hero_image:
+        return report.auction_hero_image.url        # masked on upload (_MASK_PHOTO_FIELDS)
+    if report.front_photo:
+        return report.front_photo.url               # masked on upload
+    photos = _photo_urls(report)                    # masked condition photos
+    return photos[0] if photos else None
+
+
+def _walk_to_section(zone):
+    """Map one walk-around zone (engine.report_context) to the dealer section shape
+    the room template renders. Condition + notes only — no PII, no raw photos."""
+    filled = []
+    ok = issue = 0
+    for g in zone.get("groups", []):
+        rows = []
+        for r in g.get("rows", []):
+            st = r.get("result") or ""
+            if st == "ok":
+                ok += 1
+            elif st == "issue":
+                issue += 1
+            note = r.get("note") or r.get("value") or ""
+            if st or note:
+                rows.append({"label": r.get("label", ""), "status": st,
+                             "condition": note, "value": r.get("value", "")})
+        if rows:
+            filled.append({"label": g.get("label", ""), "kind": "", "unit": "",
+                           "rows": rows, "photos": []})
+    return {"label": zone.get("title", ""), "filled": filled,
+            "ok_count": ok, "issue_count": issue}
+
+
+def dealer_inspection(report):
+    """Redacted inspection data: condition only — never seller/PII.
+
+    Walk-around (v4) reports namespace results under checkpoints['walk'] and are
+    invisible to the legacy build_report_data() section builder — so use the walk
+    engine renderer for those, and the legacy builder otherwise."""
+    if not report:
+        return None
+    from inspections import engine
+    if engine.is_walk_inspection(report):
+        ctx = engine.report_context(report)          # pure read; no save
+        sections = [s for s in (_walk_to_section(z) for z in ctx.get("zones", [])) if s["filled"]]
+        grade = ctx.get("grade") or report.condition_grade
+    else:
+        sections = build_report_data(report).get("sections", [])
+        grade = report.condition_grade
     return {
-        "grade": report.condition_grade,
+        "grade": grade,
         "sections": sections,
-        "photos": photos,
-        "hero": photos[0] if photos else None,   # primary/cover image
+        "photos": _photo_urls(report),
+        "hero": _hero_url(report),                   # hero shot, not the first random photo
         "report": report,
     }
 
@@ -104,8 +152,7 @@ def dealer_auction_list(request):
     cards = []
     for a in _live_auctions():
         card = dealer_auction(a)
-        photos = _photo_urls(_vehicle_report(a.vehicle))
-        card["cover"] = photos[0] if photos else None
+        card["cover"] = _hero_url(_vehicle_report(a.vehicle))   # hero shot, not insurance/doc
         cards.append(card)
     return render(request, "auctions/dealer_list.html", {
         "auctions": cards,
