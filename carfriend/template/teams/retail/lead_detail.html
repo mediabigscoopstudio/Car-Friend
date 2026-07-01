@@ -5,7 +5,7 @@
 {% block content %}
   <a href="/crm/retail/pipeline/" style="color:var(--cf-blue);text-decoration:none;font-weight:600;font-size:13px;display:inline-block;margin-bottom:14px">&larr; Back to pipeline</a>
   <div class="panel" style="max-width:560px">
-    <h2>{{ car }}</h2>
+    <h2>{{ car }} {% include "inspection/_disposition_badge.html" with disposition=lead.vehicle.disposition %}</h2>
     <table>
       <tr><td style="border:none;color:var(--cf-slate);width:140px">Seller</td><td style="border:none">{{ lead.seller.get_full_name|default:lead.seller.username }}{% if lead.seller.phone %} · {{ lead.seller.phone }}{% endif %}</td></tr>
       <tr><td style="border:none;color:var(--cf-slate)">Plate</td><td style="border:none">{{ lead.vehicle.plate_number }}</td></tr>
@@ -13,7 +13,9 @@
       <tr><td style="border:none;color:var(--cf-slate)">Stage</td><td style="border:none"><span class="pill">{{ lead.get_stage_display }}</span></td></tr>
     </table>
     <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-      {% if can_auction %}
+      {% if lead.vehicle.disposition == 'scrap' %}
+        <span style="font-size:12px;color:#dc2626;font-weight:600"><i class="bi bi-exclamation-triangle"></i> Marked SCRAP — not eligible for auction.</span>
+      {% elif can_auction %}
         <form method="post" action="/crm/retail/lead/{{ lead.id }}/create-auction/" style="display:inline">
           {% csrf_token %}
           <button class="btn-sm" type="submit"><i class="bi bi-hammer"></i> Create auction</button>

@@ -21,7 +21,7 @@
     <div class="jc-top">
       <div class="jc-time">{{ v.scheduled_at|date:"H:i" }}<br><span style="font-weight:500;font-size:10px;color:var(--muted)">{{ v.scheduled_at|date:"d M" }}</span></div>
       <div class="jc-body">
-        <div class="jc-car">{{ v.vehicle|short_car_name }}</div>
+        <div class="jc-car">{{ v.vehicle|short_car_name }} {% include "inspection/_disposition_badge.html" with disposition=v.report.disposition %}</div>
         <div class="jc-meta mono">{{ v.vehicle.plate_number }}</div>
         <div class="jc-meta">{{ v.lead.seller.get_full_name|default:v.vehicle.owner_name|default:"—" }} · {{ v.vehicle.city|default:"—" }}</div>
       </div>

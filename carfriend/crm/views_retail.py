@@ -95,6 +95,10 @@ def retail_create_auction(request, lead_id):
     from auctions.models import Auction
     from crm.services import transition_lead
     lead = get_object_or_404(Lead.objects.select_related("vehicle"), id=lead_id)
+    # Guard: a SCRAP-disposition car must never be pushed to auction / OCB.
+    if lead.vehicle.disposition == "scrap":
+        messages.error(request, "This car is marked SCRAP and cannot be sent to auction.")
+        return redirect(f"/crm/retail/lead/{lead.id}/")
     # Reuse a still-open auction for this vehicle if one exists (one was created
     # at inspection approval); otherwise create one. Either way, advance the lead.
     auction = (Auction.objects.filter(vehicle=lead.vehicle)
