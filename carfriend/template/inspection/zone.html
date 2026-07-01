@@ -208,6 +208,37 @@
   </div>
 </div>
 
+<style>
+.rate-row{display:flex;align-items:center;justify-content:space-between;padding:9px 2px;border-bottom:1px solid var(--line)}
+.rate-row:last-child{border-bottom:none}
+.rate-lbl{font-size:14px;font-weight:500}
+.stars{display:inline-flex;gap:4px}
+.star{cursor:pointer;font-size:22px;line-height:1;color:var(--line)}
+.star.on{color:#f5b301}
+.exh-opt.sel,.cp-btn.exh-opt.sel{outline:2px solid var(--brand);outline-offset:1px}
+</style>
+
+{% if r.disposition != 'scrap' %}
+<div class="cp-group-label">Engine exhaust smoke</div>
+<div class="card" style="display:flex;gap:8px">
+  <button type="button" class="cp-btn issue exh-opt {% if r.exhaust_smoke == 'white' %}sel{% endif %}" data-field="exhaust_smoke" data-val="white" style="flex:1;justify-content:center">White</button>
+  <button type="button" class="cp-btn issue exh-opt {% if r.exhaust_smoke == 'black' %}sel{% endif %}" data-field="exhaust_smoke" data-val="black" style="flex:1;justify-content:center">Black</button>
+  <button type="button" class="cp-btn ok exh-opt {% if r.exhaust_smoke == 'none' %}sel{% endif %}" data-field="exhaust_smoke" data-val="none" style="flex:1;justify-content:center">No Smoke</button>
+</div>
+{% endif %}
+
+<div class="cp-group-label">Ratings <span id="rate-status" style="float:right;font-weight:400;color:var(--muted)"></span></div>
+<div class="card">
+  <div class="rate-row" data-field="rating_exterior" data-val="{{ r.rating_exterior|default:0 }}"><span class="rate-lbl">Exterior</span><span class="stars"></span></div>
+  {% if r.disposition != 'scrap' %}
+  <div class="rate-row" data-field="rating_interior" data-val="{{ r.rating_interior|default:0 }}"><span class="rate-lbl">Interior</span><span class="stars"></span></div>
+  <div class="rate-row" data-field="rating_engine" data-val="{{ r.rating_engine|default:0 }}"><span class="rate-lbl">Engine</span><span class="stars"></span></div>
+  <div class="rate-row" data-field="rating_suspension" data-val="{{ r.rating_suspension|default:0 }}"><span class="rate-lbl">Suspension</span><span class="stars"></span></div>
+  <div class="rate-row" data-field="rating_ac" data-val="{{ r.rating_ac|default:0 }}"><span class="rate-lbl">AC</span><span class="stars"></span></div>
+  <div class="rate-row" data-field="rating_brake" data-val="{{ r.rating_brake|default:0 }}"><span class="rate-lbl">Brake</span><span class="stars"></span></div>
+  {% endif %}
+</div>
+
 <form method="post" action="/submit/{{ r.id }}">
   {% csrf_token %}
   <div class="sheet-field"><label>Final inspector notes (optional)</label>
@@ -565,4 +596,45 @@
   refresh();
 })();
 </script>
+
+{% if zone.key == 'docs' %}
+<script>
+// Final section — star ratings + exhaust smoke, debounced autosave to /final.
+(function () {
+  var csrf = document.querySelector('input[name=csrfmiddlewaretoken]');
+  var statusEl = document.getElementById('rate-status');
+  function setStatus(t) { if (statusEl) statusEl.textContent = t; }
+  function save(field, value) {
+    setStatus('Saving…');
+    fetch('/inspect/{{ r.id }}/final', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrf ? csrf.value : '', 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'field=' + encodeURIComponent(field) + '&value=' + encodeURIComponent(value)
+    }).then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+      .then(function () { setStatus('Saved'); setTimeout(function () { setStatus(''); }, 1200); })
+      .catch(function () { setStatus('Retry'); });
+  }
+  document.querySelectorAll('.rate-row').forEach(function (row) {
+    var wrap = row.querySelector('.stars'), field = row.dataset.field;
+    function render(v) {
+      wrap.innerHTML = '';
+      for (var i = 1; i <= 5; i++) {
+        var s = document.createElement('span');
+        s.className = 'star' + (i <= v ? ' on' : ''); s.textContent = '★';
+        (function (n) { s.onclick = function () { render(n); save(field, n); }; })(i);
+        wrap.appendChild(s);
+      }
+    }
+    render(parseInt(row.dataset.val, 10) || 0);
+  });
+  document.querySelectorAll('.exh-opt').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.exh-opt').forEach(function (x) { x.classList.remove('sel'); });
+      b.classList.add('sel');
+      save(b.dataset.field, b.dataset.val);
+    });
+  });
+})();
+</script>
+{% endif %}
 {% endblock %}

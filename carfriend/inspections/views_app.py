@@ -555,6 +555,36 @@ def insp_hero_upload(request, id):
     return redirect(f"/inspect/{r.id}")
 
 
+_RATING_FIELDS = {"rating_exterior", "rating_interior", "rating_engine",
+                  "rating_suspension", "rating_ac", "rating_brake"}
+
+
+@inspector_required
+@require_POST
+def insp_final_save(request, id):
+    """Autosave for the final section: engine exhaust smoke + 1–5 star ratings."""
+    r = _get_report(request, id)
+    if not r.editable:
+        return JsonResponse({"ok": False, "error": "locked"}, status=409)
+    field = request.POST.get("field")
+    value = request.POST.get("value")
+    if field == "exhaust_smoke" and value in ("white", "black", "none"):
+        r.exhaust_smoke = value
+        r.save(update_fields=["exhaust_smoke", "updated_at"])
+        return JsonResponse({"ok": True})
+    if field in _RATING_FIELDS:
+        try:
+            iv = int(value)
+        except (TypeError, ValueError):
+            return JsonResponse({"ok": False, "error": "bad value"}, status=400)
+        if not (1 <= iv <= 5):
+            return JsonResponse({"ok": False, "error": "range"}, status=400)
+        setattr(r, field, iv)
+        r.save(update_fields=[field, "updated_at"])
+        return JsonResponse({"ok": True})
+    return JsonResponse({"ok": False, "error": "bad field"}, status=400)
+
+
 @inspector_required
 @require_POST
 def insp_field_upload(request, id):
@@ -880,8 +910,10 @@ def insp_submit(request, id):
     r.save()
     r.visit.status = "submitted"
     r.visit.save()
-    r.visit.vehicle.condition_grade = r.condition_grade
-    r.visit.vehicle.save(update_fields=["condition_grade"])
+    _v = r.visit.vehicle
+    _v.condition_grade = r.condition_grade
+    _v.disposition = r.disposition          # mirror so auction guard / CRM / listings can filter
+    _v.save(update_fields=["condition_grade", "disposition"])
     # Challan snapshot from Surepass (synchronous, 15s timeout). Fully isolated:
     # a challan API failure must NEVER break submission — store status=failed.
     try:
