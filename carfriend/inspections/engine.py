@@ -126,11 +126,23 @@ def zone_progress(report, zone):
     }
 
 
+SCRAP_HIDDEN_ZONES = {"inside"}   # cabin + test drive — not analysed for scrap
+
+
+def zones_for(report):
+    """Zones visible for this report's disposition. SCRAP → body-frame + paperwork
+    only (hide cabin/test-drive). AUCTION or unset → the full walk (unchanged)."""
+    if getattr(report, "disposition", "") == "scrap":
+        return [z for z in ZONES if z["key"] not in SCRAP_HIDDEN_ZONES]
+    return list(ZONES)
+
+
 def overall_progress(report):
     res = results(report)
     total = done = 0
     zones_done = 0
-    for z in ZONES:
+    visible = zones_for(report)
+    for z in visible:
         zp = zone_progress(report, z)
         total += zp["total"]; done += zp["resolved"]
         if zp["complete"]:
@@ -138,34 +150,35 @@ def overall_progress(report):
     return {
         "checkpoints_done": done, "checkpoints_total": total,
         "pct": round(done * 100 / total) if total else 0,
-        "zones_done": zones_done, "zones_total": len(ZONES),
+        "zones_done": zones_done, "zones_total": len(visible),
         "issues": sum(1 for _k, cp in all_checkpoints()
                       if (res.get(cp["key"]) or {}).get("result") == "issue"),
     }
 
 
 def active_zone_key(report):
-    """First not-yet-complete zone in walk order, or None when all done."""
-    for z in ZONES:
+    """First not-yet-complete VISIBLE zone in walk order, or None when all done."""
+    for z in zones_for(report):
         if not zone_progress(report, z)["complete"]:
             return z["key"]
     return None
 
 
 def zone_states(report):
-    """locked / active / done per zone, for the gated ZoneCard list (§5.6)."""
+    """locked / active / done per visible zone, for the gated ZoneCard list (§5.6).
+    Position-based over the visible list so it is correct for both the full
+    (auction) walk and the reduced (scrap) walk."""
     active = active_zone_key(report)
-    active_idx = ZONE_ORDER.index(active) if active else len(ZONES)
     out = []
-    for z in ZONES:
+    seen_active = False
+    for z in zones_for(report):
         zp = zone_progress(report, z)
-        # Everything before the active zone is done; the active zone is active;
-        # everything after is locked. (When all zones are complete, active_idx
-        # is past the end, so every zone reads as done.)
-        if z["index"] < active_idx:
+        if active is None:
             state = "done"
-        elif z["index"] == active_idx:
-            state = "active"
+        elif z["key"] == active:
+            state = "active"; seen_active = True
+        elif not seen_active:
+            state = "done"
         else:
             state = "locked"
         out.append({"zone": z, "state": state, "progress": zp})
@@ -173,7 +186,8 @@ def zone_states(report):
 
 
 def can_enter(report, zone_key):
-    """Gating: a zone is enterable only if it is the active one or already done."""
+    """Enterable only if the zone is VISIBLE for this disposition AND is the
+    active one or already done."""
     states = {s["zone"]["key"]: s["state"] for s in zone_states(report)}
     return states.get(zone_key) in ("active", "done")
 

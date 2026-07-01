@@ -13,11 +13,22 @@
 <form method="post" action="/inspect/{{ r.id }}/hero" enctype="multipart/form-data" id="hero-form">
   {% csrf_token %}
   <label class="cam-btn" style="width:100%;height:200px;border-radius:18px;margin-bottom:14px;gap:8px">
-    <input type="file" accept="image/*" capture="environment" name="file" id="hero-file" hidden required>
+    <input type="file" accept="image/*" capture="environment" name="file" id="hero-file" hidden>
     <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
     <span id="hero-label" style="font-size:14px">Tap to capture the hero shot</span>
   </label>
   <img id="hero-preview" alt="" style="display:none;width:100%;border-radius:18px;margin-bottom:14px;border:1px solid var(--line)">
+
+  <div class="card" style="padding:14px 16px;margin-bottom:14px">
+    <div class="eyebrow" style="margin-bottom:8px">Car will go for?</div>
+    <input type="hidden" name="disposition" id="disp-input" value="{{ r.disposition }}">
+    <div style="display:flex;gap:8px">
+      <button type="button" class="cp-btn ok disp-opt {% if r.disposition == 'auction' %}sel{% endif %}" data-disp="auction" style="flex:1;justify-content:center">Auction</button>
+      <button type="button" class="cp-btn issue disp-opt {% if r.disposition == 'scrap' %}sel{% endif %}" data-disp="scrap" style="flex:1;justify-content:center">Scrap</button>
+    </div>
+    <div class="note-hint" style="margin-top:6px">Auction = full inspection · Scrap = body &amp; paperwork only</div>
+  </div>
+
   <button type="submit" class="btn btn-primary block" id="hero-next" disabled>Start inspection</button>
   <div class="note-hint" style="text-align:center;margin-top:8px">A hero shot is required before the inspection can begin.</div>
 </form>
@@ -31,12 +42,26 @@
   var nxt = document.getElementById('hero-next');
   var prev = document.getElementById('hero-preview');
   var lab = document.getElementById('hero-label');
+  var disp = document.getElementById('disp-input');
+  var hasHero = {% if r.auction_hero_image %}true{% else %}false{% endif %};
+  var fileChosen = false;
+  function refresh() { nxt.disabled = !((hasHero || fileChosen) && disp.value); }
   inp.addEventListener('change', function () {
     if (!this.files[0]) return;
-    nxt.disabled = false;
+    fileChosen = true;
     lab.textContent = 'Photo captured — tap Start inspection';
     try { prev.src = URL.createObjectURL(this.files[0]); prev.style.display = 'block'; } catch (e) {}
+    refresh();
   });
+  document.querySelectorAll('.disp-opt').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.disp-opt').forEach(function (x) { x.classList.remove('sel'); });
+      b.classList.add('sel');
+      disp.value = b.dataset.disp;
+      refresh();
+    });
+  });
+  refresh();
 })();
 </script>
 {% endblock %}

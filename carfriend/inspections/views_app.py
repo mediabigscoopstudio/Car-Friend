@@ -238,8 +238,8 @@ def insp_inspect_start(request, id):
 @inspector_required
 def insp_inspect(request, id):
     r = _get_report(request, id)
-    # Mandatory pre-inspection hero shot — gates the whole flow (Change 1).
-    if not r.auction_hero_image and r.editable:
+    # Mandatory pre-inspection hero shot + disposition — gate the whole flow.
+    if (not r.auction_hero_image or not r.disposition) and r.editable:
         return render(request, "inspection/hero.html", _shell(request,
             pushed=True, hide_nav=True, back_url="/jobs", r=r, vehicle=r.visit.vehicle))
     return render(request, "inspection/inspect.html", _shell(request,
@@ -295,8 +295,14 @@ def insp_zone(request, id, zone_key):
                          "edited": bool(entry and entry.get("value") and entry.get("value") != pf),
                          "chips": zones.chips_for(cp["pt"])})
         groups.append({"label": g["label"], "rows": rows})
-    idx = zone["index"]
-    next_zone = zones.ZONES[idx + 1] if idx + 1 < len(zones.ZONES) else None
+    # Next zone follows the VISIBLE (disposition-aware) walk order, so scrap skips
+    # the hidden cabin/test-drive zone.
+    _visible = engine.zones_for(r)
+    _vkeys = [z["key"] for z in _visible]
+    next_zone = None
+    if zone_key in _vkeys:
+        _i = _vkeys.index(zone_key)
+        next_zone = _visible[_i + 1] if _i + 1 < len(_visible) else None
     return render(request, "inspection/zone.html", _shell(request,
         active_tab="jobs", pushed=True, hide_nav=True, back_url=f"/inspect/{r.id}",
         r=r, zone=zone, groups=groups, progress=engine.zone_progress(r, zone),
@@ -541,6 +547,11 @@ def insp_hero_upload(request, id):
     if f and r.editable:
         r.auction_hero_image.save(f"hero_{r.id}_{uuid.uuid4().hex}{os.path.splitext(f.name)[1].lower() or '.jpg'}", f, save=True)
         _mask_uploaded(r.auction_hero_image)        # plate masking (Task 2)
+    # Disposition ("Car will go for?") — required at this step; branches the walk.
+    disp = request.POST.get("disposition")
+    if disp in ("auction", "scrap") and r.editable:
+        r.disposition = disp
+        r.save(update_fields=["disposition", "updated_at"])
     return redirect(f"/inspect/{r.id}")
 
 
