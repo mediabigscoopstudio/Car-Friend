@@ -35,7 +35,8 @@
   </div>
 </div>
 
-{# ---- Insurance (Change 3): structured block, replaces the OK/Issue item ---- #}
+{% if r.disposition != 'scrap' %}
+{# ---- Insurance (Change 3): structured block — hidden for scrap ---- #}
 <div class="card" id="insurance">
   <div class="cp-group-label" style="margin:0 0 10px">Insurance</div>
   <form method="post" action="/inspect/{{ r.id }}/insurance" enctype="multipart/form-data">
@@ -77,6 +78,7 @@
   <div class="ins-summary">{{ r.insurance_type|default:"—" }}{% if r.insurer_name %} · {{ r.insurer_name }}{% endif %}{% if r.insurance_expiry_month %} · Expires {{ r.insurance_expiry_month }} {{ r.insurance_expiry_year }}{% endif %}</div>
   {% endif %}
 </div>
+{% endif %}{# /disposition != scrap (insurance) #}
 
 {% endif %}
 
@@ -184,18 +186,19 @@
   </div>
 </div>
 
-<div class="cp-group-label">Walk-around video &amp; engine audio</div>
+<div class="cp-group-label">{% if r.disposition == 'scrap' %}Walk-around video (no audio){% else %}Walk-around video &amp; engine audio{% endif %}</div>
 <div class="card">
   <div class="up-row" data-field="walkaround_video" data-req="1">
     <div class="up-head">
       <div class="up-ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>
-      <div class="up-body"><div class="up-title">Walk-around video (exterior + interior)</div>
+      <div class="up-body"><div class="up-title">Walk-around video {% if r.disposition == 'scrap' %}(record with NO audio){% else %}(exterior + interior){% endif %}</div>
         <div class="up-sub {% if r.walkaround_video %}done{% endif %}">{% if r.walkaround_video %}✓ Uploaded{% else %}mp4 / mov · required{% endif %}</div></div>
       <label class="up-btn"><input type="file" accept="video/mp4,video/quicktime,.mp4,.mov" hidden class="up-input"><span class="up-btn-t">{% if r.walkaround_video %}Replace{% else %}Upload{% endif %}</span></label>
     </div>
     <div class="up-progress"><div class="up-fill"></div></div>
     <div class="up-pct"></div>
   </div>
+  {% if r.disposition != 'scrap' %}
   <div class="up-row" data-field="engine_audio" data-req="0">
     <div class="up-head">
       <div class="up-ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4"/></svg></div>
@@ -206,6 +209,7 @@
     <div class="up-progress"><div class="up-fill"></div></div>
     <div class="up-pct"></div>
   </div>
+  {% endif %}
 </div>
 
 <style>
@@ -229,7 +233,7 @@
 
 <div class="cp-group-label">Ratings <span id="rate-status" style="float:right;font-weight:400;color:var(--muted)"></span></div>
 <div class="card">
-  <div class="rate-row" data-field="rating_exterior" data-val="{{ r.rating_exterior|default:0 }}"><span class="rate-lbl">Exterior</span><span class="stars"></span></div>
+  <div class="rate-row" data-field="rating_exterior" data-val="{{ r.rating_exterior|default:0 }}"><span class="rate-lbl">{% if r.disposition == 'scrap' %}Panel Quality{% else %}Exterior{% endif %}</span><span class="stars"></span></div>
   {% if r.disposition != 'scrap' %}
   <div class="rate-row" data-field="rating_interior" data-val="{{ r.rating_interior|default:0 }}"><span class="rate-lbl">Interior</span><span class="stars"></span></div>
   <div class="rate-row" data-field="rating_engine" data-val="{{ r.rating_engine|default:0 }}"><span class="rate-lbl">Engine</span><span class="stars"></span></div>

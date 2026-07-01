@@ -279,13 +279,16 @@ def insp_zone(request, id, zone_key):
         extra = {"ins_types": INSURANCE_TYPES, "ins_months": EXPIRY_MONTHS,
                  "ins_years": [str(y) for y in range(yr, yr + 11)]}
     elif zone_key == "docs":
-        extra = {"wrap_ready": all([r.front_photo, r.rear_photo, r.left_photo,
-                                    r.right_photo, r.walkaround_video])}
+        _wrap = all([r.front_photo, r.rear_photo, r.left_photo,
+                     r.right_photo, r.walkaround_video])
+        if r.disposition == "scrap":          # scrap also needs the Panel Quality rating
+            _wrap = _wrap and bool(r.rating_exterior)
+        extra = {"wrap_ready": _wrap}
 
     groups = []
-    for g in zone["groups"]:
+    for g, cps in engine.visible_groups(r, zone):     # disposition-aware (scrap → body/RC only)
         rows = []
-        for cp in g["checkpoints"]:
+        for cp in cps:
             entry = res.get(cp["key"])
             pf = prefill.get(cp["key"], "")
             rows.append({**cp, "entry": entry,
@@ -321,6 +324,9 @@ def insp_cp_save(request, id):
     zone_key = request.POST.get("zone")
     if not key or key not in {cp["key"] for _z, cp in zones.all_checkpoints()}:
         return JsonResponse({"ok": False, "error": "bad key"}, status=400)
+    # Scrap flow stores body/RC only — never a hidden mechanical checkpoint.
+    if r.disposition == "scrap" and key not in engine.visible_keys(r):
+        return JsonResponse({"ok": False, "error": "not in scrap flow"}, status=400)
 
     before_active = engine.active_zone_key(r)
     result = request.POST.get("result")          # ok | issue | na | (none for field)
@@ -891,6 +897,9 @@ def insp_submit(request, id):
     if is_walk and not all([r.front_photo, r.rear_photo, r.left_photo,
                             r.right_photo, r.walkaround_video]):
         return redirect(f"/inspect/{r.id}/zone/docs?err=wrapup")
+    # Scrap also requires the single Panel Quality rating (stored in rating_exterior).
+    if is_walk and r.disposition == "scrap" and not r.rating_exterior:
+        return redirect(f"/inspect/{r.id}/zone/docs?err=panel")
     notes = request.POST.get("final_notes")
     if notes is not None:
         r.final_notes = notes

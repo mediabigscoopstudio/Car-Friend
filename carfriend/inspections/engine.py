@@ -15,6 +15,7 @@
 from .zones import (
     ZONES, ZONE_BY_KEY, ZONE_ORDER, zone_checkpoints, checkpoint_count,
     all_checkpoints, SEVERITY_PENALTY, PART_WEIGHT, grade_for, TEMPLATE_VERSION,
+    PT_BODY,
 )
 
 WALK_KEY = "walk"
@@ -83,7 +84,7 @@ def mark_zone_good(report, zone_key, commit=True):
     zone = ZONE_BY_KEY[zone_key]
     walk = _walk(report)
     changed = 0
-    for cp in zone_checkpoints(zone):
+    for cp in visible_checkpoints(report, zone):     # scrap → never touches hidden engine rows
         if cp["kind"] != "issue":
             continue
         entry = walk["results"].get(cp["key"])
@@ -113,15 +114,75 @@ def is_resolved(cp, entry):
     return bool(entry.get("result"))
 
 
+# ── SCRAP checkpoint-level filtering ────────────────────────────────────────
+# Scrap captures body/panel/frame condition + RC registry only. Everything else
+# (physical-capture, insurance, engine, tyres/alloys, glass, lights, mirrors,
+# interior/test-drive, doc photos) is stripped so ZERO engine info can appear.
+_SCRAP_DETAILS_KEEP = "Identity (verify from RC)"     # the RC-registration group
+_SCRAP_BODY_ZONES = {"left", "front", "right", "rear"}
+
+
+def _is_scrap(report):
+    return getattr(report, "disposition", "") == "scrap"
+
+
+def scrap_group_visible(zone_key, group):
+    """Whole-group visibility under scrap."""
+    if zone_key == "details":
+        return group["label"] == _SCRAP_DETAILS_KEEP   # RC registry only
+    if zone_key == "docs":
+        return False                                   # doc photos handled by wrap-up block
+    return True
+
+
+def scrap_cp_visible(zone_key, group, cp):
+    """Checkpoint visibility under scrap: RC-identity in details; body/frame
+    (PT_BODY) only in the exterior zones; nothing mechanical anywhere."""
+    if not scrap_group_visible(zone_key, group):
+        return False
+    if zone_key in _SCRAP_BODY_ZONES:
+        return cp.get("pt") == PT_BODY
+    return True
+
+
+def visible_groups(report, zone):
+    """[(group, [checkpoints])] visible for this report's disposition.
+    AUCTION/unset → every group + checkpoint (unchanged)."""
+    scrap = _is_scrap(report)
+    out = []
+    for g in zone["groups"]:
+        if scrap and not scrap_group_visible(zone["key"], g):
+            continue
+        cps = [cp for cp in g["checkpoints"]
+               if not scrap or scrap_cp_visible(zone["key"], g, cp)]
+        if cps:
+            out.append((g, cps))
+    return out
+
+
+def visible_checkpoints(report, zone):
+    for _g, cps in visible_groups(report, zone):
+        for cp in cps:
+            yield cp
+
+
+def visible_keys(report):
+    """Set of checkpoint keys the inspector may fill for this report's disposition."""
+    return {cp["key"] for z in zones_for(report) for cp in visible_checkpoints(report, z)}
+
+
 def zone_progress(report, zone):
     res = results(report)
-    total = checkpoint_count(zone)
-    done = sum(1 for cp in zone_checkpoints(zone) if is_resolved(cp, res.get(cp["key"])))
+    cps = list(visible_checkpoints(report, zone))
+    total = len(cps)
+    done = sum(1 for cp in cps if is_resolved(cp, res.get(cp["key"])))
     return {
         "resolved": done, "total": total,
         "pct": round(done * 100 / total) if total else 0,
-        "complete": done >= total and total > 0,
-        "issues": sum(1 for cp in zone_checkpoints(zone)
+        # A zone with no visible checkpoints (e.g. scrap 'docs') counts complete;
+        # its wrap-up is gated separately at submit.
+        "complete": done >= total,
+        "issues": sum(1 for cp in cps
                       if (res.get(cp["key"]) or {}).get("result") == "issue"),
     }
 
