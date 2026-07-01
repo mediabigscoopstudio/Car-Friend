@@ -93,6 +93,10 @@ class Vehicle(models.Model):
     # Denormalised from the inspection report on submit (read by seller dashboard
     # + auction room). Single-letter grade A/B/C/D, matching report.condition_grade.
     condition_grade = models.CharField(max_length=1, blank=True)
+    # Auction vs scrap — mirrored from InspectionReport.disposition on submit.
+    # SCRAP cars are excluded from auction creation / listings.
+    DISPOSITION_CHOICES = [("auction", "Auction"), ("scrap", "Scrap")]
+    disposition     = models.CharField(max_length=10, choices=DISPOSITION_CHOICES, blank=True, default="")
 
     # Timestamps
     created_at      = models.DateTimeField(auto_now_add=True)

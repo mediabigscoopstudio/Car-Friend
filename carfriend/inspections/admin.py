@@ -15,8 +15,8 @@ class VisitAdmin(admin.ModelAdmin):
 
 @admin.register(InspectionReport)
 class ReportAdmin(admin.ModelAdmin):
-    list_display = ("visit", "score", "condition_grade", "decision", "is_locked", "submitted_at", "decided_by")
-    list_filter  = ("condition_grade", "decision", "is_locked")
+    list_display = ("visit", "disposition", "score", "condition_grade", "decision", "is_locked", "submitted_at", "decided_by")
+    list_filter  = ("disposition", "condition_grade", "decision", "is_locked")
     inlines      = [MediaInline]
 
 

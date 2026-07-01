@@ -17,7 +17,8 @@ def checkpoint_autosave(request, report_id):
     }
     r.is_synced = True
     r.save(update_fields=["checkpoints", "is_synced"])
-    return Response({"ok": True, "done": sum(len(s) for s in r.checkpoints.values())})
+    return Response({"ok": True, "done": sum(len(s) for s in r.checkpoints.values()),
+                     "disposition": r.disposition})
 
 
 @api_view(["POST"])

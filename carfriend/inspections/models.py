@@ -41,6 +41,15 @@ class InspectionReport(models.Model):
         REDO     = "redo",     "Redo requested"
         REMOVED  = "removed",  "Removed / voided"
 
+    class Disposition(models.TextChoices):
+        AUCTION = "auction", "Auction"
+        SCRAP   = "scrap",   "Scrap"
+
+    class ExhaustSmoke(models.TextChoices):
+        WHITE = "white", "White"
+        BLACK = "black", "Black"
+        NONE  = "none",  "No Smoke"
+
     visit            = models.OneToOneField("InspectionVisit", on_delete=models.CASCADE, related_name="report")
     checkpoints      = models.JSONField(default=dict, blank=True)
     photos           = models.JSONField(default=dict, blank=True)
@@ -79,6 +88,18 @@ class InspectionReport(models.Model):
     insurance_expiry_month = models.CharField(max_length=12, blank=True)
     insurance_expiry_year  = models.CharField(max_length=4, blank=True)
     insurance_photo        = models.ImageField(upload_to="inspections/insurance/", max_length=255, blank=True, null=True)
+    # ── Disposition (auction vs scrap): chosen at the hero step, required before
+    # the walk proceeds; mirrored to Vehicle.disposition on submit. ──
+    disposition   = models.CharField(max_length=10, choices=Disposition.choices, blank=True, default="")
+    # Engine exhaust smoke — auction/full inspection only (not analysed for scrap).
+    exhaust_smoke = models.CharField(max_length=10, choices=ExhaustSmoke.choices, blank=True, default="")
+    # Final-section 5-star ratings (1–5). Auction shows all six; scrap → exterior only.
+    rating_exterior   = models.PositiveSmallIntegerField(null=True, blank=True)
+    rating_interior   = models.PositiveSmallIntegerField(null=True, blank=True)
+    rating_engine     = models.PositiveSmallIntegerField(null=True, blank=True)
+    rating_suspension = models.PositiveSmallIntegerField(null=True, blank=True)
+    rating_ac         = models.PositiveSmallIntegerField(null=True, blank=True)
+    rating_brake      = models.PositiveSmallIntegerField(null=True, blank=True)
     created_at       = models.DateTimeField(auto_now_add=True)
     updated_at       = models.DateTimeField(auto_now=True)
 
