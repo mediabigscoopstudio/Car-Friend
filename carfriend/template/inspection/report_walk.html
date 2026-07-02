@@ -90,6 +90,40 @@
 </div>
 {% endif %}
 
+{% if r.is_drivable != None %}
+<div class="section-label">Test drive</div>
+<div class="card">
+  {% if r.is_drivable %}
+  <div class="info-row"><span class="k">Drivable</span><span class="v">Yes · {{ r.distance_km|default:0 }} km{% if r.duration_seconds %} · {{ r.duration_seconds }}s{% endif %}</span></div>
+  {% if r.suspension_condition %}<div class="info-row"><span class="k">Suspension</span><span class="v">{{ r.get_suspension_condition_display }}{% if r.rating_suspension %} · {{ r.rating_suspension }}★{% endif %}</span></div>{% endif %}
+  {% if r.brake_condition %}<div class="info-row"><span class="k">Brakes</span><span class="v">{{ r.get_brake_condition_display }}{% if r.rating_brake %} · {{ r.rating_brake }}★{% endif %}</span></div>{% endif %}
+  {% if r.gps_route %}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  {{ r.gps_route|json_script:"rep-route" }}
+  <div id="rep-map" style="height:260px;border-radius:12px;overflow:hidden;margin-top:10px;background:#e5e7eb"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+  (function () {
+    var route; try { route = JSON.parse(document.getElementById('rep-route').textContent) || []; } catch (e) { route = []; }
+    if (!route.length || typeof L === 'undefined') return;
+    var pts = route.map(function (p) { return [p.lat, p.lng]; });
+    var map = L.map('rep-map');
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+    var poly = L.polyline(pts, { color: '#0B7D24', weight: 5 }).addTo(map);
+    L.marker(pts[0]).addTo(map).bindPopup('Start');
+    L.marker(pts[pts.length - 1]).addTo(map).bindPopup('End');
+    map.fitBounds(poly.getBounds(), { padding: [25, 25] });
+  })();
+  </script>
+  <div style="font-size:11px;color:var(--muted);margin-top:4px">Route visible to the CarFriend team only.</div>
+  {% endif %}
+  {% else %}
+  <div class="info-row"><span class="k">Drivable</span><span class="v" style="color:#dc2626">No{% if r.towing_needed %} · towing needed{% endif %}</span></div>
+  {% if r.issue_description %}<div class="info-row"><span class="k">Issue</span><span class="v">{{ r.issue_description }}</span></div>{% endif %}
+  {% endif %}
+</div>
+{% endif %}
+
 {% if r.editable %}
 <form method="post" action="/submit/{{ r.id }}" onsubmit="this.querySelector('button').disabled=true">
   {% csrf_token %}

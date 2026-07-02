@@ -142,6 +142,9 @@ SOCIALACCOUNT_PROVIDERS = {
 WSGI_APPLICATION = "carfriend.wsgi.application"
 ASGI_APPLICATION = "carfriend.asgi.application"
 CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
+# Live test-drive GPS broadcast (ws/drive/<report_id>/). OFF by default; store-and-
+# replay always works. Set True to let Admin/customer watch a drive live.
+DRIVE_LIVE_BROADCAST = False
 
 
 # Database

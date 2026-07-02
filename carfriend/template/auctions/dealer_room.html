@@ -219,6 +219,23 @@
               </div>
             </div>
 
+            {% if inspection.drive %}
+            <div style="padding:14px 20px;border-bottom:1px solid #e5e7eb;">
+              <div style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#64748b;margin-bottom:8px;">Test Drive</div>
+              {% if inspection.drive.is_drivable %}
+              <div style="display:flex;flex-wrap:wrap;gap:18px;font-size:.82rem;color:#0f172a;">
+                <div><span style="color:#64748b;">Distance</span> &nbsp;<strong>{{ inspection.drive.distance_km|default:0 }} km</strong></div>
+                {% if inspection.drive.duration_min %}<div><span style="color:#64748b;">Duration</span> &nbsp;<strong>{{ inspection.drive.duration_min }} min</strong></div>{% endif %}
+                {% if inspection.drive.suspension %}<div><span style="color:#64748b;">Suspension</span> &nbsp;<strong>{{ inspection.drive.suspension }}</strong></div>{% endif %}
+                {% if inspection.drive.brake %}<div><span style="color:#64748b;">Brakes</span> &nbsp;<strong>{{ inspection.drive.brake }}</strong></div>{% endif %}
+              </div>
+              <div style="font-size:.68rem;color:#94a3b8;margin-top:6px;">Route map is available to the CarFriend team only.</div>
+              {% else %}
+              <div style="font-size:.82rem;color:#dc2626;font-weight:600;">Not drivable{% if inspection.drive.towing_needed %} · towing needed{% endif %}</div>
+              {% endif %}
+            </div>
+            {% endif %}
+
             {% if inspection.audio_url %}
             <div style="padding:16px 20px;">
               <div style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#64748b;margin-bottom:12px;">Inspection Media</div>

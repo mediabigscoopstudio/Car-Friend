@@ -183,6 +183,19 @@ def dealer_inspection(report):
                                  "ok_count": ok, "issue_count": issue,
                                  "photos": photos_by_sec.get(key, [])})
 
+    # Test-drive summary — distance + duration + drivability ONLY. The GPS route
+    # map is admin-only (it would reveal the seller's location), so never sent here.
+    drive = None
+    if report.is_drivable is not None:
+        drive = {
+            "is_drivable": report.is_drivable,
+            "towing_needed": report.towing_needed,
+            "distance_km": report.distance_km,
+            "duration_min": round(report.duration_seconds / 60) if report.duration_seconds else None,
+            "suspension": report.get_suspension_condition_display() if report.suspension_condition else None,
+            "brake": report.get_brake_condition_display() if report.brake_condition else None,
+        }
+
     return {
         "grade": grade,
         "score": score,
@@ -191,6 +204,7 @@ def dealer_inspection(report):
         "has_challans": (report.challan_count or 0) > 0,
         "audio_url": report.engine_audio.url if report.engine_audio else None,
         # walkaround_video intentionally omitted — it is NOT plate-masked.
+        "drive": drive,          # distance/duration/drivability only — NO route map
         "report": report,
     }
 

@@ -11,12 +11,14 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 from django.urls import path
 
 from auctions.consumers import AuctionConsumer
+from inspections.consumers import DriveConsumer
 
 application = ProtocolTypeRouter({
     "http": django_asgi,
     "websocket": AuthMiddlewareStack(
         URLRouter([
             path("ws/auction/<auction_id>/", AuctionConsumer.as_asgi()),
+            path("ws/drive/<report_id>/", DriveConsumer.as_asgi()),
         ])
     ),
 })
