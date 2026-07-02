@@ -593,6 +593,94 @@ def insp_final_save(request, id):
 
 @inspector_required
 @require_POST
+def insp_testdrive_save(request, id):
+    """Autosave for the Test Drive section (auction only). JSON body:
+      {"action":"field","field":..,"value":..}  — scalar fields
+      {"action":"route","points":[{lat,lng,ts}..],"distance_km":..,"duration_seconds":..}
+    """
+    import json as _json
+    r = _get_report(request, id)
+    if not r.editable:
+        return JsonResponse({"ok": False, "error": "locked"}, status=409)
+    try:
+        data = _json.loads(request.body or b"{}")
+    except (ValueError, TypeError):
+        return JsonResponse({"ok": False, "error": "bad json"}, status=400)
+
+    action = data.get("action")
+    if action == "field":
+        f, v = data.get("field"), data.get("value")
+        if f == "is_drivable":
+            r.is_drivable = bool(v)
+        elif f == "towing_needed":
+            r.towing_needed = bool(v)
+        elif f == "issue_description":
+            r.issue_description = (v or "")[:2000]
+        elif f in ("rating_suspension", "rating_brake"):
+            try:
+                iv = int(v)
+            except (TypeError, ValueError):
+                return JsonResponse({"ok": False, "error": "bad value"}, status=400)
+            if not (1 <= iv <= 5):
+                return JsonResponse({"ok": False, "error": "range"}, status=400)
+            setattr(r, f, iv)
+        elif f in ("suspension_condition", "brake_condition") and v in ("abnormal", "normal", "weak"):
+            setattr(r, f, v)
+        else:
+            return JsonResponse({"ok": False, "error": "bad field"}, status=400)
+        r.save(update_fields=[f, "updated_at"] if f not in ("is_drivable", "towing_needed") else [f, "updated_at"])
+        _drive_broadcast(r, {"type": "field", "field": f, "value": v})
+        return JsonResponse({"ok": True})
+
+    if action == "route":
+        route = list(r.gps_route or [])
+        for p in (data.get("points") or [])[:2000]:
+            try:
+                route.append({"lat": round(float(p["lat"]), 6),
+                              "lng": round(float(p["lng"]), 6),
+                              "ts": int(p.get("ts") or 0)})
+            except (KeyError, TypeError, ValueError):
+                continue
+        r.gps_route = route[-6000:]
+        if route:
+            r.route_start_lat, r.route_start_lng = route[0]["lat"], route[0]["lng"]
+            r.route_end_lat, r.route_end_lng = route[-1]["lat"], route[-1]["lng"]
+        try:
+            if data.get("distance_km") is not None:
+                r.distance_km = round(float(data["distance_km"]), 3)
+            if data.get("duration_seconds") is not None:
+                r.duration_seconds = int(data["duration_seconds"])
+        except (TypeError, ValueError):
+            pass
+        r.save(update_fields=["gps_route", "route_start_lat", "route_start_lng",
+                              "route_end_lat", "route_end_lng", "distance_km",
+                              "duration_seconds", "updated_at"])
+        _drive_broadcast(r, {"type": "route", "points": data.get("points") or [],
+                             "distance_km": r.distance_km})
+        return JsonResponse({"ok": True, "distance_km": r.distance_km})
+
+    return JsonResponse({"ok": False, "error": "bad action"}, status=400)
+
+
+def _drive_broadcast(report, payload):
+    """Optional live drive broadcast over Channels — OFF unless
+    settings.DRIVE_LIVE_BROADCAST is True. Store-and-replay works regardless."""
+    from django.conf import settings
+    if not getattr(settings, "DRIVE_LIVE_BROADCAST", False):
+        return
+    try:
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        layer = get_channel_layer()
+        if layer:
+            async_to_sync(layer.group_send)(
+                f"drive_{report.id}", {"type": "drive.event", "payload": payload})
+    except Exception:
+        logger.exception("drive broadcast failed for report %s", report.id)
+
+
+@inspector_required
+@require_POST
 def insp_field_upload(request, id):
     """Generic upload to a whitelisted InspectionReport file/image field
     (wrap-up photos/video/audio, insurance photo). Reuses Django's storage."""
@@ -900,6 +988,16 @@ def insp_submit(request, id):
     # Scrap also requires the single Panel Quality rating (stored in rating_exterior).
     if is_walk and r.disposition == "scrap" and not r.rating_exterior:
         return redirect(f"/inspect/{r.id}/zone/docs?err=panel")
+    # Test Drive completeness (auction only).
+    if is_walk and r.disposition != "scrap":
+        td_ok = r.is_drivable is not None
+        if r.is_drivable is False:
+            td_ok = bool(r.issue_description) and r.towing_needed is not None
+        elif r.is_drivable is True:
+            td_ok = ((r.distance_km or 0) >= 0.9 and r.rating_suspension and r.suspension_condition
+                     and r.rating_brake and r.brake_condition)
+        if not td_ok:
+            return redirect(f"/inspect/{r.id}/zone/testdrive?err=testdrive")
     notes = request.POST.get("final_notes")
     if notes is not None:
         r.final_notes = notes

@@ -265,22 +265,17 @@ ZONES = [
                 _cp("rear_defogger", "Rear defogger", PT_INFO, na=True),
                 _cp("abs_feature", "ABS", PT_BRAKES, na=True),
             ]},
-            {"label": "Test drive", "checkpoints": [
-                _cp("td_cold_start", "Cold start", PT_DRIVE),
-                _cp("td_idle", "Idle", PT_DRIVE),
-                _cp("td_acceleration", "Acceleration", PT_DRIVE),
-                _cp("td_braking", "Braking", PT_BRAKES),
-                _cp("td_steering_feel", "Steering feel", PT_STEER),
-                _cp("td_suspension_nvh", "Suspension / NVH", PT_STEER),
-                _cp("td_clutch_gearbox", "Clutch / gearbox", PT_TRANS),
-                _cp("td_ac_driving", "AC cooling while driving", PT_AC),
-                _cp("td_electricals_load", "Electricals under load", PT_INFO),
-                _cp("td_exhaust_smoke", "Exhaust smoke", PT_EXHAUST),
-            ]},
         ],
     },
     {
-        "key": "docs", "index": 6, "title": "Documents & wrap-up", "short": "Docs",
+        # Structured Test Drive section (drivability + live 1KM GPS drive +
+        # suspension/brake) — rendered from InspectionReport fields, NOT
+        # checkpoints. Auction only (hidden for scrap via engine.zones_for).
+        "key": "testdrive", "index": 6, "title": "Test drive", "short": "Test drive",
+        "groups": [],
+    },
+    {
+        "key": "docs", "index": 7, "title": "Documents & wrap-up", "short": "Docs",
         "groups": [
             {"label": "Documents", "checkpoints": [
                 _cp("doc_rc", "RC photo", PT_RC, kind="doc", photo="req"),

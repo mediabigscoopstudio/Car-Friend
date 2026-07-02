@@ -50,6 +50,11 @@ class InspectionReport(models.Model):
         BLACK = "black", "Black"
         NONE  = "none",  "No Smoke"
 
+    class TDCondition(models.TextChoices):        # test-drive suspension / brake condition
+        ABNORMAL = "abnormal", "Abnormal"
+        NORMAL   = "normal",   "Normal"
+        WEAK     = "weak",     "Weak"
+
     visit            = models.OneToOneField("InspectionVisit", on_delete=models.CASCADE, related_name="report")
     checkpoints      = models.JSONField(default=dict, blank=True)
     photos           = models.JSONField(default=dict, blank=True)
@@ -100,6 +105,22 @@ class InspectionReport(models.Model):
     rating_suspension = models.PositiveSmallIntegerField(null=True, blank=True)
     rating_ac         = models.PositiveSmallIntegerField(null=True, blank=True)
     rating_brake      = models.PositiveSmallIntegerField(null=True, blank=True)
+    # ── Test Drive section (auction only) ──
+    is_drivable          = models.BooleanField(null=True, blank=True)
+    issue_description    = models.TextField(blank=True, default="")     # when not drivable
+    towing_needed        = models.BooleanField(null=True, blank=True)   # when not drivable
+    # Live 1KM GPS drive (drivable only). Route stays admin-only downstream.
+    gps_route            = models.JSONField(default=list, blank=True)   # [{lat,lng,ts}]
+    distance_km          = models.FloatField(null=True, blank=True)
+    duration_seconds     = models.PositiveIntegerField(null=True, blank=True)
+    route_start_lat      = models.FloatField(null=True, blank=True)
+    route_start_lng      = models.FloatField(null=True, blank=True)
+    route_end_lat        = models.FloatField(null=True, blank=True)
+    route_end_lng        = models.FloatField(null=True, blank=True)
+    # Suspension & Brake now live here (moved out of the final six ratings).
+    # The 1–5 stars reuse rating_suspension / rating_brake above.
+    suspension_condition = models.CharField(max_length=10, choices=TDCondition.choices, blank=True, default="")
+    brake_condition      = models.CharField(max_length=10, choices=TDCondition.choices, blank=True, default="")
     created_at       = models.DateTimeField(auto_now_add=True)
     updated_at       = models.DateTimeField(auto_now=True)
 

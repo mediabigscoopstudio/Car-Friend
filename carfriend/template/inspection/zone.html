@@ -237,9 +237,8 @@
   {% if r.disposition != 'scrap' %}
   <div class="rate-row" data-field="rating_interior" data-val="{{ r.rating_interior|default:0 }}"><span class="rate-lbl">Interior</span><span class="stars"></span></div>
   <div class="rate-row" data-field="rating_engine" data-val="{{ r.rating_engine|default:0 }}"><span class="rate-lbl">Engine</span><span class="stars"></span></div>
-  <div class="rate-row" data-field="rating_suspension" data-val="{{ r.rating_suspension|default:0 }}"><span class="rate-lbl">Suspension</span><span class="stars"></span></div>
   <div class="rate-row" data-field="rating_ac" data-val="{{ r.rating_ac|default:0 }}"><span class="rate-lbl">AC</span><span class="stars"></span></div>
-  <div class="rate-row" data-field="rating_brake" data-val="{{ r.rating_brake|default:0 }}"><span class="rate-lbl">Brake</span><span class="stars"></span></div>
+  {# Suspension & Brake moved to the Test Drive section (avoid double capture). #}
   {% endif %}
 </div>
 
@@ -252,7 +251,78 @@
 </form>
 {% endif %}
 
-{% if progress.complete and zone.key != 'docs' %}
+{% if zone.key == 'testdrive' %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+.td .rate-row{display:flex;align-items:center;justify-content:space-between;padding:9px 2px}
+.td .rate-lbl{font-size:14px;font-weight:500}
+.td .stars{display:inline-flex;gap:4px}.td .star{cursor:pointer;font-size:22px;line-height:1;color:var(--line)}.td .star.on{color:#f5b301}
+.td .cp-btn.sel{outline:2px solid var(--brand);outline-offset:1px}
+#td-map{height:280px;border-radius:12px;overflow:hidden;background:#e5e7eb}
+.td-big{font-family:var(--font-d);font-weight:800;font-size:22px;line-height:1}
+</style>
+{{ r.gps_route|json_script:"td-route" }}
+<div class="td">
+  <div class="card">
+    <div class="cp-group-label">Is the car in a drivable state?</div>
+    <div style="display:flex;gap:8px">
+      <button type="button" class="cp-btn ok td-drivable {% if r.is_drivable %}sel{% endif %}" data-v="1" style="flex:1;justify-content:center">Yes</button>
+      <button type="button" class="cp-btn issue td-drivable {% if r.is_drivable == False %}sel{% endif %}" data-v="0" style="flex:1;justify-content:center">No</button>
+    </div>
+  </div>
+
+  <div id="td-notdrivable" class="card" style="{% if r.is_drivable != False %}display:none{% endif %}">
+    <div class="sheet-field"><label>Mention the issue</label>
+      <textarea id="td-issue" rows="3" placeholder="What is wrong with the car?">{{ r.issue_description }}</textarea></div>
+    <div class="cp-group-label" style="margin-top:8px">Towing needed</div>
+    <div style="display:flex;gap:8px">
+      <button type="button" class="cp-btn issue td-towing {% if r.towing_needed %}sel{% endif %}" data-v="1" style="flex:1;justify-content:center">Needed</button>
+      <button type="button" class="cp-btn ok td-towing {% if r.towing_needed == False %}sel{% endif %}" data-v="0" style="flex:1;justify-content:center">Not needed</button>
+    </div>
+  </div>
+
+  <div id="td-drivable-block" style="{% if not r.is_drivable %}display:none{% endif %}">
+    <div class="cp-group-label">Live test drive <span id="td-status" style="float:right;font-weight:400;color:var(--muted)"></span></div>
+    <div class="card">
+      <div id="td-map"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+        <div>
+          <div class="td-big"><span id="td-dist">{{ r.distance_km|default:0 }}</span> <span style="font-size:13px;color:var(--muted);font-weight:400">/ 1.0 km</span></div>
+          <div style="font-size:12px;color:var(--muted)">Elapsed <span id="td-time">0:00</span></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button type="button" id="td-start" class="btn btn-primary btn-sm">Start Drive</button>
+          <button type="button" id="td-end" class="btn btn-ghost btn-sm" disabled>End Drive</button>
+        </div>
+      </div>
+      <div id="td-warn" class="note-hint" style="margin-top:6px"></div>
+    </div>
+
+    <div class="card">
+      <div class="cp-group-label" style="margin:0 0 8px">Suspension</div>
+      <div class="rate-row" data-field="rating_suspension" data-val="{{ r.rating_suspension|default:0 }}"><span class="rate-lbl">Rating</span><span class="stars"></span></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button type="button" class="cp-btn issue td-cond {% if r.suspension_condition == 'abnormal' %}sel{% endif %}" data-field="suspension_condition" data-v="abnormal" style="flex:1;justify-content:center">Abnormal</button>
+        <button type="button" class="cp-btn ok td-cond {% if r.suspension_condition == 'normal' %}sel{% endif %}" data-field="suspension_condition" data-v="normal" style="flex:1;justify-content:center">Normal</button>
+        <button type="button" class="cp-btn td-cond {% if r.suspension_condition == 'weak' %}sel{% endif %}" data-field="suspension_condition" data-v="weak" style="flex:1;justify-content:center">Weak</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="cp-group-label" style="margin:0 0 8px">Braking</div>
+      <div class="rate-row" data-field="rating_brake" data-val="{{ r.rating_brake|default:0 }}"><span class="rate-lbl">Rating</span><span class="stars"></span></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button type="button" class="cp-btn issue td-cond {% if r.brake_condition == 'abnormal' %}sel{% endif %}" data-field="brake_condition" data-v="abnormal" style="flex:1;justify-content:center">Abnormal</button>
+        <button type="button" class="cp-btn ok td-cond {% if r.brake_condition == 'normal' %}sel{% endif %}" data-field="brake_condition" data-v="normal" style="flex:1;justify-content:center">Normal</button>
+        <button type="button" class="cp-btn td-cond {% if r.brake_condition == 'weak' %}sel{% endif %}" data-field="brake_condition" data-v="weak" style="flex:1;justify-content:center">Weak</button>
+      </div>
+    </div>
+  </div>
+</div>
+<a class="btn btn-primary block" href="/inspect/{{ r.id }}/zone/docs" style="margin-top:14px">Continue to documents →</a>
+{% endif %}
+
+{% if progress.complete and zone.key != 'docs' and zone.key != 'testdrive' %}
 <a class="btn btn-primary block" href="/inspect/{{ r.id }}" style="margin-top:14px">Zone done — back to zones</a>
 {% endif %}
 
@@ -638,6 +708,157 @@
       save(b.dataset.field, b.dataset.val);
     });
   });
+})();
+</script>
+{% endif %}
+
+{% if zone.key == 'testdrive' %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// Test Drive: drivability + live 1KM GPS drive (Leaflet/OSM) + suspension/brake.
+(function () {
+  var REPORT_ID = {{ r.id }};
+  var MIN_KM = 1.0;
+  var csrf = document.querySelector('input[name=csrfmiddlewaretoken]');
+  var statusEl = document.getElementById('td-status');
+  function setStatus(t) { if (statusEl) statusEl.textContent = t; }
+
+  function save(payload) {
+    setStatus('Saving…');
+    return fetch('/inspect/' + REPORT_ID + '/testdrive', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrf ? csrf.value : '', 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+      .then(function (d) { setStatus('Saved'); setTimeout(function () { setStatus(''); }, 1000); return d; })
+      .catch(function () { setStatus('Retry'); });
+  }
+  function saveField(field, value) { return save({ action: 'field', field: field, value: value }); }
+
+  // ---- Drivable Yes/No branch ----
+  var notDrivable = document.getElementById('td-notdrivable');
+  var drivableBlock = document.getElementById('td-drivable-block');
+  document.querySelectorAll('.td-drivable').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.td-drivable').forEach(function (x) { x.classList.remove('sel'); });
+      b.classList.add('sel');
+      var yes = b.dataset.v === '1';
+      notDrivable.style.display = yes ? 'none' : 'block';
+      drivableBlock.style.display = yes ? 'block' : 'none';
+      saveField('is_drivable', yes);
+      if (yes) setTimeout(initMap, 60);
+    });
+  });
+  // Not-drivable: issue + towing
+  var issue = document.getElementById('td-issue'), issueT;
+  if (issue) issue.addEventListener('input', function () {
+    clearTimeout(issueT); issueT = setTimeout(function () { saveField('issue_description', issue.value); }, 700);
+  });
+  document.querySelectorAll('.td-towing').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.td-towing').forEach(function (x) { x.classList.remove('sel'); });
+      b.classList.add('sel'); saveField('towing_needed', b.dataset.v === '1');
+    });
+  });
+  // Condition selectors (suspension/brake)
+  document.querySelectorAll('.td-cond').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.td-cond[data-field="' + b.dataset.field + '"]').forEach(function (x) { x.classList.remove('sel'); });
+      b.classList.add('sel'); saveField(b.dataset.field, b.dataset.v);
+    });
+  });
+  // Star ratings (reuse pattern) → rating_suspension / rating_brake
+  document.querySelectorAll('.td .rate-row').forEach(function (row) {
+    var wrap = row.querySelector('.stars'), field = row.dataset.field;
+    function render(v) {
+      wrap.innerHTML = '';
+      for (var i = 1; i <= 5; i++) {
+        var s = document.createElement('span');
+        s.className = 'star' + (i <= v ? ' on' : ''); s.textContent = '★';
+        (function (n) { s.onclick = function () { render(n); saveField(field, n); }; })(i);
+        wrap.appendChild(s);
+      }
+    }
+    render(parseInt(row.dataset.val, 10) || 0);
+  });
+
+  // ---- Live GPS drive (Leaflet + OSM) behind a tiny provider wrapper ----
+  var map, marker, poly, mapReady = false;
+  var route = [];
+  try { route = JSON.parse(document.getElementById('td-route').textContent) || []; } catch (e) { route = []; }
+  var watchId = null, startTs = 0, timerId = null, totalKm = 0;
+
+  function haversine(a, b) {
+    var R = 6371, dLat = (b.lat - a.lat) * Math.PI / 180, dLng = (b.lng - a.lng) * Math.PI / 180;
+    var s = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return 2 * R * Math.asin(Math.sqrt(s));
+  }
+  function latlngs() { return route.map(function (p) { return [p.lat, p.lng]; }); }
+
+  function initMap() {
+    if (mapReady || typeof L === 'undefined') return;
+    var start = route.length ? [route[0].lat, route[0].lng] : [20.5937, 78.9629];
+    map = L.map('td-map').setView(start, route.length ? 15 : 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+    poly = L.polyline(latlngs(), { color: '#0B7D24', weight: 5 }).addTo(map);
+    if (route.length) { marker = L.marker(start).addTo(map); map.fitBounds(poly.getBounds(), { padding: [30, 30] }); }
+    // recompute stored distance
+    for (var i = 1; i < route.length; i++) totalKm += haversine(route[i - 1], route[i]);
+    updateDist();
+    mapReady = true;
+  }
+
+  function updateDist() { document.getElementById('td-dist').textContent = totalKm.toFixed(2); }
+  function fmtTime(s) { var m = Math.floor(s / 60); return m + ':' + String(s % 60).padStart(2, '0'); }
+
+  var pending = [], lastSave = 0;
+  function flush(force) {
+    if (!pending.length && !force) return;
+    var batch = pending.splice(0);
+    save({ action: 'route', points: batch, distance_km: totalKm,
+           duration_seconds: startTs ? Math.round((Date.now() - startTs) / 1000) : null });
+  }
+
+  function onPos(p) {
+    var pt = { lat: p.coords.latitude, lng: p.coords.longitude, ts: Math.round(p.timestamp / 1000) };
+    if (route.length) totalKm += haversine(route[route.length - 1], pt);
+    route.push(pt); pending.push(pt);
+    if (mapReady) {
+      var ll = [pt.lat, pt.lng];
+      poly.addLatLng(ll);
+      if (!marker) marker = L.marker(ll).addTo(map); else marker.setLatLng(ll);
+      map.setView(ll, Math.max(map.getZoom(), 16));
+    }
+    updateDist();
+    var now = Date.now();
+    if (now - lastSave > 4000) { lastSave = now; flush(); }   // debounced route save
+  }
+
+  var startBtn = document.getElementById('td-start'), endBtn = document.getElementById('td-end');
+  var warn = document.getElementById('td-warn');
+  if (startBtn) startBtn.addEventListener('click', function () {
+    if (!navigator.geolocation) { warn.textContent = 'Geolocation not available on this device.'; return; }
+    initMap();
+    startTs = Date.now();
+    watchId = navigator.geolocation.watchPosition(onPos, function (e) {
+      warn.textContent = 'GPS error: ' + e.message;
+    }, { enableHighAccuracy: true, maximumAge: 1000, timeout: 15000 });
+    startBtn.disabled = true; endBtn.disabled = false;
+    warn.textContent = 'Recording… drive at least 1.0 km.';
+    timerId = setInterval(function () { document.getElementById('td-time').textContent = fmtTime(Math.round((Date.now() - startTs) / 1000)); }, 1000);
+  });
+  if (endBtn) endBtn.addEventListener('click', function () {
+    if (watchId != null) navigator.geolocation.clearWatch(watchId);
+    if (timerId) clearInterval(timerId);
+    startBtn.disabled = false; endBtn.disabled = true;
+    flush(true);
+    if (totalKm < MIN_KM) warn.textContent = '⚠ Only ' + totalKm.toFixed(2) + ' km — a full test drive should be at least 1.0 km.';
+    else warn.textContent = '✓ Drive captured: ' + totalKm.toFixed(2) + ' km.';
+  });
+
+  if (drivableBlock && drivableBlock.style.display !== 'none') setTimeout(initMap, 60);
 })();
 </script>
 {% endif %}

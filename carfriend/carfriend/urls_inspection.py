@@ -38,6 +38,7 @@ urlpatterns = [
     path("inspect/<int:id>/field-upload", v.insp_field_upload, name="insp_field_upload"),
     path("inspect/<int:id>/insurance", v.insp_insurance_save, name="insp_insurance_save"),
     path("inspect/<int:id>/final", v.insp_final_save, name="insp_final_save"),
+    path("inspect/<int:id>/testdrive", v.insp_testdrive_save, name="insp_testdrive_save"),
     path("report/<int:id>", v.insp_report, name="insp_report"),
     path("submit/<int:id>", v.insp_submit, name="insp_submit"),
     path("alerts", v.insp_alerts, name="insp_alerts"),

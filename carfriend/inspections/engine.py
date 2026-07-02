@@ -187,7 +187,7 @@ def zone_progress(report, zone):
     }
 
 
-SCRAP_HIDDEN_ZONES = {"inside"}   # cabin + test drive — not analysed for scrap
+SCRAP_HIDDEN_ZONES = {"inside", "testdrive"}   # cabin + test drive — not analysed for scrap
 
 
 def zones_for(report):
