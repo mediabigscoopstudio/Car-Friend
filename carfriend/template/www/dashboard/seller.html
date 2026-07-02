@@ -1,273 +1,189 @@
-{% extends 'www/base.html' %}
-{% block title %}Seller Dashboard — CarFriend{% endblock %}
+{% extends "base/base_www.html" %}
+{% block title %}My Cars — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_seller.html" with active="cars" %}{% endblock %}
 
-{% block extra_css %}
-@keyframes spin { to { transform: rotate(360deg); } }
-.cf-spinner { width:20px;height:20px;border:2px solid rgba(255,255,255,.12);border-top-color:#4ade80;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px; }
-.cf-dash-help a { display:flex;align-items:center;gap:8px;font-size:.85rem;font-weight:600;color:#4ade80;text-decoration:none;margin-top:8px; }
-.cf-dash-help a:first-of-type { margin-top:0; }
-.pd-amount { font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:1rem;color:#fff;margin:12px 0 4px; }
-.pd-note { font-size:.8rem;color:rgba(255,255,255,.5);line-height:1.6;margin-bottom:12px; }
-.pd-lbl { font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:4px; }
-.pd-big { font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:1.4rem;color:var(--cf-accent);line-height:1; }
-.pd-counter-input { background:rgba(255,255,255,.06);border:1px solid rgba(74,222,128,.25);border-radius:8px;color:#fff;padding:9px 12px;font-size:.85rem;max-width:200px; }
-.pd-counter-input:focus { outline:none;border-color:#4ade80; }
-{% endblock %}
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="cf-focus">
 
-{% block content %}
-<div class="cf-dash">
+  <div class="cf-page-head cf-reveal">
+    <h1>My Cars <span class="count" id="carCount"></span></h1>
+    <a href="{% url 'list_car' %}" class="cf-btn cf-btn-primary"><svg class="i"><use href="#ic-plus"/></svg>List a car</a>
+  </div>
 
-  <div class="cf-dashboard-header">
-    <div class="container">
-      <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+  {% if kyc_status != 'verified' %}
+  <div class="cf-ribbon cf-reveal d1" style="margin-bottom:1.1rem">
+    <div class="cf-ribbon-top">
+      <div class="cf-warn-ic"><svg class="i"><use href="#ic-shield"/></svg></div>
+      <div class="cf-ribbon-txt">
+        <h2>{% if kyc_status == 'failed' %}Finish your verification{% else %}Verify your identity{% endif %}</h2>
+        <p>A one-time Aadhaar &amp; PAN check is needed before your car can go to auction.</p>
+      </div>
+      <a href="/kyc/" class="cf-btn cf-btn-primary">Verify now</a>
+    </div>
+    <div class="cf-ribbon-docs">
+      <span class="cf-docs-label">Documents</span>
+      <span class="cf-chip pend"><svg class="i"><use href="#ic-file"/></svg>Aadhaar</span>
+      <span class="cf-chip pend"><svg class="i"><use href="#ic-file"/></svg>PAN</span>
+    </div>
+  </div>
+  {% endif %}
+
+  <div id="carsLoading" class="cf-card cf-reveal d1" style="padding:2.4rem;text-align:center;color:var(--cf-muted)">Loading your cars…</div>
+  <div id="carsList" class="d-flex flex-column" style="gap:1.1rem"></div>
+  <div id="carsEmpty" class="cf-empty cf-reveal d1" style="display:none">
+    <div class="ic"><svg class="i"><use href="#ic-car"/></svg></div>
+    <h3>List your first car</h3>
+    <p>Add your car and we'll schedule a free inspection, then take it to auction for the best price.</p>
+    <a href="{% url 'list_car' %}" class="cf-btn cf-btn-primary"><svg class="i"><use href="#ic-plus"/></svg>List a car</a>
+  </div>
+
+  {% if pending_decisions %}
+  {% csrf_token %}
+  <div style="margin-top:1.8rem">
+    <div class="cf-journey-h" style="margin-inline:0">Pending auction decisions</div>
+    {% for pd in pending_decisions %}
+    <div class="cf-card cf-reveal" style="padding:1.1rem 1.2rem;margin-bottom:.8rem">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem">
         <div>
-          <h1>Good to see you, {{ request.user.first_name|default:request.user.email }} 👋</h1>
-          <p>Here's what's happening with your car listings</p>
+          <div style="font-weight:800">{{ pd.vehicle.display_name }}</div>
+          <div style="font-size:.8rem;color:var(--cf-muted)">Auction #{{ pd.auction.id }} · ended {{ pd.auction.end_at|date:"d M, g:i A" }}</div>
         </div>
-        <a href="/vehicles/list-car/" class="btn-nav-sell"><i class="bi bi-plus-lg"></i> List a New Car</a>
+        {% if pd.decision %}<span class="cf-status"><svg class="i"><use href="#ic-check"/></svg>{{ pd.decision.get_decision_display }}</span>{% endif %}
       </div>
-    </div>
-  </div>
-
-  <div class="cf-dash-body">
-    <div class="container">
-
-      {% if kyc_status == 'verified' %}
-      <div class="cf-dash-banner ok">
-        <i class="bi bi-patch-check-fill"></i>
-        <div><strong>Identity verified.</strong> Your Aadhaar &amp; PAN are confirmed — you're all set.</div>
-      </div>
-      {% elif kyc_status == 'failed' %}
-      <div class="cf-dash-banner err">
-        <i class="bi bi-exclamation-triangle"></i>
-        <div><strong>Verification couldn't be completed.</strong> Please retry your Aadhaar &amp; PAN verification. <a href="/kyc/">Retry verification →</a></div>
-      </div>
+      {% if not pd.decision %}
+        {% if pd.highest_bid %}
+        <div style="margin:.75rem 0"><div class="cf-bid-l">Highest bid received</div><div class="cf-bid-v" style="color:var(--cf-green);font-size:1.5rem">₹{{ pd.highest_fmt }}</div></div>
+        <div class="cf-sale-btns">
+          <button type="button" class="cf-btn cf-btn-primary" onclick="cfDecision({{ pd.auction.id }},'accept')"><svg class="i"><use href="#ic-check"/></svg>Accept bid</button>
+          <button type="button" class="cf-btn cf-btn-ghost" onclick="cfCounter({{ pd.auction.id }})">Counter</button>
+          <button type="button" class="cf-btn cf-btn-ghost" onclick="cfDecision({{ pd.auction.id }},'reauction')">Re-auction</button>
+        </div>
+        <div id="ctr-{{ pd.auction.id }}" style="display:none;margin-top:.7rem">
+          <div class="cf-field" style="margin:0"><input type="text" inputmode="numeric" id="ctrv-{{ pd.auction.id }}" class="cf-input" placeholder="Your counter price ₹"></div>
+          <button type="button" class="cf-btn cf-btn-primary" style="margin-top:.5rem" onclick="cfSubmitCounter({{ pd.auction.id }})">Send counter</button>
+        </div>
+        {% else %}
+        <div class="cf-foot-note" style="margin-top:.7rem"><svg class="i"><use href="#ic-warn"/></svg>No bids were received in this auction.</div>
+        <div class="cf-sale-btns" style="margin-top:.6rem"><button type="button" class="cf-btn cf-btn-primary" onclick="cfDecision({{ pd.auction.id }},'reauction')">Request re-auction</button></div>
+        {% endif %}
       {% else %}
-      <div class="cf-dash-banner warn">
-        <i class="bi bi-shield-exclamation"></i>
-        <div><strong>Verify your identity.</strong> A quick one-time Aadhaar &amp; PAN check is needed before your inspection is scheduled. <a href="/kyc/">Verify Aadhaar &amp; PAN →</a></div>
-      </div>
+        <div class="cf-foot-note" style="margin-top:.7rem"><svg class="i"><use href="#ic-check"/></svg>
+        {% if pd.decision.decision == 'accept' %}Bid accepted — your Sales Associate is processing the offer.{% if pd.ocb_status %} ({{ pd.ocb_status }}){% endif %}
+        {% elif pd.decision.decision == 'counter' %}Counter offer of ₹{{ pd.counter_fmt }} sent — waiting for the response.
+        {% else %}Re-auction requested — awaiting admin approval.{% endif %}</div>
       {% endif %}
-
-      <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3"><div class="cf-dash-stat"><div class="lbl">Active Listings</div><div class="val" id="statListings">0</div><div class="sub">Cars listed for sale</div></div></div>
-        <div class="col-6 col-md-3"><div class="cf-dash-stat"><div class="lbl">Inspections</div><div class="val" id="statInspections">0</div><div class="sub">Scheduled or completed</div></div></div>
-        <div class="col-6 col-md-3"><div class="cf-dash-stat"><div class="lbl">Live Auctions</div><div class="val" id="statAuctions">0</div><div class="sub">Currently running</div></div></div>
-        <div class="col-6 col-md-3"><div class="cf-dash-stat"><div class="lbl">Deals Closed</div><div class="val" id="statSold">0</div><div class="sub">Successfully sold</div></div></div>
-      </div>
-
-      <div class="row g-4">
-        <div class="col-12 col-lg-8">
-          <div class="cf-dash-card">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.07);">
-              <h5 style="margin:0;padding:0;border:none;"><i class="bi bi-car-front"></i> My Car Listings</h5>
-              <a href="/vehicles/list-car/" class="cf-action-btn-active-green"><i class="bi bi-plus-lg"></i> List a Car</a>
-            </div>
-
-            <div id="carsLoading" style="text-align:center;padding:32px;color:rgba(255,255,255,.45);font-size:.85rem;">
-              <div class="cf-spinner"></div>Loading your listings...
-            </div>
-
-            <div id="carsEmpty" style="display:none;" class="cf-dash-empty">
-              <div style="margin-bottom:12px;"><svg viewBox="0 0 20 20" width="38" height="38" fill="none" stroke="#4ade80" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="16" height="9" rx="3"/><path d="M5 14 Q10 17.5 15 14"/><circle cx="5.5" cy="14" r="1.3" fill="#4ade80" stroke="none"/><circle cx="14.5" cy="14" r="1.3" fill="#4ade80" stroke="none"/></svg></div>
-              <p style="margin-bottom:16px;">You haven't listed any cars yet.</p>
-              <a href="/vehicles/list-car/" class="cf-action-btn-active-green">List My First Car →</a>
-            </div>
-
-            <div id="carsList"></div>
-          </div>
-
-          <div class="cf-dash-card">
-            <h5><i class="bi bi-hammer"></i> Pending Auction Decisions</h5>
-            {% if pending_decisions %}
-            {% csrf_token %}
-            <div class="d-flex flex-column gap-3">
-              {% for pd in pending_decisions %}
-              <div class="cf-vehicle-card" style="margin-bottom:0;">
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
-                  <div>
-                    <div class="cf-vehicle-name">{{ pd.vehicle.display_name }}</div>
-                    <div class="cf-vehicle-meta">Auction #{{ pd.auction.id }} &middot; ended {{ pd.auction.end_at|date:"d M Y, g:i A" }}</div>
-                  </div>
-                  {% if pd.decision %}<span class="cf-status-badge cf-status-approved">{{ pd.decision.get_decision_display }}</span>{% else %}<span class="cf-status-badge cf-status-auction">Decision needed</span>{% endif %}
-                </div>
-
-                {% if pd.decision %}
-                  {% if pd.decision.decision == 'accept' %}
-                    <div class="pd-amount">Bid accepted &middot; <span style="color:var(--cf-accent);">₹{{ pd.highest_fmt }}</span></div>
-                    {% if pd.ocb_signable %}
-                    <div class="pd-note">OCB accepted — ready to finalise the sale.</div>
-                    <div class="cf-vehicle-actions"><a href="https://wa.me/919537186783" target="_blank" rel="noopener" class="cf-action-btn-active-green"><i class="bi bi-pencil-square"></i> Sign Agreement</a></div>
-                    {% else %}
-                    <div class="pd-note">Your Sales Associate is processing the OCB offer.{% if pd.ocb_status %} <span class="cf-status-badge cf-status-submitted">{{ pd.ocb_status }}</span>{% endif %}</div>
-                    {% endif %}
-                  {% elif pd.decision.decision == 'counter' %}
-                    <div class="pd-amount">Counter offer sent &middot; <span style="color:var(--cf-accent);">₹{{ pd.counter_fmt }}</span></div>
-                    <div class="pd-note">Waiting for the response.{% if pd.ocb_status %} <span class="cf-status-badge cf-status-submitted">{{ pd.ocb_status }}</span>{% endif %}</div>
-                  {% else %}
-                    <div class="pd-amount">Re-auction requested</div>
-                    <div class="pd-note">Awaiting admin approval to restart the auction.</div>
-                  {% endif %}
-                {% else %}
-                  {% if pd.highest_bid %}
-                    <div style="display:flex;gap:28px;flex-wrap:wrap;margin:12px 0;">
-                      <div><div class="pd-lbl">Highest bid</div><div class="pd-big">₹{{ pd.highest_fmt }}</div></div>
-                      <div><div class="pd-lbl">Bids received</div><div class="pd-big" style="color:#fff;">{{ pd.bid_count }}</div></div>
-                    </div>
-                    <div class="cf-vehicle-actions">
-                      <button type="button" class="cf-action-btn-active-green" onclick="cfDecision({{ pd.auction.id }},'accept')"><i class="bi bi-check2-circle"></i> Accept Bid</button>
-                      <button type="button" class="cf-action-btn-disabled" style="cursor:pointer;color:#fff;border-color:rgba(74,222,128,.3);" onclick="cfShowCounter({{ pd.auction.id }})"><i class="bi bi-arrow-left-right"></i> Counter Offer</button>
-                      <button type="button" class="cf-action-btn-disabled" style="cursor:pointer;color:rgba(255,255,255,.7);" onclick="cfDecision({{ pd.auction.id }},'reauction')"><i class="bi bi-arrow-repeat"></i> Request Re-Auction</button>
-                    </div>
-                    <div id="counter-{{ pd.auction.id }}" style="display:none;margin-top:12px;gap:8px;align-items:center;">
-                      <input type="text" inputmode="numeric" id="counterval-{{ pd.auction.id }}" class="pd-counter-input" placeholder="Your counter price ₹">
-                      <button type="button" class="cf-action-btn-active-green" onclick="cfSubmitCounter({{ pd.auction.id }})">Send counter</button>
-                    </div>
-                  {% else %}
-                    <div class="pd-note" style="margin:10px 0;">No bids were received in this auction.</div>
-                    <div class="cf-vehicle-actions"><button type="button" class="cf-action-btn-active-green" onclick="cfDecision({{ pd.auction.id }},'reauction')"><i class="bi bi-arrow-repeat"></i> Request Re-Auction</button></div>
-                  {% endif %}
-                {% endif %}
-              </div>
-              {% endfor %}
-            </div>
-            {% else %}
-            <div class="cf-dash-empty"><div style="font-size:32px;margin-bottom:10px;">⚡</div>No pending decisions. When your auction closes, you'll see the highest bid here.</div>
-            {% endif %}
-          </div>
-        </div>
-
-        <div class="col-12 col-lg-4">
-          <div class="cf-dash-card">
-            <h5><i class="bi bi-person-check"></i> Account Status</h5>
-            <div class="d-flex flex-column gap-2">
-              <div class="d-flex align-items-center justify-content-between">
-                <span style="font-size:.82rem;color:rgba(255,255,255,.55);">KYC Verification</span>
-                {% if request.user.is_kyc_done %}
-                <span class="cf-status-badge cf-status-approved">✓ Verified</span>
-                {% else %}
-                <span class="cf-status-badge cf-status-pending">Pending</span>
-                {% endif %}
-              </div>
-              <div class="d-flex align-items-center justify-content-between">
-                <span style="font-size:.82rem;color:rgba(255,255,255,.55);">Account Type</span>
-                <span class="cf-status-badge cf-status-submitted">Seller</span>
-              </div>
-              <div class="d-flex align-items-center justify-content-between">
-                <span style="font-size:.82rem;color:rgba(255,255,255,.55);">Email</span>
-                <span style="font-size:.78rem;color:rgba(255,255,255,.8);">{{ request.user.email }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="cf-dash-card cf-dash-help">
-            <h5><i class="bi bi-question-circle"></i> Need Help?</h5>
-            <p class="muted" style="line-height:1.7;margin-bottom:14px;">Our team is here to help you list your car or resolve any issue.</p>
-            <a href="https://wa.me/919537186783" target="_blank" rel="noopener"><i class="bi bi-whatsapp" style="color:#25D366;"></i>+91 9537186783</a>
-            <a href="mailto:support@carfriend.in"><i class="bi bi-envelope"></i>support@carfriend.in</a>
-          </div>
-
-          <div class="cf-dash-card">
-            <h5><i class="bi bi-signpost-split"></i> What's Next?</h5>
-            <div class="d-flex flex-column gap-3">
-              <div class="d-flex gap-2 align-items-start"><div class="cf-dash-step">1</div><div class="muted" style="line-height:1.5;">Complete KYC (Aadhaar + PAN)</div></div>
-              <div class="d-flex gap-2 align-items-start"><div class="cf-dash-step">2</div><div class="muted" style="line-height:1.5;">List your car with details &amp; photos</div></div>
-              <div class="d-flex gap-2 align-items-start"><div class="cf-dash-step">3</div><div class="muted" style="line-height:1.5;">Schedule your free home inspection</div></div>
-              <div class="d-flex gap-2 align-items-start"><div class="cf-dash-step">4</div><div class="muted" style="line-height:1.5;">Watch the live auction &amp; accept the best bid</div></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
     </div>
+    {% endfor %}
   </div>
-</div>
+  {% endif %}
+
+</div></div></main>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-function getStatusClass(s) {
-  return { submitted:'cf-status-submitted', draft:'cf-status-pending',
-    inspection_scheduled:'cf-status-inspection', inspection_done:'cf-status-inspection',
-    approved:'cf-status-approved', in_auction:'cf-status-auction',
-    sold:'cf-status-sold', rejected:'cf-status-rejected' }[s] || 'cf-status-pending';
+// Journey stages tracked per car (matches the real vehicle status flow).
+var CF_STAGES = ['Listed', 'Inspected', 'Approved', 'Auction', 'Sold'];
+function cfStageIndex(status) {
+  return { draft: 0, submitted: 0, inspection_scheduled: 1, inspection_done: 1,
+    approved: 2, in_auction: 3, sold: 4 }[status];  // undefined for 'rejected'
 }
-function formatPrice(p) {
-  if (!p) return '';
-  var n = parseInt(p);
-  if (n >= 10000000) return '&#8377;' + (n/10000000).toFixed(2) + ' Cr';
-  if (n >= 100000)   return '&#8377;' + (n/100000).toFixed(1) + ' L';
-  return '&#8377;' + n.toLocaleString('en-IN');
+var CF_KYC_OK = {% if kyc_status == 'verified' %}true{% else %}false{% endif %};
+function cfKycOk() { return CF_KYC_OK; }
+function fmtPrice(p) {
+  if (!p) return ''; var n = parseInt(p, 10);
+  if (n >= 10000000) return '₹' + (n / 10000000).toFixed(2) + ' Cr';
+  if (n >= 100000) return '₹' + (n / 100000).toFixed(1) + ' L';
+  return '₹' + n.toLocaleString('en-IN');
 }
-function setText(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
-function loadListings() {
-  fetch('/vehicles/my-cars/')
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      document.getElementById('carsLoading').style.display = 'none';
-      var vehicles = data.vehicles || [];
-      setText('statListings', vehicles.filter(function(v) {
-        return ['submitted','inspection_scheduled','inspection_done','approved','in_auction'].includes(v.status);
-      }).length);
-      setText('statInspections', vehicles.filter(function(v) { return v.inspection_report_ready; }).length);
-      setText('statAuctions', vehicles.filter(function(v) { return v.auction_status === 'live'; }).length);
-      setText('statSold', vehicles.filter(function(v) { return v.status === 'sold'; }).length);
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
-      if (vehicles.length === 0) { document.getElementById('carsEmpty').style.display = 'block'; return; }
-      var html = vehicles.map(function(v) {
-        var reportBtn = (v.inspection_report_ready && v.report_url)
-          ? '<a href="'+v.report_url+'" target="_blank" rel="noopener" class="cf-action-btn-active-green"><i class="bi bi-file-earmark-check"></i> Inspection Report</a>'
-          : '<span class="cf-action-btn-disabled"><i class="bi bi-file-earmark-check"></i> Pending inspection</span>';
-        var auctionBtn;
-        if (v.auction_status === 'live' && v.auction_id) {
-          auctionBtn = '<a href="/auctions/'+v.auction_id+'/seller/" class="cf-action-btn-active-red"><span class="cf-pulse-dot"></span> Go to Auction</a>';
-        } else if (v.auction_status === 'ended') {
-          auctionBtn = '<span class="cf-action-btn-disabled"><i class="bi bi-broadcast"></i> Auction ended</span>';
-        } else {
-          auctionBtn = '<span class="cf-action-btn-disabled"><i class="bi bi-broadcast"></i> Awaiting auction</span>';
-        }
-        var meta = [v.year, v.fuel_type, v.odometer_km ? v.odometer_km.toLocaleString('en-IN')+' km' : '', v.city].filter(Boolean).join(' &middot; ');
-        return '<div class="cf-vehicle-card">'
-          + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">'
-          + '<div>'
-          + '<div class="cf-vehicle-name">'+v.display_name+'</div>'
-          + '<div class="cf-vehicle-meta">'+v.plate_number+(meta?' &middot; '+meta:'')+'</div>'
-          + (v.expected_price ? '<div class="cf-vehicle-price">'+formatPrice(v.expected_price)+' expected</div>' : '')
-          + '</div>'
-          + '<span class="cf-status-badge '+getStatusClass(v.status)+'">'+v.status_label+'</span>'
-          + '</div>'
-          + '<div class="cf-vehicle-actions">'+reportBtn+auctionBtn
-          + '<span style="margin-left:auto;font-size:.7rem;color:rgba(255,255,255,.35);align-self:center;">Listed '+v.created_at+'</span>'
-          + '</div></div>';
-      }).join('');
-      document.getElementById('carsList').innerHTML = html;
-    })
-    .catch(function() {
-      document.getElementById('carsLoading').style.display = 'none';
-      document.getElementById('carsEmpty').style.display = 'block';
-    });
+function journeyHtml(status) {
+  var cur = cfStageIndex(status);
+  var chips = '<span class="cf-cap"><i></i><i></i><i></i></span>';
+  CF_STAGES.forEach(function (label, i) {
+    var cls = i < cur ? 'is-done' : (i === cur ? 'is-current' : 'is-todo');
+    var node = i < cur ? '<span class="cf-node done"><svg class="i"><use href="#ic-check"/></svg></span>'
+      : (i === cur ? '<span class="cf-node current"><span class="core"></span></span>'
+        : '<span class="cf-node todo"></span>');
+    chips += '<span class="cf-chip-step ' + cls + '">' + node + '<span><span class="cf-step-label">' + label + '</span></span></span>';
+  });
+  chips += '<span class="cf-cap"><i></i><i></i><i></i></span>';
+  return '<div class="cf-journey"><div class="cf-journey-h">Your car\'s journey' +
+    (cur != null ? '<span class="step-of">Step ' + (cur + 1) + ' of ' + CF_STAGES.length + '</span>' : '') +
+    '</div><div class="cf-carousel"><div class="cf-carousel-track">' + chips + '</div></div></div>';
 }
-loadListings();
 
-// ── Post-auction seller decisions ──────────────────────
+function saleButtons(v) {
+  var kyc = cfKycOk();
+  if (!kyc) {
+    return '<div class="cf-sale-btns">' +
+      '<span class="cf-btn cf-btn-lock"><svg class="i"><use href="#ic-lock"/></svg>Live Auction</span>' +
+      '<span class="cf-btn cf-btn-lock"><svg class="i"><use href="#ic-lock"/></svg>Live OCB</span></div>' +
+      '<div class="cf-foot-note"><svg class="i"><use href="#ic-warn"/></svg>Complete your Aadhaar &amp; PAN verification to send this car to auction.</div>';
+  }
+  var live = v.auction_status === 'live' && v.auction_id;
+  var auctionBtn = live
+    ? '<a href="/auctions/' + v.auction_id + '/seller/" class="cf-btn cf-btn-primary"><span class="cf-live" style="padding:.1rem .3rem"><span class="d"></span></span>Live Auction</a>'
+    : '<span class="cf-btn cf-btn-ghost" style="opacity:.6"><svg class="i"><use href="#ic-broadcast"/></svg>Live Auction</span>';
+  var ocbBtn = '<span class="cf-btn cf-btn-ghost" style="opacity:.6"><svg class="i"><use href="#ic-bolt"/></svg>Live OCB</span>';
+  return '<div class="cf-sale-btns">' + auctionBtn + ocbBtn + '</div>';
+}
+
+function inspStrip(v) {
+  if (v.grade) {
+    var report = v.inspection_report_ready && v.report_url
+      ? '<a class="cf-btn cf-btn-ghost" style="margin-left:auto" href="' + v.report_url + '" target="_blank" rel="noopener"><svg class="i"><use href="#ic-file"/></svg>Report</a>'
+      : '';
+    return '<div class="cf-insp"><div class="cf-grade"><b>' + esc(v.grade) + '</b><small>GRADE</small></div>' +
+      '<div class="cf-insp-body"><div class="t">Inspection complete</div><div class="d">Certified · 300+ checkpoints</div></div>' + report + '</div>';
+  }
+  return '<div class="cf-insp"><div class="cf-grade" style="background:var(--cf-line-strong);box-shadow:none"><svg class="i" style="stroke:#fff"><use href="#ic-clock"/></svg></div>' +
+    '<div class="cf-insp-body"><div class="t">Inspection pending</div><div class="d">We\'ll schedule your free home inspection.</div></div></div>';
+}
+
+function tileHtml(v) {
+  var meta = [v.year, v.fuel_type, v.odometer_km ? v.odometer_km.toLocaleString('en-IN') + ' km' : '', v.city].filter(Boolean);
+  var facts = meta.map(function (m) { return '<span>' + esc(m) + '</span>'; }).join('');
+  return '<div class="cf-tile cf-reveal">' +
+    '<div class="cf-tile-head"><div class="cf-media"><svg class="i car-glyph"><use href="#ic-car"/></svg>' +
+      '<span class="cf-media-tag"><svg class="i"><use href="#ic-shield"/></svg>Inspected</span>' +
+      '<span class="cf-plate"><i>P</i>Plate hidden</span></div>' +
+      '<div class="cf-tile-meta"><span class="cf-status">' + esc(v.status_label) + '</span>' +
+      '<div class="cf-cartitle">' + esc(v.display_name) + '</div>' +
+      '<div class="cf-facts">' + facts + '</div>' +
+      (v.expected_price ? '<div class="cf-facts" style="margin-top:.4rem"><span style="color:var(--cf-green);font-weight:700">' + fmtPrice(v.expected_price) + ' expected</span></div>' : '') +
+      '</div></div>' +
+    '<div class="cf-div"></div>' + inspStrip(v) +
+    journeyHtml(v.status) +
+    '<div class="cf-tile-foot">' + saleButtons(v) + '</div></div>';
+}
+
+fetch('/vehicles/my-cars/').then(function (r) { return r.json(); }).then(function (data) {
+  var cars = data.vehicles || [];
+  document.getElementById('carsLoading').style.display = 'none';
+  document.getElementById('carCount').textContent = cars.length ? cars.length + (cars.length === 1 ? ' car' : ' cars') : '';
+  if (!cars.length) { document.getElementById('carsEmpty').style.display = 'block'; return; }
+  document.getElementById('carsList').innerHTML = cars.map(tileHtml).join('');
+  if (window.cfInitJourneys) window.cfInitJourneys();
+}).catch(function () {
+  document.getElementById('carsLoading').style.display = 'none';
+  document.getElementById('carsEmpty').style.display = 'block';
+});
+
+// Post-auction seller decisions (reuse the /auctions/<id>/decision/ endpoint).
 function cfCsrf() { var t = document.querySelector('[name=csrfmiddlewaretoken]'); return t ? t.value : ''; }
 function cfDecision(id, action, extra) {
+  if (action === 'accept' && !confirm('Accept the highest bid?')) return;
   if (action === 'reauction' && !confirm('Request a re-auction for this car?')) return;
-  if (action === 'accept' && !confirm('Accept the highest bid? Your Sales Associate will then process the offer.')) return;
-  var body = 'action=' + action + (extra ? '&' + extra : '');
-  fetch('/auctions/' + id + '/decision/', {
-    method: 'POST',
+  fetch('/auctions/' + id + '/decision/', { method: 'POST',
     headers: { 'X-CSRFToken': cfCsrf(), 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: body
-  }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
-    .then(function (res) { if (res.ok) { location.reload(); } else { alert((res.d && res.d.error) || 'Something went wrong.'); } })
+    body: 'action=' + action + (extra ? '&' + extra : '') })
+    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+    .then(function (res) { if (res.ok) location.reload(); else alert((res.d && res.d.error) || 'Something went wrong.'); })
     .catch(function () { alert('Network error — please try again.'); });
 }
-function cfShowCounter(id) { var el = document.getElementById('counter-' + id); if (el) el.style.display = (el.style.display === 'none' || !el.style.display) ? 'flex' : 'none'; }
-function cfSubmitCounter(id) {
-  var v = document.getElementById('counterval-' + id);
-  if (!v || !v.value.trim()) { alert('Enter a counter price.'); return; }
-  cfDecision(id, 'counter', 'counter_price=' + encodeURIComponent(v.value));
-}
+function cfCounter(id) { var el = document.getElementById('ctr-' + id); if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
+function cfSubmitCounter(id) { var v = document.getElementById('ctrv-' + id); if (!v || !v.value.trim()) { alert('Enter a counter price.'); return; } cfDecision(id, 'counter', 'counter_price=' + encodeURIComponent(v.value)); }
 </script>
 {% endblock %}

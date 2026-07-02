@@ -4,9 +4,12 @@
   "use strict";
 
   // ── §7.7 journey: center on current step, drag to peek (no auto-scroll) ──
-  function initJourney() {
-    var wrap = document.querySelector('.cf-carousel'); if (!wrap) return;
-    var track = wrap.querySelector('.cf-carousel-track');
+  // Inits every .cf-carousel; safe to re-run after tiles are injected (idempotent
+  // via data-cf-journey). Exposed as window.cfInitJourneys() for post-fetch render.
+  function initJourneys() { document.querySelectorAll('.cf-carousel').forEach(oneJourney); }
+  function oneJourney(wrap) {
+    if (!wrap || wrap.dataset.cfJourney) return; wrap.dataset.cfJourney = '1';
+    var track = wrap.querySelector('.cf-carousel-track'); if (!track) return;
     var chips = track.querySelectorAll('.cf-chip-step'); if (!chips.length) return;
     var cur = track.querySelector('.cf-chip-step.is-current') || chips[0];
     var t = 0, cx = function (el) { return el.offsetLeft + el.offsetWidth / 2; };
@@ -24,6 +27,7 @@
   // ── §7.9 live countdowns ──
   function initTimers() {
     document.querySelectorAll('.cf-timer[data-secs]').forEach(function (el) {
+      if (el.dataset.cfTimer) return; el.dataset.cfTimer = '1';
       var s = +el.dataset.secs, out = el.querySelector('.t'); if (!out) return;
       function p() { var m = Math.floor(s / 60), x = s % 60; out.textContent = (m < 10 ? '0' : '') + m + ':' + (x < 10 ? '0' : '') + x; if (s <= 90) el.classList.add('low'); }
       p(); var id = setInterval(function () { if (s > 0) { s--; p(); } else { clearInterval(id); } }, 1000);
@@ -41,6 +45,9 @@
     });
   }
 
-  function boot() { initJourney(); initTimers(); initFilters(); }
+  window.cfInitJourneys = initJourneys;   // call after injecting tiles
+  window.cfInitTimers = initTimers;
+
+  function boot() { initJourneys(); initTimers(); initFilters(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

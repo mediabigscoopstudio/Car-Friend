@@ -226,6 +226,7 @@ def my_cars(request):
             'city':                    v.city,
             'status':                  v.status,
             'status_label':            v.status_label,
+            'grade':                   v.condition_grade or None,
             'expected_price':          str(v.expected_price) if v.expected_price else None,
             'inspection_report_ready': bool(report_url),
             'report_url':              report_url,
