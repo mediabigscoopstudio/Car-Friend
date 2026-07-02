@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     # third-party
     "rest_framework",
     "channels",
+    "storages",
     # carfriend apps
     "core",
     "accounts",
@@ -152,12 +153,14 @@ DRIVE_LIVE_BROADCAST = False
 
 DATABASES = {
     'default': {
+        # Engine stays PostgreSQL on the VPS. Credentials/host/port are read from
+        # the environment (.env); defaults preserve current local behaviour.
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'carfriend_db',
-        'USER': 'minaketan',
-        'PASSWORD': 'Mina@2001',
-        'HOST': '127.0.0.1',
-        'PORT': '5432',
+        'NAME': config('DB_NAME', default='carfriend_db'),
+        'USER': config('DB_USER', default='minaketan'),
+        'PASSWORD': config('DB_PASSWORD', default=''),
+        'HOST': config('DB_HOST', default='127.0.0.1'),
+        'PORT': config('DB_PORT', default='5432'),
     }
 }
 
@@ -203,7 +206,34 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else []
 
 MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_ROOT = BASE_DIR / "media"     # local source for the migrate_media_to_s3 command
+
+# ── Media storage: Amazon S3 (django-storages + boto3) ──────────────────────
+# Every FileField/ImageField that uses the DEFAULT storage (i.e. no explicit
+# storage=) is routed to S3 — across all apps, with no model changes. Static
+# files stay LOCAL on the VPS (StaticFilesStorage). Credentials come from .env.
+AWS_STORAGE_BUCKET_NAME = config("AWS_STORAGE_BUCKET_NAME", default="")
+AWS_S3_REGION_NAME      = config("AWS_S3_REGION_NAME", default="")
+AWS_ACCESS_KEY_ID       = config("AWS_ACCESS_KEY_ID", default="")
+AWS_SECRET_ACCESS_KEY   = config("AWS_SECRET_ACCESS_KEY", default="")
+
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            "bucket_name": AWS_STORAGE_BUCKET_NAME,
+            "region_name": AWS_S3_REGION_NAME,
+            "access_key": AWS_ACCESS_KEY_ID,
+            "secret_key": AWS_SECRET_ACCESS_KEY,
+            "querystring_auth": True,     # private objects, served via signed URLs
+            "file_overwrite": False,      # never clobber an existing key
+        },
+    },
+    "staticfiles": {
+        # Static stays local on the VPS — do NOT move to S3.
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
 
 # Inspection videos can be up to 400 MB raw (compressed server-side after).
 # Accept them, and spool anything over 5 MB to a temp file on disk so a 400 MB

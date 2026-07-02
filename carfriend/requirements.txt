@@ -1,0 +1,7 @@
+# NOTE: this repo had no requirements.txt before. The two packages below were
+# added for S3 media storage. To capture the COMPLETE pinned dependency set,
+# run on the server (inside the venv):  pip freeze > requirements.txt
+#
+# New for S3 media (task):
+boto3>=1.34
+django-storages>=1.14
