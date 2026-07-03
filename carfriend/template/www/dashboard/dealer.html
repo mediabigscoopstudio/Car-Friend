@@ -20,7 +20,10 @@
 
   <div class="cf-page-head cf-reveal">
     <h1>My Bids</h1>
-    <a href="{% url 'dealer_auction_list' %}" class="cf-btn cf-btn-primary"><svg class="i"><use href="#ic-broadcast"/></svg>Live Auctions</a>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <a href="{% url 'dealer_purchases' %}" class="cf-btn cf-btn-ghost"><svg class="i"><use href="#ic-wallet"/></svg>Purchases</a>
+      <a href="{% url 'dealer_auction_list' %}" class="cf-btn cf-btn-primary"><svg class="i"><use href="#ic-broadcast"/></svg>Live Auctions</a>
+    </div>
   </div>
 
   {% if verification_status == 'approved' or can_bid %}

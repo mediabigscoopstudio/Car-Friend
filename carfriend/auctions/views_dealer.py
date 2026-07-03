@@ -228,6 +228,24 @@ def dealer_auction_list(request):
 
 
 @login_required(login_url="/auth/login/")
+def dealer_purchases(request):
+    """Dealer's won/closed deals with payment status. Reuses deals.Deal +
+    payments.Payment; no new model."""
+    guard = _bounce_non_dealer(request)
+    if guard:
+        return guard
+    from deals.models import Deal
+    from payments.models import Payment
+    deals = (Deal.objects.filter(dealer=request.user, status__in=["signed", "paid", "closed"])
+             .select_related("vehicle").order_by("-created_at"))
+    rows = []
+    for d in deals:
+        p = Payment.objects.filter(deal=d).order_by("-id").first()
+        rows.append({"deal": d, "paid": bool(p and p.status == "confirmed")})
+    return render(request, "auctions/dealer_purchases.html", {"rows": rows})
+
+
+@login_required(login_url="/auth/login/")
 def dealer_auction_room(request, id):
     guard = _bounce_non_dealer(request)
     if guard:

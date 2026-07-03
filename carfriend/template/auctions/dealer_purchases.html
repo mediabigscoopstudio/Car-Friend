@@ -1,0 +1,41 @@
+{% extends "base/base_www.html" %}
+{% block title %}Purchases — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_dealer.html" with active="bids" %}{% endblock %}
+
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="cf-focus">
+
+  <div class="cf-reveal" style="padding-top:clamp(14px,2.5vw,22px)">
+    <a href="{% url 'dealer_dashboard' %}" class="cf-btn cf-btn-ghost" style="padding:.5rem .9rem"><svg class="i" style="transform:rotate(180deg)"><use href="#ic-out"/></svg>My Bids</a>
+  </div>
+
+  <div class="cf-page-head cf-reveal"><h1>Purchases <span class="count">{{ rows|length }}</span></h1></div>
+
+  {% if rows %}
+  <div class="d-flex flex-column cf-reveal d1" style="gap:.8rem">
+    {% for r in rows %}
+    <article class="cf-card" style="padding:1.05rem 1.2rem;display:flex;align-items:center;gap:.9rem;flex-wrap:wrap">
+      <div class="mb-ic" style="width:40px;height:40px;border-radius:11px;flex-shrink:0;display:grid;place-items:center;background:var(--cf-green-050);color:var(--cf-green)"><svg class="i"><use href="#ic-car"/></svg></div>
+      <div style="flex:1 1 auto;min-width:0">
+        <div style="font-weight:800;letter-spacing:-.01em">{{ r.deal.vehicle.display_name }}</div>
+        <div style="font-size:.78rem;color:var(--cf-muted);margin-top:.15rem">Deal #{{ r.deal.id }} · {{ r.deal.created_at|date:"d M Y" }} · {{ r.deal.get_status_display }}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="cf-bid-l">Price</div>
+        <div style="font-weight:800;font-variant-numeric:tabular-nums">₹{{ r.deal.final_price|floatformat:0 }}</div>
+      </div>
+      {% if r.paid %}<span class="cf-status"><svg class="i"><use href="#ic-check"/></svg>Paid</span>{% else %}<span class="cf-chip pend"><svg class="i"><use href="#ic-clock"/></svg>Payment due</span>{% endif %}
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="cf-empty cf-reveal d1">
+    <div class="ic"><svg class="i"><use href="#ic-wallet"/></svg></div>
+    <h3>No purchases yet</h3>
+    <p>Cars you win and close will appear here with their payment status.</p>
+    <a class="cf-btn cf-btn-primary" href="{% url 'dealer_auction_list' %}"><svg class="i"><use href="#ic-broadcast"/></svg>Browse auctions</a>
+  </div>
+  {% endif %}
+
+</div></div></main>
+{% endblock %}

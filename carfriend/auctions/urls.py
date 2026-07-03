@@ -8,6 +8,7 @@ from . import views_winner as w
 # so dealers reach the auction list at /auctions/ and a room at /auctions/<id>/.
 urlpatterns = [
     path("", d.dealer_auction_list, name="dealer_auction_list"),
+    path("purchases/", d.dealer_purchases, name="dealer_purchases"),
     path("ocb/offers/", w.winner_ocb_list, name="winner_ocb_list"),
     path("ocb/<int:listing_id>/respond/", w.winner_respond_view, name="winner_respond"),
     path("ocb/<int:listing_id>/", w.winner_ocb_detail, name="winner_ocb_detail"),
