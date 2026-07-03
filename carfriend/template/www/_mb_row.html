@@ -1,0 +1,19 @@
+{% comment %}
+One My-Bids row. Pass item (bid_history entry) + tab (active|won|lost). Live rows
+link to the bidding room; ended rows are static.
+{% endcomment %}
+{% if item.is_live %}<a href="/auctions/{{ item.auction.id }}/" class="mb-row" data-tab="{{ tab }}">{% else %}<div class="mb-row" data-tab="{{ tab }}">{% endif %}
+  <div class="mb-ic"{% if item.i_won %} style="background:var(--cf-green-100)"{% elif not item.is_live %} style="background:var(--cf-green-050);color:var(--cf-muted)"{% endif %}>
+    {% if item.is_live %}<svg class="i"><use href="#ic-broadcast"/></svg>{% elif item.i_won %}<svg class="i"><use href="#ic-check"/></svg>{% else %}<svg class="i"><use href="#ic-x"/></svg>{% endif %}
+  </div>
+  <div style="flex:1;min-width:0">
+    <div style="font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ item.vehicle.make }} {{ item.vehicle.model }} {{ item.vehicle.year }}</div>
+    <div style="font-size:.78rem;margin-top:.15rem;{% if item.is_live %}color:var(--cf-green){% elif item.i_won %}color:var(--cf-green-deep){% else %}color:var(--cf-muted){% endif %}">{% if item.is_live %}● Live — in progress{% elif item.i_won %}Won — highest bid{% else %}Ended — outbid{% endif %}</div>
+  </div>
+  <div style="text-align:right;flex-shrink:0">
+    <div class="cf-bid-l">Your bid</div>
+    <div style="font-weight:800;font-variant-numeric:tabular-nums;{% if item.i_won %}color:var(--cf-green){% endif %}">{% if item.my_amount %}₹{{ item.my_amount|floatformat:0 }}{% else %}—{% endif %}</div>
+    {% if item.top_amount and not item.i_won %}<div style="font-size:.7rem;color:var(--cf-muted);margin-top:.1rem">Top ₹{{ item.top_amount|floatformat:0 }}</div>{% endif %}
+  </div>
+  {% if item.is_live %}<svg class="i" style="stroke:var(--cf-muted);flex-shrink:0"><use href="#ic-chevd"/></svg>{% endif %}
+{% if item.is_live %}</a>{% else %}</div>{% endif %}
