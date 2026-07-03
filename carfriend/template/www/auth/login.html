@@ -1,144 +1,64 @@
-{% extends 'www/base.html' %}
-{% load static %}
-{% block title %}{% if intended_role == 'dealer' %}Dealer Login{% elif intended_role == 'seller' %}Sell Your Car{% else %}Login{% endif %} — Car Friend{% endblock %}
+{% extends "base/base_www.html" %}
+{% block title %}{% if intended_role == 'dealer' %}Dealer login{% elif intended_role == 'seller' %}Sell your car{% else %}Log in{% endif %} — Car Friend{% endblock %}
 
-{% block extra_css %}
-.auth-section {
-  min-height: calc(100vh - 130px);
-  background: var(--cf-paper);
-  display: flex;
-  align-items: center;
-  padding: 48px 0;
-}
-.auth-card {
-  background: var(--cf-white);
-  border: 1px solid var(--cf-mist);
-  border-radius: 16px;
-  padding: 40px 36px;
-  max-width: 440px;
-  width: 100%;
-  margin: 0 auto;
-}
-@media (max-width: 480px) {
-  .auth-card { padding: 28px 20px; border-radius: 12px; }
-}
-.auth-logo { display: flex; align-items: center; gap: 8px; margin-bottom: 28px; text-decoration: none; }
-.auth-logo-icon { width: 32px; height: 32px; background: var(--cf-blue); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
-.auth-logo-icon svg { width: 18px; height: 18px; }
-.auth-logo-text { font-family: var(--cf-font-display); font-weight: 800; font-size: 18px; color: var(--cf-azure); }
-.auth-logo-text span { color: var(--cf-blue); }
-.auth-card h2 { font-size: 22px; font-weight: 700; color: var(--cf-azure); margin-bottom: 4px; font-family: var(--cf-font-display); }
-.auth-card .sub { font-size: 13px; color: var(--cf-slate); margin-bottom: 28px; }
-.cf-label { font-size: 12px; font-weight: 600; color: var(--cf-slate); margin-bottom: 6px; display: block; font-family: var(--cf-font-sans); }
-.cf-field {
-  width: 100%; padding: 11px 14px; border: 1px solid var(--cf-mist); border-radius: 10px;
-  font-family: var(--cf-font-sans); font-size: 14px; color: var(--cf-ink);
-  outline: none; background: var(--cf-white); transition: border-color .2s, box-shadow .2s; margin-bottom: 16px;
-}
-.cf-field:focus { border-color: var(--cf-blue); box-shadow: 0 0 0 3px var(--cf-blue-100); }
-.btn-login {
-  width: 100%; padding: 13px; background: var(--cf-blue); color: var(--cf-white); border: none;
-  border-radius: 9px; font-family: var(--cf-font-sans); font-size: 14px; font-weight: 700;
-  cursor: pointer; transition: background .2s; margin-bottom: 16px;
-}
-.btn-login:hover { background: var(--cf-blue-700); }
-.divider { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
-.divider hr { flex: 1; border: none; border-top: 1px solid var(--cf-mist); margin: 0; }
-.divider span { font-size: 12px; color: var(--cf-slate); white-space: nowrap; }
-.btn-google {
-  width: 100%; padding: 11px; background: var(--cf-white); border: 1px solid var(--cf-mist); border-radius: 9px;
-  font-family: var(--cf-font-sans); font-size: 13px; font-weight: 600; color: var(--cf-ink);
-  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
-  transition: border-color .2s, background .2s; text-decoration: none;
-}
-.btn-google:hover { border-color: var(--cf-blue); background: var(--cf-sky-tint); color: var(--cf-ink); }
-.btn-google svg { width: 18px; height: 18px; flex-shrink: 0; }
-.auth-footer { text-align: center; margin-top: 20px; font-size: 13px; color: var(--cf-slate); }
-.auth-footer a { color: var(--cf-blue); font-weight: 600; text-decoration: none; }
-.auth-footer a:hover { text-decoration: underline; }
-.error-box {
-  background: var(--cf-danger-tint); border: 1px solid var(--cf-danger); border-radius: 8px;
-  padding: 10px 14px; font-size: 13px; color: var(--cf-danger); margin-bottom: 16px;
-  display: flex; align-items: flex-start; gap: 8px;
-}
-.error-box i { flex-shrink: 0; margin-top: 1px; }
-.success-box {
-  background: var(--cf-teal-tint); border: 1px solid var(--cf-teal); border-radius: 8px;
-  padding: 10px 14px; font-size: 13px; color: var(--cf-teal-dark); margin-bottom: 16px;
-  display: flex; align-items: flex-start; gap: 8px;
-}
+{% block extra_head %}
+<style>
+  .auth-wrap{max-width:440px;margin:clamp(22px,5vh,56px) auto 60px}
+  .auth-divider{display:flex;align-items:center;gap:.7rem;margin:1.1rem 0}
+  .auth-divider hr{flex:1;border:0;border-top:1px solid var(--cf-line);margin:0}
+  .auth-divider span{font-size:.78rem;color:var(--cf-muted);white-space:nowrap}
+  .btn-google{width:100%;background:#fff;border:1px solid var(--cf-line-strong);color:var(--cf-ink);gap:.6rem}
+  .btn-google svg{width:18px;height:18px;flex:0 0 auto}
+  .auth-err{display:flex;align-items:flex-start;gap:.5rem;background:var(--cf-amber-bg);border:1px solid var(--cf-amber-line);color:var(--cf-amber);border-radius:10px;padding:.65rem .85rem;font-size:.85rem;margin-bottom:1rem}
+  .auth-err svg.i{stroke:var(--cf-amber-bright);flex:0 0 auto;margin-top:1px}
+  .auth-ok{display:flex;align-items:flex-start;gap:.5rem;background:var(--cf-green-050);border:1px solid var(--cf-green-100);color:var(--cf-green-deep);border-radius:10px;padding:.65rem .85rem;font-size:.85rem;margin-bottom:1rem}
+</style>
 {% endblock %}
 
-{% block content %}
-<section class="auth-section">
-  <div class="container px-3">
-    <div class="auth-card">
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="auth-wrap">
 
-      <a class="auth-logo" href="/" style="gap:10px;justify-content:center;">
-        <img src="{% static 'img/brand/logo-green.png' %}" alt="CarFriend" height="34" style="display:block;">
-        <span style="font-family:var(--cf-font-display,'Plus Jakarta Sans',sans-serif);font-weight:800;font-size:1.2rem;color:#1a2a1a;letter-spacing:-.02em;">Car<span style="color:#166534;">Friend</span></span>
-      </a>
+  <a class="cf-logo" href="/" style="justify-content:center;margin-bottom:1.3rem"><span class="cf-logo-mark"><svg class="i"><use href="#ic-car"/></svg></span><span class="cf-logo-name">Car<span>Friend</span></span></a>
 
-      {% if intended_role == 'dealer' %}
-      <span class="eyebrow" style="margin-bottom:12px;"><i class="fas fa-store"></i>&nbsp; Dealer Portal</span>
-      <h2>Dealer Login</h2>
-      <p class="sub">For dealerships and car traders. Bid on inspected cars.</p>
-      {% elif intended_role == 'seller' %}
-      <span class="eyebrow" style="margin-bottom:12px;"><i class="fas fa-car"></i>&nbsp; Sell Your Car</span>
-      <h2>Sell Your Car</h2>
-      <p class="sub">Get a free inspection and the best price from 850+ dealers.</p>
-      {% else %}
-      <h2>Welcome back</h2>
-      <p class="sub">Log in to your CarFriend account to continue</p>
-      {% endif %}
+  <div class="cf-card cf-reveal" style="padding:clamp(24px,4vw,34px)">
+    {% if intended_role == 'dealer' %}
+      <h1 style="font-size:1.4rem;font-weight:800;margin:0 0 .3rem">Dealer login</h1>
+      <p style="color:var(--cf-muted);font-size:.9rem;margin:0 0 1.4rem">For dealerships and traders. Bid on inspected cars.</p>
+    {% elif intended_role == 'seller' %}
+      <h1 style="font-size:1.4rem;font-weight:800;margin:0 0 .3rem">Sell your car</h1>
+      <p style="color:var(--cf-muted);font-size:.9rem;margin:0 0 1.4rem">Get a free inspection and the best price from verified dealers.</p>
+    {% else %}
+      <h1 style="font-size:1.4rem;font-weight:800;margin:0 0 .3rem">Welcome back</h1>
+      <p style="color:var(--cf-muted);font-size:.9rem;margin:0 0 1.4rem">Log in to your Car Friend account to continue.</p>
+    {% endif %}
 
-      {% if error %}
-      <div class="error-box">
-        <i class="bi bi-exclamation-circle-fill"></i>
-        {{ error }}
-      </div>
-      {% endif %}
+    {% if error %}<div class="auth-err"><svg class="i"><use href="#ic-warn"/></svg><span>{{ error }}</span></div>{% endif %}
+    {% if messages %}{% for message in messages %}<div class="auth-ok"><svg class="i" style="stroke:var(--cf-green-bright)"><use href="#ic-check"/></svg><span>{{ message }}</span></div>{% endfor %}{% endif %}
 
-      {% if messages %}
-        {% for message in messages %}
-        <div class="success-box">
-          <i class="bi bi-check-circle-fill"></i>{{ message }}
-        </div>
-        {% endfor %}
-      {% endif %}
+    <a href="/accounts/google/login/" class="cf-btn btn-google">
+      <svg viewBox="0 0 18 18" fill="none" aria-hidden="true">
+        <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+        <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+        <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+        <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+      </svg>
+      {% if intended_role == 'dealer' %}Continue with Google as Dealer{% else %}Continue with Google{% endif %}
+    </a>
 
-      <a href="/accounts/google/login/" class="btn-google">
-        <svg viewBox="0 0 18 18" fill="none">
-          <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
-          <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
-          <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
-          <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
-        </svg>
-        {% if intended_role == 'dealer' %}Continue with Google as Dealer{% else %}Continue with Google{% endif %}
-      </a>
+    <div class="auth-divider"><hr><span>or log in with email</span><hr></div>
 
-      <div class="divider"><hr><span>or log in with email</span><hr></div>
+    <form method="POST" action="/auth/login/">
+      {% csrf_token %}
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+      <div class="cf-field"><label for="id_email">Email address</label><input type="email" id="id_email" name="email" class="cf-input" placeholder="you@example.com" required autocomplete="email"></div>
+      <div class="cf-field"><label for="id_pass">Password</label><input type="password" id="id_pass" name="password" class="cf-input" placeholder="Your password" required autocomplete="current-password"></div>
+      <button type="submit" class="cf-btn cf-btn-primary" style="width:100%">{% if intended_role == 'dealer' %}Log in as dealer{% elif intended_role == 'seller' %}Log in to sell my car{% else %}Log in{% endif %}</button>
+    </form>
 
-      <form method="POST" action="/auth/login/">
-        {% csrf_token %}
-        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
-        <label class="cf-label">Email address</label>
-        <input type="email" name="email" class="cf-field" placeholder="you@example.com" required autocomplete="email">
-        <label class="cf-label">Password</label>
-        <input type="password" name="password" class="cf-field" placeholder="Your password" required autocomplete="current-password">
-        <button type="submit" class="btn-login">{% if intended_role == 'dealer' %}Login as Dealer{% elif intended_role == 'seller' %}Login to Sell My Car{% else %}Log In to CarFriend{% endif %}</button>
-      </form>
-
-      <p class="auth-footer">
-        Don't have an account? <a href="/auth/register/">Create one free →</a>
-      </p>
-      <p style="text-align:center;font-size:11px;color:var(--cf-slate);margin-top:12px;">
-        By continuing, you agree to CarFriend's
-        <a href="//www.carfriend.in/terms/" style="color:var(--cf-blue);">Terms</a> and
-        <a href="//www.carfriend.in/privacy/" style="color:var(--cf-blue);">Privacy Policy</a>
-      </p>
-
-    </div>
+    <p style="text-align:center;margin:1.2rem 0 0;font-size:.88rem;color:var(--cf-muted)">Don't have an account? <a href="/auth/register/" style="color:var(--cf-green);font-weight:700;text-decoration:none">Create one free</a></p>
   </div>
-</section>
+
+  <p style="text-align:center;font-size:.72rem;color:var(--cf-muted);margin-top:1rem">By continuing you agree to Car Friend's <a href="/terms/" style="color:var(--cf-green)">Terms</a> and <a href="/privacy/" style="color:var(--cf-green)">Privacy Policy</a>.</p>
+
+</div></div></main>
 {% endblock %}

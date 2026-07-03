@@ -1,170 +1,87 @@
-{% extends 'www/base.html' %}
-{% block title %}Create Account — CarFriend{% endblock %}
+{% extends "base/base_www.html" %}
+{% block title %}Create account — Car Friend{% endblock %}
 
-{% block extra_css %}
-.auth-section {
-  min-height: calc(100vh - 130px);
-  background: var(--cf-paper);
-  display: flex;
-  align-items: flex-start;
-  padding: 48px 0 80px;
-}
-.auth-card {
-  background: var(--cf-white); border: 1px solid var(--cf-mist); border-radius: 16px;
-  padding: 40px 36px; max-width: 500px; width: 100%; margin: 0 auto;
-}
-@media (max-width: 480px) { .auth-card { padding: 28px 20px; border-radius: 12px; } }
-.auth-logo { display: flex; align-items: center; gap: 8px; margin-bottom: 28px; text-decoration: none; }
-.auth-logo-icon { width: 32px; height: 32px; background: var(--cf-blue); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
-.auth-logo-icon svg { width: 18px; height: 18px; }
-.auth-logo-text { font-family: var(--cf-font-display); font-weight: 800; font-size: 18px; color: var(--cf-azure); }
-.auth-logo-text span { color: var(--cf-blue); }
-.auth-card h2 { font-size: 22px; font-weight: 700; color: var(--cf-azure); margin-bottom: 4px; font-family: var(--cf-font-display); }
-.auth-card .sub { font-size: 13px; color: var(--cf-slate); margin-bottom: 28px; }
-.cf-label { font-size: 12px; font-weight: 600; color: var(--cf-slate); margin-bottom: 6px; display: block; font-family: var(--cf-font-sans); }
-.cf-field {
-  width: 100%; padding: 11px 14px; border: 1px solid var(--cf-mist); border-radius: 10px;
-  font-family: var(--cf-font-sans); font-size: 14px; color: var(--cf-ink);
-  outline: none; background: var(--cf-white); transition: border-color .2s, box-shadow .2s; margin-bottom: 16px;
-}
-.cf-field:focus { border-color: var(--cf-blue); box-shadow: 0 0 0 3px var(--cf-blue-100); }
-.role-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-.role-card input[type="radio"] { display: none; }
-.role-card label {
-  display: block; border: 2px solid var(--cf-mist); border-radius: 10px;
-  padding: 16px 14px; cursor: pointer; transition: all .2s; text-align: center;
-}
-.role-card input[type="radio"]:checked + label { border-color: var(--cf-blue); background: var(--cf-sky-tint); }
-.role-card label:hover { border-color: var(--cf-blue); }
-.role-icon { font-size: 24px; display: block; margin-bottom: 8px; }
-.role-title { font-family: var(--cf-font-display); font-weight: 700; font-size: 14px; color: var(--cf-azure); margin-bottom: 4px; }
-.role-desc { font-size: 12px; color: var(--cf-slate); line-height: 1.4; }
-.btn-register {
-  width: 100%; padding: 13px; background: var(--cf-blue); color: var(--cf-white); border: none;
-  border-radius: 9px; font-family: var(--cf-font-sans); font-size: 14px; font-weight: 700;
-  cursor: pointer; transition: background .2s; margin-bottom: 16px;
-}
-.btn-register:hover { background: var(--cf-blue-700); }
-.divider { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
-.divider hr { flex: 1; border: none; border-top: 1px solid var(--cf-mist); margin: 0; }
-.divider span { font-size: 12px; color: var(--cf-slate); white-space: nowrap; }
-.btn-google {
-  width: 100%; padding: 11px; background: var(--cf-white); border: 1px solid var(--cf-mist); border-radius: 9px;
-  font-family: var(--cf-font-sans); font-size: 13px; font-weight: 600; color: var(--cf-ink);
-  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
-  transition: border-color .2s, background .2s; text-decoration: none;
-}
-.btn-google:hover { border-color: var(--cf-blue); background: var(--cf-sky-tint); color: var(--cf-ink); }
-.btn-google svg { width: 18px; height: 18px; flex-shrink: 0; }
-.auth-footer { text-align: center; margin-top: 20px; font-size: 13px; color: var(--cf-slate); }
-.auth-footer a { color: var(--cf-blue); font-weight: 600; text-decoration: none; }
-.error-box {
-  background: var(--cf-danger-tint); border: 1px solid var(--cf-danger); border-radius: 8px;
-  padding: 10px 14px; font-size: 13px; color: var(--cf-danger); margin-bottom: 16px;
-  display: flex; align-items: flex-start; gap: 8px;
-}
-.section-label {
-  font-family: var(--cf-font-display); font-size: 12px; font-weight: 700;
-  color: var(--cf-azure); letter-spacing: .8px; text-transform: uppercase;
-  margin-bottom: 12px; margin-top: 4px;
-}
-.name-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+{% block extra_head %}
+<style>
+  .auth-wrap{max-width:500px;margin:clamp(22px,5vh,48px) auto 70px}
+  .auth-divider{display:flex;align-items:center;gap:.7rem;margin:1.1rem 0}
+  .auth-divider hr{flex:1;border:0;border-top:1px solid var(--cf-line);margin:0}
+  .auth-divider span{font-size:.78rem;color:var(--cf-muted);white-space:nowrap}
+  .btn-google{width:100%;background:#fff;border:1px solid var(--cf-line-strong);color:var(--cf-ink);gap:.6rem}
+  .btn-google svg{width:18px;height:18px;flex:0 0 auto}
+  .auth-err{display:flex;align-items:flex-start;gap:.5rem;background:var(--cf-amber-bg);border:1px solid var(--cf-amber-line);color:var(--cf-amber);border-radius:10px;padding:.65rem .85rem;font-size:.85rem;margin-bottom:1rem}
+  .auth-err svg.i{stroke:var(--cf-amber-bright);flex:0 0 auto;margin-top:1px}
+  .sec-label{font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--cf-muted);margin:.2rem 0 .7rem}
+  .role-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:1.2rem}
+  .role-card input[type="radio"]{position:absolute;opacity:0;pointer-events:none}
+  .role-card label{display:block;border:2px solid var(--cf-line-strong);border-radius:14px;padding:1.05rem .9rem;cursor:pointer;transition:all .18s var(--ease);text-align:center}
+  .role-card input[type="radio"]:checked+label{border-color:var(--cf-green);background:var(--cf-green-050)}
+  .role-card label:hover{border-color:var(--cf-green-200)}
+  .role-card input[type="radio"]:focus-visible+label{outline:3px solid rgba(31,164,99,.45);outline-offset:2px}
+  .role-ic{width:34px;height:34px;margin:0 auto .5rem;color:var(--cf-green-bright);display:grid;place-items:center}
+  .role-ic svg.i{width:26px;height:26px}
+  .role-title{font-weight:800;font-size:.92rem;margin-bottom:.25rem}
+  .role-desc{font-size:.76rem;color:var(--cf-muted);line-height:1.4}
+  .name-row{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+</style>
 {% endblock %}
 
-{% block content %}
-<section class="auth-section">
-  <div class="container px-3">
-    <div class="auth-card">
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="auth-wrap">
 
-      <a class="auth-logo" href="/">
-        <div class="auth-logo-icon">
-          <svg viewBox="0 0 20 20" fill="none">
-            <path d="M3 13h14M5 13L6.5 8h7L15 13" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="6.5" cy="15.5" r="1.5" fill="#fff"/>
-            <circle cx="13.5" cy="15.5" r="1.5" fill="#fff"/>
-          </svg>
+  <a class="cf-logo" href="/" style="justify-content:center;margin-bottom:1.3rem"><span class="cf-logo-mark"><svg class="i"><use href="#ic-car"/></svg></span><span class="cf-logo-name">Car<span>Friend</span></span></a>
+
+  <div class="cf-card cf-reveal" style="padding:clamp(24px,4vw,34px)">
+    <h1 style="font-size:1.4rem;font-weight:800;margin:0 0 .3rem">Create your account</h1>
+    <p style="color:var(--cf-muted);font-size:.9rem;margin:0 0 1.4rem">Join Car Friend. It's free and takes two minutes.</p>
+
+    {% if error %}<div class="auth-err"><svg class="i"><use href="#ic-warn"/></svg><span>{{ error }}</span></div>{% endif %}
+
+    <a href="/accounts/google/login/" class="cf-btn btn-google">
+      <svg viewBox="0 0 18 18" fill="none" aria-hidden="true">
+        <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+        <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+        <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+        <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+      </svg>
+      Continue with Google
+    </a>
+
+    <div class="auth-divider"><hr><span>or create an account with email</span><hr></div>
+
+    <form method="POST" action="/auth/register/">
+      {% csrf_token %}
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+      <div class="sec-label">Step 1 — I want to</div>
+      <div class="role-grid">
+        <div class="role-card">
+          <input type="radio" id="role_seller" name="role" value="seller" checked>
+          <label for="role_seller"><span class="role-ic"><svg class="i"><use href="#ic-car"/></svg></span><div class="role-title">Sell my car</div><div class="role-desc">List, inspect and sell via live auction</div></label>
         </div>
-        <span class="auth-logo-text">Car<span>Friend</span></span>
-      </a>
-
-      <h2>Create your account</h2>
-      <p class="sub">Join CarFriend — it's free and takes 2 minutes</p>
-
-      {% if error %}
-      <div class="error-box">
-        <i class="bi bi-exclamation-circle-fill"></i>{{ error }}
+        <div class="role-card">
+          <input type="radio" id="role_dealer" name="role" value="dealer">
+          <label for="role_dealer"><span class="role-ic"><svg class="i"><use href="#ic-broadcast"/></svg></span><div class="role-title">Buy as dealer</div><div class="role-desc">Bid on verified cars in live auctions</div></label>
+        </div>
       </div>
-      {% endif %}
 
-      <a href="/accounts/google/login/" class="btn-google">
-        <svg viewBox="0 0 18 18" fill="none">
-          <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
-          <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
-          <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
-          <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
-        </svg>
-        Continue with Google
-      </a>
+      <div class="sec-label">Step 2 — Your details</div>
+      <div class="name-row">
+        <div class="cf-field"><label for="id_first">First name</label><input type="text" id="id_first" name="first_name" class="cf-input" placeholder="Rahul" required autocomplete="given-name"></div>
+        <div class="cf-field"><label for="id_last">Last name</label><input type="text" id="id_last" name="last_name" class="cf-input" placeholder="Sharma" required autocomplete="family-name"></div>
+      </div>
+      <div class="cf-field"><label for="id_email">Email address</label><input type="email" id="id_email" name="email" class="cf-input" placeholder="rahul@example.com" required autocomplete="email"></div>
+      <div class="cf-field"><label for="id_phone">Mobile number</label><input type="tel" id="id_phone" name="phone" class="cf-input" placeholder="10-digit mobile" autocomplete="tel"></div>
+      <div class="cf-field"><label for="id_p1">Password</label><input type="password" id="id_p1" name="password1" class="cf-input" placeholder="At least 8 characters" required autocomplete="new-password"></div>
+      <div class="cf-field"><label for="id_p2">Confirm password</label><input type="password" id="id_p2" name="password2" class="cf-input" placeholder="Repeat your password" required autocomplete="new-password"></div>
 
-      <div class="divider"><hr><span>or create account with email</span><hr></div>
+      <button type="submit" class="cf-btn cf-btn-primary" style="width:100%">Create my account</button>
+    </form>
 
-      <form method="POST" action="/auth/register/">
-        {% csrf_token %}
-        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
-
-        <div class="section-label">Step 1 — I want to</div>
-        <div class="role-selector">
-          <div class="role-card">
-            <input type="radio" id="role_seller" name="role" value="seller" checked>
-            <label for="role_seller">
-              <span class="role-icon"><svg viewBox="0 0 20 20" width="22" height="22" fill="none" stroke="#166534" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><rect x="2" y="5" width="16" height="9" rx="3"/><path d="M5 14 Q10 17.5 15 14"/><circle cx="5.5" cy="14" r="1.3" fill="#166534" stroke="none"/><circle cx="14.5" cy="14" r="1.3" fill="#166534" stroke="none"/></svg></span>
-              <div class="role-title">Sell My Car</div>
-              <div class="role-desc">List your car, get it inspected, sell via live auction</div>
-            </label>
-          </div>
-          <div class="role-card">
-            <input type="radio" id="role_dealer" name="role" value="dealer">
-            <label for="role_dealer">
-              <span class="role-icon">🏢</span>
-              <div class="role-title">Buy as Dealer</div>
-              <div class="role-desc">Bid on verified cars in live auctions as a registered dealer</div>
-            </label>
-          </div>
-        </div>
-
-        <div class="section-label">Step 2 — Your details</div>
-        <div class="name-row">
-          <div>
-            <label class="cf-label">First Name</label>
-            <input type="text" name="first_name" class="cf-field" placeholder="Rahul" required autocomplete="given-name">
-          </div>
-          <div>
-            <label class="cf-label">Last Name</label>
-            <input type="text" name="last_name" class="cf-field" placeholder="Sharma" required autocomplete="family-name">
-          </div>
-        </div>
-        <label class="cf-label">Email address</label>
-        <input type="email" name="email" class="cf-field" placeholder="rahul@example.com" required autocomplete="email">
-        <label class="cf-label">Mobile Number</label>
-        <input type="tel" name="phone" class="cf-field" placeholder="+91 98765 43210" autocomplete="tel">
-        <label class="cf-label">Password</label>
-        <input type="password" name="password1" class="cf-field" placeholder="At least 8 characters" required autocomplete="new-password">
-        <label class="cf-label">Confirm Password</label>
-        <input type="password" name="password2" class="cf-field" placeholder="Repeat your password" required autocomplete="new-password">
-
-        <button type="submit" class="btn-register">Create My CarFriend Account →</button>
-      </form>
-
-      <p class="auth-footer">
-        Already have an account? <a href="/auth/login/">Log in →</a>
-      </p>
-      <p style="text-align:center;font-size:11px;color:var(--cf-slate);margin-top:10px;">
-        By signing up, you agree to CarFriend's
-        <a href="//www.carfriend.in/terms/" style="color:var(--cf-blue);">Terms</a> and
-        <a href="//www.carfriend.in/privacy/" style="color:var(--cf-blue);">Privacy Policy</a>
-      </p>
-
-    </div>
+    <p style="text-align:center;margin:1.2rem 0 0;font-size:.88rem;color:var(--cf-muted)">Already have an account? <a href="/auth/login/" style="color:var(--cf-green);font-weight:700;text-decoration:none">Log in</a></p>
   </div>
-</section>
+
+  <p style="text-align:center;font-size:.72rem;color:var(--cf-muted);margin-top:1rem">By signing up you agree to Car Friend's <a href="/terms/" style="color:var(--cf-green)">Terms</a> and <a href="/privacy/" style="color:var(--cf-green)">Privacy Policy</a>.</p>
+
+</div></div></main>
 {% endblock %}
