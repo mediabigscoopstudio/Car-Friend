@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     "deals",
     "payments",
     "notifications",
+    "support",
     "www",
 ]
 

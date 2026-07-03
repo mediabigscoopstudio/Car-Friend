@@ -1,0 +1,43 @@
+{% extends "base/base_www.html" %}
+{% block title %}My tickets — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_seller.html" with active="support" %}{% endblock %}
+
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="cf-focus">
+
+  <div class="cf-page-head cf-reveal">
+    <h1>My tickets</h1>
+    <a href="{% url 'ticket_new' %}" class="cf-btn cf-btn-primary"><svg class="i"><use href="#ic-plus"/></svg>New ticket</a>
+  </div>
+
+  {% if tickets %}
+  <div class="d-flex flex-column cf-reveal d1" style="gap:.8rem">
+    {% for t in tickets %}
+    <a href="{% url 'ticket_detail' t.pk %}" class="cf-card" style="padding:1.05rem 1.2rem;text-decoration:none;color:inherit;display:block">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem">
+        <div style="min-width:0">
+          <div style="font-weight:800;letter-spacing:-.01em">{{ t.subject }}</div>
+          <div style="color:var(--cf-muted);font-size:.82rem;margin-top:.2rem">#{{ t.pk }} · {{ t.get_category_display }} · updated {{ t.updated_at|date:"d M Y" }}</div>
+        </div>
+        {% if t.status == 'resolved' %}
+          <span class="cf-status"><svg class="i"><use href="#ic-check"/></svg>Resolved</span>
+        {% elif t.status == 'in_progress' %}
+          <span class="cf-chip"><svg class="i" style="stroke:var(--cf-green-bright)"><use href="#ic-clock"/></svg>In progress</span>
+        {% else %}
+          <span class="cf-chip"><svg class="i"><use href="#ic-clock"/></svg>Open</span>
+        {% endif %}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="cf-empty cf-reveal d1">
+    <div class="ic"><svg class="i"><use href="#ic-life"/></svg></div>
+    <h3>No tickets yet</h3>
+    <p>When you need a hand, raise a ticket and we'll get back to you.</p>
+    <a href="{% url 'ticket_new' %}" class="cf-btn cf-btn-primary"><svg class="i"><use href="#ic-plus"/></svg>Raise a ticket</a>
+  </div>
+  {% endif %}
+
+</div></div></main>
+{% endblock %}

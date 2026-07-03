@@ -1,0 +1,56 @@
+{% extends "base/base_www.html" %}
+{% block title %}FAQ — Support — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_seller.html" with active="support" %}{% endblock %}
+
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="cf-focus">
+
+  <div class="cf-reveal" style="padding-top:clamp(14px,2.5vw,22px)">
+    <a href="{% url 'support_home' %}" class="cf-btn cf-btn-ghost" style="padding:.5rem .9rem"><svg class="i" style="transform:rotate(180deg)"><use href="#ic-out"/></svg>Support</a>
+  </div>
+
+  <div class="cf-page-head cf-reveal">
+    <h1>Frequently asked</h1>
+  </div>
+
+  <div class="d-flex flex-column cf-reveal d1" style="gap:.8rem">
+
+    <details class="cf-card" style="padding:1.05rem 1.2rem">
+      <summary style="font-weight:800;cursor:pointer;list-style:none;display:flex;align-items:center;gap:.6rem">
+        <svg class="i" style="stroke:var(--cf-green-bright)"><use href="#ic-car"/></svg>How do I sell my car on Car Friend?</summary>
+      <p style="color:var(--cf-ink-soft);margin:.7rem 0 0;line-height:1.55">List your car with its registration number, complete a one-time Aadhaar and PAN verification, and we schedule a free home inspection. Once graded, your car goes to a live auction of verified dealers and you decide on the best offer.</p>
+    </details>
+
+    <details class="cf-card" style="padding:1.05rem 1.2rem">
+      <summary style="font-weight:800;cursor:pointer;list-style:none;display:flex;align-items:center;gap:.6rem">
+        <svg class="i" style="stroke:var(--cf-green-bright)"><use href="#ic-shield"/></svg>Why do you need my Aadhaar and PAN?</summary>
+      <p style="color:var(--cf-ink-soft);margin:.7rem 0 0;line-height:1.55">Verification confirms you are the genuine owner and is required before a car can be auctioned. We only store a masked reference, never your full Aadhaar number.</p>
+    </details>
+
+    <details class="cf-card" style="padding:1.05rem 1.2rem">
+      <summary style="font-weight:800;cursor:pointer;list-style:none;display:flex;align-items:center;gap:.6rem">
+        <svg class="i" style="stroke:var(--cf-green-bright)"><use href="#ic-gauge"/></svg>Is the inspection really free?</summary>
+      <p style="color:var(--cf-ink-soft);margin:.7rem 0 0;line-height:1.55">Yes. A certified inspector visits you, checks 300+ points, and assigns a condition grade. There is no charge, and you are under no obligation to sell.</p>
+    </details>
+
+    <details class="cf-card" style="padding:1.05rem 1.2rem">
+      <summary style="font-weight:800;cursor:pointer;list-style:none;display:flex;align-items:center;gap:.6rem">
+        <svg class="i" style="stroke:var(--cf-green-bright)"><use href="#ic-tag"/></svg>Do I have to accept the highest bid?</summary>
+      <p style="color:var(--cf-ink-soft);margin:.7rem 0 0;line-height:1.55">No. When the auction ends you can accept the highest bid, send a counter price, or request a re-auction. You stay in control of the final decision.</p>
+    </details>
+
+    <details class="cf-card" style="padding:1.05rem 1.2rem">
+      <summary style="font-weight:800;cursor:pointer;list-style:none;display:flex;align-items:center;gap:.6rem">
+        <svg class="i" style="stroke:var(--cf-green-bright)"><use href="#ic-wallet"/></svg>When and how do I get paid?</summary>
+      <p style="color:var(--cf-ink-soft);margin:.7rem 0 0;line-height:1.55">After you e-sign the agreement and hand over the car and documents, the payout is transferred to your saved bank or UPI. Add your payout details under Profile so we can pay you without delay.</p>
+    </details>
+
+  </div>
+
+  <div class="cf-card cf-reveal d2" style="padding:1.2rem 1.3rem;margin-top:1.2rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+    <div style="flex:1 1 auto;min-width:0"><div style="font-weight:800">Still stuck?</div><div style="color:var(--cf-muted);font-size:.88rem">Raise a ticket and we'll help you directly.</div></div>
+    <a href="{% url 'ticket_new' %}" class="cf-btn cf-btn-primary"><svg class="i"><use href="#ic-plus"/></svg>Raise a ticket</a>
+  </div>
+
+</div></div></main>
+{% endblock %}

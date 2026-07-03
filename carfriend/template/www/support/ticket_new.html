@@ -1,0 +1,62 @@
+{% extends "base/base_www.html" %}
+{% block title %}Raise a ticket — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_seller.html" with active="support" %}{% endblock %}
+
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="cf-focus">
+
+  <div class="cf-reveal" style="padding-top:clamp(14px,2.5vw,22px)">
+    <a href="{% url 'support_home' %}" class="cf-btn cf-btn-ghost" style="padding:.5rem .9rem"><svg class="i" style="transform:rotate(180deg)"><use href="#ic-out"/></svg>Support</a>
+  </div>
+
+  <div class="cf-page-head cf-reveal">
+    <h1>Raise a ticket</h1>
+  </div>
+
+  <div class="cf-card cf-reveal d1" style="padding:1.3rem 1.35rem">
+    {% if error %}
+    <div class="cf-ribbon" style="margin-bottom:1.1rem">
+      <div class="cf-ribbon-top" style="padding:.85rem 1rem">
+        <div class="cf-warn-ic"><svg class="i"><use href="#ic-warn"/></svg></div>
+        <div class="cf-ribbon-txt"><p style="font-weight:600">{{ error }}</p></div>
+      </div>
+    </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'ticket_new' %}">
+      {% csrf_token %}
+
+      <div class="cf-field">
+        <label for="id_category">What is this about?</label>
+        <div class="cf-select-wrap">
+          <select class="cf-select" id="id_category" name="category">
+            {% for value, label in categories %}
+            <option value="{{ value }}"{% if category_sel == value %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <svg class="i"><use href="#ic-chevd"/></svg>
+        </div>
+      </div>
+
+      <div class="cf-field">
+        <label for="id_subject">Subject</label>
+        <input class="cf-input" id="id_subject" name="subject" type="text" maxlength="200"
+               value="{{ subject }}" placeholder="A short summary" required>
+      </div>
+
+      <div class="cf-field">
+        <label for="id_body">Describe it</label>
+        <textarea class="cf-input" id="id_body" name="body" rows="6"
+                  placeholder="Tell us what's happening, and the car or auction it relates to." required>{{ body }}</textarea>
+        <div class="cf-help">The more detail you share, the faster we can help.</div>
+      </div>
+
+      <div style="display:flex;gap:.65rem;margin-top:.4rem">
+        <button type="submit" class="cf-btn cf-btn-primary"><svg class="i"><use href="#ic-check"/></svg>Raise ticket</button>
+        <a href="{% url 'support_home' %}" class="cf-btn cf-btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+</div></div></main>
+{% endblock %}

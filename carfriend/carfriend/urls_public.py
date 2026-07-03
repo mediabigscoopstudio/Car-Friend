@@ -15,6 +15,10 @@ urlpatterns = [
     # Sub-app public URLs
     path("vehicles/", include("vehicles.urls")),
     path("auctions/", include("auctions.urls")),
+    path("deals/", include("deals.urls")),
     # Seller KYC (PAN + Aadhaar)
     path("kyc/", include("kyc.urls")),
+    # Seller/dealer account surfaces
+    path("support/", include("support.urls")),
+    path("notifications/", include("notifications.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

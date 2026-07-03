@@ -1,0 +1,58 @@
+{% extends "base/base_www.html" %}
+{% block title %}Support — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_seller.html" with active="support" %}{% endblock %}
+
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="cf-focus">
+
+  <div class="cf-page-head cf-reveal">
+    <h1>Support</h1>
+  </div>
+  <p class="cf-reveal d1" style="color:var(--cf-muted);margin:0 0 1.3rem;max-width:52ch">
+    We're here to help you sell with confidence. Browse common questions, or raise a ticket and
+    a Car Friend associate will get back to you.</p>
+
+  <div class="cf-card cf-reveal d1" style="padding:1.2rem 1.3rem;margin-bottom:1rem">
+    <div style="display:flex;align-items:center;gap:1rem">
+      <div class="cf-warn-ic" style="background:var(--cf-green-050);border-color:var(--cf-green-100);color:var(--cf-green-bright)"><svg class="i"><use href="#ic-life"/></svg></div>
+      <div style="flex:1 1 auto;min-width:0">
+        <div style="font-weight:800;font-size:1.02rem">Raise a ticket</div>
+        <div style="color:var(--cf-muted);font-size:.88rem;margin-top:.1rem">Tell us what's happening and we'll pick it up.</div>
+      </div>
+      <a href="{% url 'ticket_new' %}" class="cf-btn cf-btn-primary"><svg class="i"><use href="#ic-plus"/></svg>New ticket</a>
+    </div>
+  </div>
+
+  <div class="cf-card cf-reveal d1" style="padding:1.2rem 1.3rem;margin-bottom:1rem">
+    <div style="display:flex;align-items:center;gap:1rem">
+      <div class="cf-warn-ic" style="background:var(--cf-green-050);border-color:var(--cf-green-100);color:var(--cf-green-bright)"><svg class="i"><use href="#ic-list"/></svg></div>
+      <div style="flex:1 1 auto;min-width:0">
+        <div style="font-weight:800;font-size:1.02rem">My tickets{% if open_count %} <span class="cf-status" style="margin-left:.25rem">{{ open_count }} open</span>{% endif %}</div>
+        <div style="color:var(--cf-muted);font-size:.88rem;margin-top:.1rem">Track the status of your requests.</div>
+      </div>
+      <a href="{% url 'my_tickets' %}" class="cf-btn cf-btn-ghost">View</a>
+    </div>
+  </div>
+
+  <div class="cf-card cf-reveal d2" style="padding:1.2rem 1.3rem;margin-bottom:1rem">
+    <div style="display:flex;align-items:center;gap:1rem">
+      <div class="cf-warn-ic" style="background:var(--cf-green-050);border-color:var(--cf-green-100);color:var(--cf-green-bright)"><svg class="i"><use href="#ic-file"/></svg></div>
+      <div style="flex:1 1 auto;min-width:0">
+        <div style="font-weight:800;font-size:1.02rem">Browse FAQ</div>
+        <div style="color:var(--cf-muted);font-size:.88rem;margin-top:.1rem">Quick answers on selling, KYC, inspection and payout.</div>
+      </div>
+      <a href="{% url 'support_faq' %}" class="cf-btn cf-btn-ghost">Read</a>
+    </div>
+  </div>
+
+  <div class="cf-card cf-reveal d2" style="padding:1.2rem 1.3rem">
+    <div class="cf-flabel" style="margin-bottom:.7rem">Reach us directly</div>
+    <div style="display:flex;flex-wrap:wrap;gap:.6rem 1.4rem">
+      <a href="tel:+918000000000" class="cf-chip"><svg class="i"><use href="#ic-life"/></svg>+91 80000 00000</a>
+      <a href="mailto:support@carfriend.in" class="cf-chip"><svg class="i"><use href="#ic-file"/></svg>support@carfriend.in</a>
+    </div>
+    <div class="cf-help" style="margin-top:.6rem">Mon to Sat, 9 AM to 8 PM.</div>
+  </div>
+
+</div></div></main>
+{% endblock %}
