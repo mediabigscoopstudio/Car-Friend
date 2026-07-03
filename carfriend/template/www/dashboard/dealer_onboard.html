@@ -1,163 +1,60 @@
-{% extends 'www/base.html' %}
-{% block title %}Dealer Setup — CarFriend{% endblock %}
+{% extends "base/base_www.html" %}
+{% block title %}Dealer verification — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_dealer.html" with active="profile" %}{% endblock %}
 
-{% block extra_css %}
-.onboard-section {
-  min-height: calc(100vh - 130px);
-  background: var(--cf-paper);
-  display: flex;
-  align-items: flex-start;
-  padding: 48px 0 80px;
-}
-.onboard-card {
-  background: #fff;
-  border: 1px solid var(--cf-mist);
-  border-radius: 16px;
-  padding: 40px 36px;
-  max-width: 560px;
-  width: 100%;
-  margin: 0 auto;
-}
-@media (max-width: 480px) { .onboard-card { padding: 28px 20px; } }
-.onboard-card h2 { font-family: var(--cf-font-display); font-size: 22px; font-weight: 700; color: var(--cf-azure); margin-bottom: 6px; }
-.onboard-card .sub { font-size: 13px; color: var(--cf-slate); margin-bottom: 28px; }
-.section-label {
-  font-family: var(--cf-font-sans);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--cf-blue);
-  letter-spacing: .8px;
-  text-transform: uppercase;
-  margin-bottom: 12px;
-  margin-top: 20px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--cf-mist);
-}
-.cf-label { font-size: 12px; font-weight: 600; color: var(--cf-slate); margin-bottom: 6px; display: block; }
-.cf-field {
-  width: 100%; padding: 11px 14px; border: 1.5px solid var(--cf-mist); border-radius: 8px;
-  font-family: var(--cf-font-sans); font-size: 14px; color: var(--cf-ink);
-  outline: none; background: #fff; transition: border-color .2s; margin-bottom: 16px;
-}
-.cf-field:focus { border-color: var(--cf-blue); }
-.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.btn-submit {
-  width: 100%; padding: 13px; background: var(--cf-blue); color: #fff; border: none;
-  border-radius: 9px; font-family: var(--cf-font-sans); font-size: 14px; font-weight: 700;
-  cursor: pointer; transition: background .2s; margin-top: 8px;
-}
-.btn-submit:hover { background: var(--cf-blue-700); }
-.error-box {
-  background: var(--cf-danger-tint); border: 1px solid var(--cf-danger); border-radius: 8px;
-  padding: 10px 14px; font-size: 13px; color: var(--cf-danger); margin-bottom: 16px;
-  display: flex; align-items: flex-start; gap: 8px;
-}
-.info-box {
-  background: var(--cf-sky-tint); border: 1px solid var(--cf-blue-100); border-radius: 8px;
-  padding: 12px 14px; font-size: 13px; color: var(--cf-azure); margin-bottom: 20px;
-  display: flex; align-items: flex-start; gap: 8px;
-}
-.step-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--cf-sky-tint);
-  color: var(--cf-blue);
-  font-family: var(--cf-font-sans);
-  font-size: 11px;
-  font-weight: 700;
-  padding: 4px 12px;
-  border-radius: 50px;
-  margin-bottom: 16px;
-}
-{% endblock %}
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="cf-focus">
 
-{% block content %}
-<section class="onboard-section">
-  <div class="container px-3">
-    <div class="onboard-card">
+  <div class="cf-reveal" style="padding-top:clamp(14px,2.5vw,22px)">
+    <a href="{% url 'profile' %}" class="cf-btn cf-btn-ghost" style="padding:.5rem .9rem"><svg class="i" style="transform:rotate(180deg)"><use href="#ic-out"/></svg>Profile</a>
+  </div>
 
-      <div class="step-badge">
-        <i class="bi bi-buildings"></i> Dealer Setup
-      </div>
-      <h2>Set up your dealer account</h2>
-      <p class="sub">Fill in your business details to unlock live auction access and start bidding on certified cars.</p>
+  <div class="cf-page-head cf-reveal"><h1>Dealer verification</h1></div>
+  <p class="cf-reveal d1" style="color:var(--cf-muted);margin:0 0 1.2rem;max-width:54ch">Add your business details to unlock live auction bidding. Documents are reviewed privately by our team and never shared publicly.</p>
 
-      {% if error %}
-      <div class="error-box">
-        <i class="bi bi-exclamation-circle-fill"></i>{{ error }}
-      </div>
-      {% endif %}
-
-      <div class="info-box">
-        <i class="bi bi-info-circle-fill" style="flex-shrink:0;margin-top:1px;"></i>
-        <div>Your details are reviewed by our team. Full bidding access is unlocked once verification is complete. You can start browsing auctions immediately.</div>
-      </div>
-
-      {% if rejected %}
-      <div style="background:var(--cf-coral-tint);border:1px solid var(--cf-coral);color:var(--cf-coral-dark);padding:12px 14px;border-radius:10px;margin-bottom:14px;font-size:13px">
-        <strong>Your previous submission was rejected:</strong> {{ reject_reason }} Please correct and resubmit.
-      </div>
-      {% endif %}
-      {% if error %}
-      <div style="background:var(--cf-danger-tint);border:1px solid var(--cf-danger);color:var(--cf-danger);padding:12px 14px;border-radius:10px;margin-bottom:14px;font-size:13px">{{ error }}</div>
-      {% endif %}
-
-      <form method="POST" action="/auth/dealer/onboard/" enctype="multipart/form-data">
-        {% csrf_token %}
-
-        <div class="section-label"><i class="bi bi-building me-1"></i>Business Details</div>
-
-        <label class="cf-label">Legal Business Name <span style="color:var(--cf-danger);">*</span></label>
-        <input type="text" name="business_name" class="cf-field" placeholder="e.g. Sharma Auto Sales Pvt Ltd" required>
-
-        <div class="two-col">
-          <div>
-            <label class="cf-label">City <span style="color:var(--cf-danger);">*</span></label>
-            <input type="text" name="city" class="cf-field" placeholder="e.g. Delhi" required value="{{ request.user.city }}">
-          </div>
-          <div>
-            <label class="cf-label">Mobile Number</label>
-            <input type="tel" name="phone" class="cf-field" placeholder="+91 98765 43210" value="{{ request.user.phone }}">
-          </div>
-        </div>
-
-        <label class="cf-label">GSTIN (GST Number) <span style="color:var(--cf-danger);">*</span></label>
-        <input type="text" name="gstin" class="cf-field" placeholder="22AAAAA0000A1Z5" maxlength="15" style="text-transform:uppercase;" required>
-
-        <div class="section-label"><i class="bi bi-file-earmark-text me-1"></i>Verification Documents</div>
-        <p style="font-size:12px;color:var(--cf-slate);margin:-6px 0 12px;">PDF, JPG or PNG · max 5 MB each. Reviewed privately by our admin team — never shared publicly.</p>
-        {% for key, label in required_docs %}
-        <label class="cf-label">{{ label }} <span style="color:var(--cf-danger);">*</span></label>
-        <input type="file" name="doc_{{ key }}" class="cf-field" accept=".pdf,.jpg,.jpeg,.png" required>
-        {% endfor %}
-
-        <div class="section-label"><i class="bi bi-hammer me-1"></i>Auction Preferences (Optional)</div>
-
-        <div class="two-col">
-          <div>
-            <label class="cf-label">Min Budget (₹)</label>
-            <input type="number" name="budget_min" class="cf-field" placeholder="e.g. 200000" min="0">
-          </div>
-          <div>
-            <label class="cf-label">Max Budget (₹)</label>
-            <input type="number" name="budget_max" class="cf-field" placeholder="e.g. 1000000" min="0">
-          </div>
-        </div>
-
-        <label class="cf-label">Brands of Interest</label>
-        <input type="text" name="brand_interest" class="cf-field" placeholder="e.g. Maruti, Hyundai, Tata">
-
-        <button type="submit" class="btn-submit">
-          <i class="bi bi-arrow-right-circle me-2"></i>Submit for verification →
-        </button>
-      </form>
-
-      <p style="text-align:center;font-size:12px;color:var(--cf-slate);margin-top:16px;">
-        Prefer to sell instead? <a href="/auth/seller/dashboard/" style="color:var(--cf-blue);font-weight:600;">Back to Seller Dashboard</a>
-      </p>
-
+  {% if rejected %}
+  <div class="cf-ribbon cf-reveal d1" style="margin-bottom:1rem">
+    <div class="cf-ribbon-top" style="padding:.9rem 1rem">
+      <div class="cf-warn-ic"><svg class="i"><use href="#ic-warn"/></svg></div>
+      <div class="cf-ribbon-txt"><h2>Previous submission needs changes</h2><p>{{ reject_reason }} Please correct and resubmit.</p></div>
     </div>
   </div>
-</section>
+  {% endif %}
+  {% if error %}
+  <div class="cf-card cf-reveal d1" style="padding:.75rem 1rem;margin-bottom:1rem;color:var(--cf-amber);display:flex;align-items:center;gap:.5rem"><svg class="i" style="stroke:var(--cf-amber-bright)"><use href="#ic-warn"/></svg><span>{{ error }}</span></div>
+  {% endif %}
+
+  <div class="cf-card cf-reveal d1" style="padding:1.3rem 1.35rem">
+    <form method="POST" action="/auth/dealer/onboard/" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <div class="cf-flabel" style="margin-bottom:.7rem">Business details</div>
+      <div class="cf-field"><label for="id_bname">Legal business name</label><input type="text" name="business_name" id="id_bname" class="cf-input" placeholder="e.g. Sharma Auto Sales Pvt Ltd" required></div>
+      <div class="d-flex" style="gap:.9rem;flex-wrap:wrap">
+        <div class="cf-field" style="flex:1 1 200px"><label for="id_city">City</label><input type="text" name="city" id="id_city" class="cf-input" placeholder="e.g. Delhi" required value="{{ request.user.city }}"></div>
+        <div class="cf-field" style="flex:1 1 200px"><label for="id_phone">Mobile number</label><input type="tel" name="phone" id="id_phone" class="cf-input" placeholder="10-digit mobile" value="{{ request.user.phone }}"></div>
+      </div>
+      <div class="cf-field"><label for="id_gstin">GSTIN</label><input type="text" name="gstin" id="id_gstin" class="cf-input" placeholder="22AAAAA0000A1Z5" maxlength="15" style="text-transform:uppercase" required></div>
+
+      <div class="cf-div" style="margin:1.1rem 0"></div>
+      <div class="cf-flabel" style="margin-bottom:.3rem">Verification documents</div>
+      <p class="cf-help" style="margin:0 0 .8rem">PDF, JPG or PNG · max 5 MB each.</p>
+      {% for key, label in required_docs %}
+      <div class="cf-field"><label for="id_doc_{{ key }}">{{ label }}</label><input type="file" name="doc_{{ key }}" id="id_doc_{{ key }}" class="cf-input" accept=".pdf,.jpg,.jpeg,.png" required></div>
+      {% endfor %}
+
+      <div class="cf-div" style="margin:1.1rem 0"></div>
+      <div class="cf-flabel" style="margin-bottom:.7rem">Auction preferences (optional)</div>
+      <div class="d-flex" style="gap:.9rem;flex-wrap:wrap">
+        <div class="cf-field" style="flex:1 1 160px"><label for="id_bmin">Min budget (₹)</label><input type="number" name="budget_min" id="id_bmin" class="cf-input" placeholder="e.g. 200000" min="0"></div>
+        <div class="cf-field" style="flex:1 1 160px"><label for="id_bmax">Max budget (₹)</label><input type="number" name="budget_max" id="id_bmax" class="cf-input" placeholder="e.g. 1000000" min="0"></div>
+      </div>
+      <div class="cf-field"><label for="id_brand">Brands of interest</label><input type="text" name="brand_interest" id="id_brand" class="cf-input" placeholder="e.g. Maruti, Hyundai, Tata"></div>
+
+      <div class="cf-foot-note" style="margin:.2rem 0 1rem"><svg class="i"><use href="#ic-shield"/></svg>You can browse auctions immediately. Bidding unlocks once verification is approved.</div>
+      <button type="submit" class="cf-btn cf-btn-primary" style="width:100%"><svg class="i"><use href="#ic-check"/></svg>Submit for verification</button>
+    </form>
+  </div>
+
+</div></div></main>
 {% endblock %}

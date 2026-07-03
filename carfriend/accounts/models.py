@@ -131,6 +131,11 @@ class DealerProfile(models.Model):
     preferences     = models.TextField(blank=True)
     is_banned       = models.BooleanField(default=False)
     status          = models.CharField(max_length=20, default="Enabled")
+    # Notification channel preferences.
+    notify_whatsapp = models.BooleanField(default=True)
+    notify_sms      = models.BooleanField(default=True)
+    notify_email    = models.BooleanField(default=True)
+    notify_push     = models.BooleanField(default=True)
     created_at      = models.DateTimeField(auto_now_add=True)
     updated_at      = models.DateTimeField(auto_now=True)
 

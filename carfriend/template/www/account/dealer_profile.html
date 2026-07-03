@@ -1,0 +1,72 @@
+{% extends "base/base_www.html" %}
+{% block title %}Profile — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_dealer.html" with active="profile" %}{% endblock %}
+
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="cf-focus">
+
+  <div class="cf-page-head cf-reveal">
+    <h1>Profile</h1>
+    <a href="{% url 'logout' %}" class="cf-btn cf-btn-ghost" style="padding:.55rem 1rem"><svg class="i"><use href="#ic-out"/></svg>Log out</a>
+  </div>
+
+  <div class="cf-card cf-reveal d1" style="padding:1.3rem 1.35rem;margin-bottom:1rem">
+    <div style="display:flex;gap:1rem;align-items:center">
+      <div class="cf-logo-mark" style="width:52px;height:52px;border-radius:15px"><svg class="i" style="width:26px;height:26px"><use href="#ic-user"/></svg></div>
+      <div style="flex:1 1 auto;min-width:0">
+        <div style="font-weight:800;font-size:1.15rem;letter-spacing:-.01em">{{ dp.dealership_name }}</div>
+        <div style="color:var(--cf-muted);font-size:.86rem">{{ request.user.email }}{% if request.user.phone %} · {{ request.user.phone }}{% endif %}</div>
+      </div>
+      <a href="{% url 'profile_edit' %}" class="cf-btn cf-btn-ghost">Edit</a>
+    </div>
+  </div>
+
+  <div class="cf-card cf-reveal d1" style="padding:1.2rem 1.3rem;margin-bottom:1rem">
+    <div style="display:flex;align-items:center;gap:1rem">
+      <div class="cf-warn-ic" style="background:var(--cf-green-050);border-color:var(--cf-green-100);color:var(--cf-green-bright)"><svg class="i"><use href="#ic-shield"/></svg></div>
+      <div style="flex:1 1 auto;min-width:0">
+        <div style="font-weight:800;font-size:1.02rem">Verification</div>
+        <div style="margin-top:.3rem">
+          {% if can_bid or verification.is_approved %}
+            <span class="cf-status"><svg class="i"><use href="#ic-check"/></svg>Verified · bidding enabled</span>
+          {% elif verification.status == 'pending' %}
+            <span class="cf-chip"><svg class="i" style="stroke:var(--cf-green-bright)"><use href="#ic-clock"/></svg>Pending approval</span>
+          {% elif verification.status == 'rejected' %}
+            <span class="cf-chip pend"><svg class="i"><use href="#ic-warn"/></svg>Needs changes</span>
+          {% else %}
+            <span class="cf-chip pend"><svg class="i"><use href="#ic-warn"/></svg>Not verified</span>
+          {% endif %}
+        </div>
+        {% if verification.status == 'rejected' and verification.reject_reason %}<div style="color:var(--cf-amber);font-size:.82rem;margin-top:.35rem">{{ verification.reject_reason }}</div>{% endif %}
+      </div>
+      <a href="/auth/dealer/onboard/" class="cf-btn {% if can_bid or verification.is_approved %}cf-btn-ghost{% else %}cf-btn-primary{% endif %}">{% if can_bid or verification.is_approved %}View{% elif verification.status == 'rejected' %}Resubmit{% else %}Verify{% endif %}</a>
+    </div>
+  </div>
+
+  <div class="cf-card cf-reveal d2" style="padding:1.2rem 1.3rem;margin-bottom:1rem">
+    <div style="display:flex;align-items:flex-start;gap:1rem">
+      <div class="cf-warn-ic" style="background:var(--cf-green-050);border-color:var(--cf-green-100);color:var(--cf-green-bright)"><svg class="i"><use href="#ic-list"/></svg></div>
+      <div style="flex:1 1 auto;min-width:0">
+        <div style="font-weight:800;font-size:1.02rem">Business details</div>
+        <div style="color:var(--cf-muted);font-size:.86rem;margin-top:.15rem">
+          {% if dp.gstin %}GST {{ dp.gstin }}{% else %}GST not added{% endif %}{% if dp.city %} · {{ dp.city }}{% endif %}{% if dp.budget_max %} · Budget up to ₹{{ dp.budget_max }}{% endif %}
+        </div>
+        {% if dp.brand_interest %}<div style="color:var(--cf-muted);font-size:.82rem;margin-top:.2rem">Interested in: {{ dp.brand_interest }}</div>{% endif %}
+      </div>
+      <a href="{% url 'profile_edit' %}" class="cf-btn cf-btn-ghost">Edit</a>
+    </div>
+  </div>
+
+  <div class="cf-card cf-reveal d2" style="padding:1.2rem 1.3rem">
+    <div style="display:flex;align-items:center;gap:1rem">
+      <div class="cf-warn-ic" style="background:var(--cf-green-050);border-color:var(--cf-green-100);color:var(--cf-green-bright)"><svg class="i"><use href="#ic-bell"/></svg></div>
+      <div style="flex:1 1 auto;min-width:0">
+        <div style="font-weight:800;font-size:1.02rem">Notifications</div>
+        <div style="color:var(--cf-muted);font-size:.86rem;margin-top:.15rem">{% if dp.notify_whatsapp %}WhatsApp · {% endif %}{% if dp.notify_sms %}SMS · {% endif %}{% if dp.notify_email %}Email · {% endif %}{% if dp.notify_push %}Push{% endif %}{% if not dp.notify_whatsapp and not dp.notify_sms and not dp.notify_email and not dp.notify_push %}All channels off{% endif %}</div>
+      </div>
+      <a href="{% url 'profile_notifications' %}" class="cf-btn cf-btn-ghost">Manage</a>
+    </div>
+  </div>
+
+</div></div></main>
+{% endblock %}

@@ -441,10 +441,29 @@ def dealer_dashboard(request):
     })
 
 
-# ── Seller profile / account ─────────────────────────────────────────────────
+# ── Seller / dealer profile / account ────────────────────────────────────────
+
+def _dealer_profile(user):
+    dp, _ = DealerProfile.objects.get_or_create(
+        user=user, defaults={"dealership_name": user.get_full_name() or user.email or "Dealer"})
+    return dp
+
+
+def _to_int(v):
+    try:
+        return max(0, int(v))
+    except (TypeError, ValueError):
+        return 0
+
 
 @login_required(login_url="/auth/login/")
 def profile(request):
+    if request.user.is_dealer:
+        return render(request, "www/account/dealer_profile.html", {
+            "dp":           _dealer_profile(request.user),
+            "verification": latest_dealer_verification(request.user),
+            "can_bid":      dealer_can_bid(request.user),
+        })
     sp, _ = SellerProfile.objects.get_or_create(user=request.user)
     return render(request, "www/account/profile.html", {
         "sp": sp,
@@ -454,6 +473,27 @@ def profile(request):
 
 @login_required(login_url="/auth/login/")
 def profile_edit(request):
+    if request.user.is_dealer:
+        dp = _dealer_profile(request.user)
+        if request.method == "POST":
+            u = request.user
+            u.first_name = (request.POST.get("first_name") or "").strip()[:150]
+            u.last_name  = (request.POST.get("last_name") or "").strip()[:150]
+            phone = (request.POST.get("phone") or "").strip()
+            if phone:
+                u.phone = phone[:20]
+            u.city = (request.POST.get("city") or "").strip()[:120]
+            u.save(update_fields=["first_name", "last_name", "phone", "city"])
+            dp.dealership_name = ((request.POST.get("dealership_name") or dp.dealership_name).strip()[:200]) or "Dealer"
+            dp.gstin          = (request.POST.get("gstin") or "").strip().upper()[:20]
+            dp.city           = u.city
+            dp.brand_interest = (request.POST.get("brand_interest") or "").strip()[:255]
+            dp.budget_min     = _to_int(request.POST.get("budget_min"))
+            dp.budget_max     = _to_int(request.POST.get("budget_max"))
+            dp.save(update_fields=["dealership_name", "gstin", "city",
+                                   "brand_interest", "budget_min", "budget_max", "updated_at"])
+            return redirect("profile")
+        return render(request, "www/account/dealer_profile_edit.html", {"dp": dp})
     sp, _ = SellerProfile.objects.get_or_create(user=request.user)
     if request.method == "POST":
         u = request.user
@@ -473,6 +513,8 @@ def profile_edit(request):
 
 @login_required(login_url="/auth/login/")
 def profile_payout(request):
+    if request.user.is_dealer:
+        return redirect("profile")   # dealers are buyers — no payout page
     sp, _ = SellerProfile.objects.get_or_create(user=request.user)
     if request.method == "POST":
         sp.bank_account_name   = (request.POST.get("bank_account_name") or "").strip()[:150]
@@ -488,6 +530,17 @@ def profile_payout(request):
 
 @login_required(login_url="/auth/login/")
 def profile_notifications(request):
+    if request.user.is_dealer:
+        dp = _dealer_profile(request.user)
+        if request.method == "POST":
+            dp.notify_whatsapp = bool(request.POST.get("notify_whatsapp"))
+            dp.notify_sms      = bool(request.POST.get("notify_sms"))
+            dp.notify_email    = bool(request.POST.get("notify_email"))
+            dp.notify_push     = bool(request.POST.get("notify_push"))
+            dp.save(update_fields=["notify_whatsapp", "notify_sms",
+                                   "notify_email", "notify_push", "updated_at"])
+            return redirect("profile")
+        return render(request, "www/account/dealer_notif_prefs.html", {"dp": dp})
     sp, _ = SellerProfile.objects.get_or_create(user=request.user)
     if request.method == "POST":
         sp.notify_whatsapp = bool(request.POST.get("notify_whatsapp"))
