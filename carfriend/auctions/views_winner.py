@@ -23,6 +23,23 @@ def winner_ocb_list(request):
 
 
 @login_required(login_url="/auth/login/")
+def winner_ocb_detail(request, listing_id):
+    """Read + act on one OCB offered to this dealer. Uses the dealer-safe
+    serialization from views_dealer (no seller PII). Actions post to
+    winner_respond_view (accept / pass) — the same endpoint the list uses."""
+    from auctions.views_dealer import dealer_vehicle, dealer_inspection, _vehicle_report
+    ocb = get_object_or_404(OCBListing.objects.select_related("vehicle"),
+                            id=listing_id, offered_to=request.user)
+    report = _vehicle_report(ocb.vehicle)
+    return render(request, "auctions/winner_ocb_detail.html", {
+        "ocb":        ocb,
+        "vehicle":    dealer_vehicle(ocb.vehicle),
+        "inspection": dealer_inspection(report),
+        "can_act":    ocb.status == OCBListing.Status.OFFERED_TO_WINNER,
+    })
+
+
+@login_required(login_url="/auth/login/")
 @require_POST
 def winner_respond_view(request, listing_id):
     ocb = get_object_or_404(OCBListing.objects.select_related("vehicle"),

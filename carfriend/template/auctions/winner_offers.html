@@ -1,35 +1,49 @@
-{% extends "www/base.html" %}
-{% block title %}Your Offers — CarFriend{% endblock %}
-{% block extra_css %}
-.wo-wrap{max-width:760px;margin:0 auto;padding:32px 16px 80px}
-.wo-h{font-size:24px;font-weight:800;color:#0f172a;margin-bottom:4px}
-.wo-sub{color:#64748b;font-size:14px;margin-bottom:22px}
-.wo-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:18px;margin-bottom:14px}
-.wo-car{font-weight:700;color:#0f172a;font-size:16px}
-.wo-price{font-size:22px;font-weight:800;color:#2D6CDF;margin:8px 0}
-.wo-actions{display:flex;gap:10px;margin-top:10px}
-.wo-actions button{padding:9px 18px;border:none;border-radius:9px;font-weight:700;font-size:14px;cursor:pointer}
-.wo-accept{background:#0FB5C9;color:#fff}
-.wo-pass{background:#f1f5f9;color:#334155}
-.wo-empty{color:#64748b;text-align:center;padding:40px;background:#fff;border:1px solid #e5e7eb;border-radius:14px}
-{% endblock %}
-{% block content %}
-<div class="wo-wrap">
-  <div class="wo-h">Offers waiting for you</div>
-  <div class="wo-sub">You won these auctions. Accept the counter-offer to proceed, or pass.</div>
-  {% if messages %}{% for m in messages %}<div class="au-notice">{{ m }}</div>{% endfor %}{% endif %}
-  {% for o in offers %}
-  <div class="wo-card">
-    <div class="wo-car">{{ o.vehicle.make }} {{ o.vehicle.model }} {{ o.vehicle.year }}</div>
-    <div class="wo-price">₹{{ o.ocb_price }}</div>
-    <form class="wo-actions" method="post" action="/auctions/ocb/{{ o.id }}/respond/">
-      {% csrf_token %}
-      <button class="wo-accept" type="submit" name="decision" value="accept">Accept</button>
-      <button class="wo-pass" type="submit" name="decision" value="decline">Pass</button>
-    </form>
+{% extends "base/base_www.html" %}
+{% block title %}Live OCB — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_dealer.html" with active="ocb" %}{% endblock %}
+
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="cf-focus">
+
+  <div class="cf-page-head cf-reveal">
+    <h1>Live OCB <span class="count">{{ offers|length }}</span></h1>
   </div>
-  {% empty %}
-  <div class="wo-empty">No offers awaiting your response right now.</div>
-  {% endfor %}
-</div>
+  <p class="cf-reveal d1" style="color:var(--cf-muted);margin:0 0 1.3rem;max-width:52ch">You won these auctions. Accept the One Click Buy offer to proceed, or pass.</p>
+
+  {% if messages %}{% for m in messages %}
+  <div class="cf-card cf-reveal d1" style="padding:.85rem 1.1rem;margin-bottom:.8rem;display:flex;align-items:center;gap:.5rem"><svg class="i" style="stroke:var(--cf-green-bright)"><use href="#ic-check"/></svg><span>{{ m }}</span></div>
+  {% endfor %}{% endif %}
+
+  {% if offers %}
+  <div class="d-flex flex-column cf-reveal d1" style="gap:.9rem">
+    {% for o in offers %}
+    <article class="cf-card" style="padding:1.3rem 1.4rem">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap">
+        <div>
+          <div style="font-weight:800;font-size:1.05rem">{{ o.vehicle.make }} {{ o.vehicle.model }} {{ o.vehicle.year }}</div>
+          <div class="cf-bid-l" style="margin-top:.7rem">One Click Buy price</div>
+          <div class="cf-bid-v" style="color:var(--cf-green);font-size:1.7rem">₹{{ o.ocb_price }}</div>
+        </div>
+        <span class="cf-live"><span class="d"></span>Offer live</span>
+      </div>
+      <div class="cf-div" style="margin:1rem 0"></div>
+      <form method="post" action="/auctions/ocb/{{ o.id }}/respond/" style="display:flex;gap:.65rem;flex-wrap:wrap;align-items:center">
+        {% csrf_token %}
+        <button class="cf-btn cf-btn-primary" type="submit" name="decision" value="accept"><svg class="i"><use href="#ic-check"/></svg>Accept offer</button>
+        <button class="cf-btn cf-btn-ghost" type="submit" name="decision" value="decline">Pass</button>
+        <a href="{% url 'winner_ocb_detail' o.id %}" class="cf-btn cf-btn-ghost" style="margin-left:auto"><svg class="i"><use href="#ic-file"/></svg>View details</a>
+      </form>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="cf-empty cf-reveal d1">
+    <div class="ic"><svg class="i"><use href="#ic-bolt"/></svg></div>
+    <h3>No offers awaiting you</h3>
+    <p>When you win an auction, its One Click Buy offer appears here for you to accept or pass.</p>
+    <a class="cf-btn cf-btn-primary" href="{% url 'dealer_auction_list' %}"><svg class="i"><use href="#ic-broadcast"/></svg>Browse auctions</a>
+  </div>
+  {% endif %}
+
+</div></div></main>
 {% endblock %}
