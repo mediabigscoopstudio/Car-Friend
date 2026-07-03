@@ -233,6 +233,11 @@ STORAGES = {
             "secret_key": AWS_SECRET_ACCESS_KEY,
             "querystring_auth": True,     # private objects, served via signed URLs
             "file_overwrite": False,      # never clobber an existing key
+            # ap-south-1 (Mumbai) needs SigV4 + virtual-host addressing and an
+            # explicit regional endpoint so signed media URLs verify correctly.
+            "signature_version": "s3v4",
+            "addressing_style": "virtual",
+            "endpoint_url": "https://s3.ap-south-1.amazonaws.com",
         },
     },
     "staticfiles": {
