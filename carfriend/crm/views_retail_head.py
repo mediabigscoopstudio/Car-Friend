@@ -217,7 +217,7 @@ def rh_lead_detail(request, lead_id):
     if vehicle:
         report = (InspectionReport.objects.filter(visit__vehicle=vehicle)
                   .select_related("visit").order_by("-id").first())
-        if report and report.decision == "approved" and report.pdf:
+        if report and report.pdf:            # generated at inspection submit
             report_url = report.pdf.url
         auction = (Auction.objects.filter(vehicle=vehicle)
                    .exclude(status=Auction.Status.CLOSED).order_by("-created_at").first())
@@ -253,4 +253,4 @@ def rh_start_auction(request, lead_id):
         messages.error(request, str(e))
         return redirect(f"/crm/retail-head/lead/{lead_id}/")
     messages.success(request, f"Auction started for {_car(lead.vehicle)}.")
-    return redirect("/crm/retail-head/auctions/")
+    return redirect(f"/crm/retail-head/lead/{lead_id}/")
