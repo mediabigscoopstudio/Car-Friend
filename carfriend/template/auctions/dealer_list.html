@@ -1,117 +1,224 @@
-{% extends "www/base.html" %}
-{% block title %}Live Auctions — CarFriend{% endblock %}
+{% extends "base/base_www.html" %}
+{% block title %}Live Auctions — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_dealer.html" with active="auctions" %}{% endblock %}
 
-{% block extra_css %}
-.au-wrap { max-width: 1100px; margin: 0 auto; padding: 32px 16px 80px; }
-.au-h { font-size: 24px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
-.au-sub { color: #64748b; font-size: 14px; margin-bottom: 22px; }
-.au-notice { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: 12px; padding: 14px 18px; font-size: 14px; margin-bottom: 22px; display:flex; gap:10px; align-items:center; }
-.au-notice a { color: #92400e; font-weight: 700; }
-.au-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
-.au-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
-.au-thumb { width:100%; aspect-ratio:16/10; border-radius:10px; overflow:hidden; background:#eef2f6; display:flex; align-items:center; justify-content:center; }
-.au-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
-.au-thumb .ph svg { width:46px; height:46px; color:#cbd5e1; }
-.au-card-top { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
-.au-name { font-size: 17px; font-weight: 700; color: #0f172a; line-height:1.25; }
-.au-spec { font-size: 12.5px; color: #64748b; margin-top: 4px; }
-.au-grade { font-size: 12px; font-weight: 800; padding: 3px 10px; border-radius: 999px; flex-shrink:0; }
-.g-A,.g-B { background:#dcfce7; color:#15803d; } .g-C { background:#fef9c3; color:#a16207; } .g-D { background:#fee2e2; color:#b91c1c; } .g- { background:#f1f5f9; color:#64748b; }
-.au-bidrow { display:flex; justify-content:space-between; align-items:flex-end; border-top:1px solid #f1f5f9; padding-top:12px; }
-.au-hb-lbl { font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:#94a3b8; }
-.au-hb { font-size:20px; font-weight:800; color:#0f172a; }
-.au-nobid { font-size:15px; font-weight:600; color:#94a3b8; }
-.au-reserve { font-size:12px; color:#64748b; }
-.au-timer-row { display:flex; justify-content:space-between; align-items:center; }
-.au-timer { font-weight:700; color:#0f172a; font-variant-numeric:tabular-nums; }
-.au-timer.ended { color:#94a3b8; }
-.au-live { font-size:11px; font-weight:800; color:#dc2626; }
-.au-live .dot { display:inline-block;width:7px;height:7px;border-radius:50%;background:#dc2626;margin-right:5px;animation:aupulse 1.2s infinite; }
-@keyframes aupulse { 0%,100%{opacity:1} 50%{opacity:.3} }
-.au-btn { display:block; text-align:center; background:#0B7D24; color:#fff; border:none; border-radius:9px; padding:11px; font-weight:700; font-size:14px; text-decoration:none; }
-.au-btn:hover { background:#015310; color:#fff; }
-.au-empty { text-align:center; color:#64748b; padding:60px 20px; font-size:15px; }
-{% endblock %}
+{% block body %}
+<main class="cf-main"><div class="cf-container">
 
-{% block content %}
-<div class="au-wrap">
-  <a href="/auth/dealer/dashboard/"
-     style="display:inline-flex;align-items:center;gap:6px;color:#64748b;text-decoration:none;font-size:.85rem;font-weight:600;margin-bottom:18px;padding:7px 14px;border:1px solid #e5e7eb;border-radius:8px;transition:all .2s;"
-     onmouseover="this.style.borderColor='#0B7D24';this.style.color='#0B7D24'"
-     onmouseout="this.style.borderColor='#e5e7eb';this.style.color='#64748b'">← Dealer Dashboard</a>
-  <div class="au-h">Live Auctions</div>
-  <div class="au-sub">Certified, inspected cars — 30-minute live auctions.</div>
+  <div class="cf-page-head cf-reveal">
+    <h1>Live Auctions <span class="count" id="auctionCount">{{ auctions|length }}</span></h1>
+  </div>
 
   {% if not can_bid %}
-  <div class="au-notice">
-    <span>⚠</span>
-    <div>You can browse auctions, but <strong>complete dealer verification to place bids</strong>.
-      <a href="/auth/dealer/onboard/">Complete verification →</a></div>
+  <div class="cf-ribbon cf-reveal d1" style="margin-bottom:1.1rem">
+    <div class="cf-ribbon-top">
+      <div class="cf-warn-ic"><svg class="i"><use href="#ic-shield"/></svg></div>
+      <div class="cf-ribbon-txt"><h2>Verify to place bids</h2><p>You can browse every live auction. Finish dealer verification to start bidding.</p></div>
+      <a href="/auth/dealer/onboard/" class="cf-btn cf-btn-primary">Complete verification</a>
+    </div>
   </div>
   {% endif %}
 
-  {% if auctions %}
-  <div class="au-grid">
-    {% for a in auctions %}
-    <div class="au-card">
-      <div class="au-thumb">
-        {% if a.cover %}<img src="{{ a.cover }}" alt="{{ a.vehicle.name }}" loading="lazy">{% else %}<div class="ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l1.6-4.8A2 2 0 0 1 8.5 7h7a2 2 0 0 1 1.9 1.2L19 13M5 13h14M5 13v4a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1h8v1a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-4"/></svg></div>{% endif %}
-      </div>
-      <div class="au-card-top">
-        <div>
-          <div class="au-name">{{ a.vehicle.name }}</div>
-          <div class="au-spec">
-            {{ a.vehicle.year }}{% if a.vehicle.fuel %} · {{ a.vehicle.fuel }}{% endif %}{% if a.vehicle.transmission %} · {{ a.vehicle.transmission }}{% endif %}{% if a.vehicle.km %} · {{ a.vehicle.km }} km{% endif %}{% if a.vehicle.city %} · {{ a.vehicle.city }}{% endif %}
+  <div class="cf-browse">
+    <!-- Desktop filter sidebar -->
+    <aside class="cf-filters d-none d-lg-block">
+      <div class="cf-filter-card" id="filterContent">
+        <div class="cf-filter-head"><b>Filters</b><a class="cf-clear" href="#" onclick="cfClearFilters(event)">Clear all</a></div>
+        <div class="cf-fgroup">
+          <div class="cf-flabel">Fuel</div>
+          <div class="cf-chips">
+            <button class="cf-fchip" data-group="fuel" data-val="petrol">Petrol</button>
+            <button class="cf-fchip" data-group="fuel" data-val="diesel">Diesel</button>
+            <button class="cf-fchip" data-group="fuel" data-val="cng">CNG</button>
+            <button class="cf-fchip" data-group="fuel" data-val="electric">Electric</button>
+            <button class="cf-fchip" data-group="fuel" data-val="hybrid">Hybrid</button>
           </div>
         </div>
-        {% if a.vehicle.grade %}<span class="au-grade g-{{ a.vehicle.grade }}">{{ a.vehicle.grade }}</span>{% endif %}
-      </div>
-
-      <div class="au-bidrow">
-        <div>
-          <div class="au-hb-lbl">Highest Bid</div>
-          {% if a.highest %}<div class="au-hb"><span class="au-inr" data-v="{{ a.highest }}"></span></div>{% else %}<div class="au-nobid">No bids yet</div>{% endif %}
+        <div class="cf-fgroup">
+          <div class="cf-flabel">Grade</div>
+          <div class="cf-chips">
+            <button class="cf-fchip" data-group="grade" data-val="a">A</button>
+            <button class="cf-fchip" data-group="grade" data-val="b">B</button>
+            <button class="cf-fchip" data-group="grade" data-val="c">C</button>
+            <button class="cf-fchip" data-group="grade" data-val="d">D</button>
+          </div>
         </div>
-        <div class="au-reserve">Reserve <span class="au-inr" data-v="{{ a.reserve }}"></span></div>
+        <div class="cf-fgroup">
+          <div class="cf-flabel">Transmission</div>
+          <div class="cf-chips">
+            <button class="cf-fchip" data-group="trans" data-val="manual">Manual</button>
+            <button class="cf-fchip" data-group="trans" data-val="automatic">Automatic</button>
+          </div>
+        </div>
+        <div class="cf-fgroup">
+          <div class="cf-flabel">Search</div>
+          <div class="cf-search"><svg class="i"><use href="#ic-search"/></svg><input type="text" class="cf-filter-search" placeholder="Make or model" oninput="cfApplyFilters()"></div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="cf-results">
+      <!-- Mobile toolbar: Filters (drawer) + sort -->
+      <div class="cf-toolbar d-lg-none">
+        <button class="cf-tool-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#filterDrawer"><svg class="i"><use href="#ic-filter"/></svg>Filters <span class="cf-badge" id="filterCountM" style="display:none">0</span></button>
+        <button class="cf-sort" type="button" onclick="cfCycleSort()"><svg class="i"><use href="#ic-sort"/></svg><span class="lbl">Sort:</span> <span id="sortLabel">Ending soon</span></button>
+      </div>
+      <div class="d-none d-lg-flex" style="justify-content:flex-end;margin-bottom:.4rem">
+        <button class="cf-sort" type="button" onclick="cfCycleSort()"><svg class="i"><use href="#ic-sort"/></svg><span class="lbl">Sort:</span> <span id="sortLabelD">Ending soon</span></button>
       </div>
 
-      <div class="au-timer-row">
-        <span class="au-live"><span class="dot"></span>LIVE</span>
-        <span class="au-timer" data-end="{{ a.end_ts }}">—</span>
-      </div>
+      <div class="cf-applied" id="appliedChips" style="display:none"></div>
 
-      <a class="au-btn" href="/auctions/{{ a.id }}/">View &amp; Bid →</a>
+      {% if auctions %}
+      <div class="cf-grid" id="auctionGrid">
+        {% for a in auctions %}
+        <a class="cf-ac" href="/auctions/{{ a.id }}/"
+           data-name="{{ a.vehicle.name|lower }}" data-fuel="{{ a.vehicle.fuel|lower }}"
+           data-grade="{{ a.vehicle.grade|lower }}" data-trans="{{ a.vehicle.transmission|lower }}"
+           data-end="{{ a.end_ts }}" data-highest="{{ a.highest|default:0 }}">
+          <div class="cf-ac-media">
+            {% if a.cover %}<img src="{{ a.cover }}" alt="{{ a.vehicle.name }}" loading="lazy">{% else %}<svg class="i car-glyph"><use href="#ic-car"/></svg>{% endif %}
+            <span class="cf-timer" data-end="{{ a.end_ts }}"><svg class="i"><use href="#ic-clock"/></svg> <span class="t">—</span></span>
+            {% if a.vehicle.grade %}<span class="cf-ac-grade">{{ a.vehicle.grade }}</span>{% endif %}
+            {% if a.vehicle.city %}<span class="cf-plate-sm"><svg class="i"><use href="#ic-pin"/></svg> {{ a.vehicle.city }}</span>{% endif %}
+          </div>
+          <div class="cf-ac-body">
+            <div class="cf-ac-title">{{ a.vehicle.name }}</div>
+            <div class="cf-ac-specs">{{ a.vehicle.year }}{% if a.vehicle.fuel %} · {{ a.vehicle.fuel }}{% endif %}{% if a.vehicle.km %} · {{ a.vehicle.km }} km{% endif %}</div>
+            <div class="cf-ac-bid">
+              <div>
+                <div class="cf-bid-l">Highest bid</div>
+                {% if a.highest %}<div class="cf-bid-v"><span class="au-inr" data-v="{{ a.highest }}"></span></div>{% else %}<div class="cf-bid-v" style="color:var(--cf-muted);font-size:.95rem">No bids yet</div>{% endif %}
+              </div>
+              <div class="cf-bid-n">Reserve <span class="au-inr" data-v="{{ a.reserve }}"></span></div>
+            </div>
+            <span class="cf-btn cf-btn-primary cf-ac-cta"><svg class="i"><use href="#ic-bolt"/></svg>View &amp; bid</span>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+      <div class="cf-empty" id="noMatches" style="display:none">
+        <div class="ic"><svg class="i"><use href="#ic-search"/></svg></div>
+        <h3>No live auctions match these filters</h3>
+        <p>Try clearing a filter to see more cars.</p>
+        <button class="cf-btn cf-btn-primary" type="button" onclick="cfClearFilters(event)"><svg class="i"><use href="#ic-x"/></svg>Clear filters</button>
+      </div>
+      {% else %}
+      <div class="cf-empty">
+        <div class="ic"><svg class="i"><use href="#ic-broadcast"/></svg></div>
+        <h3>No live auctions right now</h3>
+        <p>New auctions open as inspected cars are approved. Check back soon.</p>
+        <a class="cf-btn cf-btn-primary" href="{% url 'dealer_dashboard' %}"><svg class="i"><use href="#ic-list"/></svg>My Bids</a>
+      </div>
+      {% endif %}
     </div>
-    {% endfor %}
   </div>
-  {% else %}
-  <div class="au-empty">No live auctions right now. Check back soon.</div>
-  {% endif %}
+</div></main>
+
+<!-- Mobile filter drawer -->
+<div class="offcanvas offcanvas-start cf-drawer" tabindex="-1" id="filterDrawer">
+  <div class="offcanvas-header"><h5 class="offcanvas-title" style="font-weight:800">Filters</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
+  <div class="offcanvas-body" id="drawerBody"></div>
+  <div class="cf-drawer-foot"><button class="cf-btn cf-btn-primary" style="width:100%" type="button" data-bs-dismiss="offcanvas"><svg class="i"><use href="#ic-check"/></svg>Show cars</button></div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 (function () {
-  document.querySelectorAll('.au-inr').forEach(function (el) {
-    var n = parseInt(el.dataset.v, 10);
-    el.textContent = isNaN(n) ? '—' : '₹' + n.toLocaleString('en-IN');
-  });
-  var timers = Array.prototype.slice.call(document.querySelectorAll('.au-timer'));
-  function fmt(s) {
-    var h = Math.floor(s/3600); s-=h*3600; var m = Math.floor(s/60); var ss = s-m*60;
-    if (h>0) return h+'h '+m+'m'; if (m>0) return m+'m '+ss+'s'; return ss+'s';
-  }
-  function tick() {
+  // rupee formatting for all .au-inr[data-v]
+  function inr(n){ return isNaN(n) ? '—' : '₹' + Number(n).toLocaleString('en-IN'); }
+  document.querySelectorAll('.au-inr').forEach(function (el) { el.textContent = inr(parseInt(el.dataset.v, 10)); });
+
+  // live countdowns on the cards (absolute end timestamp)
+  var timers = Array.prototype.slice.call(document.querySelectorAll('.cf-timer[data-end]'));
+  function fmt(s){ var h=Math.floor(s/3600); s-=h*3600; var m=Math.floor(s/60); var ss=s-m*60; if(h>0) return h+'h '+m+'m'; return (m<10?'0':'')+m+':'+(ss<10?'0':'')+ss; }
+  function tickTimers(){
     var now = Math.floor(Date.now()/1000);
-    timers.forEach(function (el) {
-      var end = parseInt(el.dataset.end,10), left = end-now;
-      if (isNaN(end)) { el.textContent='—'; return; }
-      if (left<=0) { el.textContent='Ended'; el.classList.add('ended'); }
-      else el.textContent = fmt(left);
-    });
+    timers.forEach(function (el){ var end=parseInt(el.dataset.end,10), left=end-now, out=el.querySelector('.t'); if(!out) return;
+      if(isNaN(end)){ out.textContent='—'; return; }
+      if(left<=0){ out.textContent='Ended'; el.classList.add('low'); } else { out.textContent=fmt(left); if(left<=90) el.classList.add('low'); } });
   }
-  tick(); setInterval(tick, 1000);
+  tickTimers(); setInterval(tickTimers, 1000);
+
+  // ── client-side filtering + sort (all cars show by default) ──
+  var state = { fuel:new Set(), grade:new Set(), trans:new Set(), search:'' };
+  var GROUP_LABEL = { fuel:'', grade:'Grade ', trans:'' };
+
+  function syncTwins(group, val, on){
+    document.querySelectorAll('.cf-fchip[data-group="'+group+'"][data-val="'+val+'"]').forEach(function(c){ c.classList.toggle('is-on', on); });
+  }
+  // shared carfriend-ui.js already toggles is-on on chip click; we read the result, sync the twin, and apply.
+  document.addEventListener('click', function (e){
+    var chip = e.target.closest('.cf-fchip'); if(!chip) return;
+    var g = chip.dataset.group, v = chip.dataset.val;
+    var on = chip.classList.contains('is-on');
+    if(on) state[g].add(v); else state[g].delete(v);
+    syncTwins(g, v, on);
+    cfApplyFilters();
+  });
+
+  window.cfApplyFilters = function(){
+    // pull search text from whichever filter search input has a value
+    var s = '';
+    document.querySelectorAll('.cf-filter-search').forEach(function(i){ if(i.value.trim()) s = i.value.trim().toLowerCase(); });
+    state.search = s;
+    var cards = document.querySelectorAll('#auctionGrid .cf-ac'), shown = 0;
+    cards.forEach(function(card){
+      var ok = true;
+      if(state.fuel.size  && !state.fuel.has(card.dataset.fuel))   ok = false;
+      if(state.grade.size && !state.grade.has(card.dataset.grade)) ok = false;
+      if(state.trans.size && !state.trans.has(card.dataset.trans)) ok = false;
+      if(ok && state.search && card.dataset.name.indexOf(state.search) === -1) ok = false;
+      card.style.display = ok ? '' : 'none'; if(ok) shown++;
+    });
+    var grid = document.getElementById('auctionGrid'), none = document.getElementById('noMatches');
+    if(grid && none){ none.style.display = (cards.length && shown===0) ? '' : 'none'; grid.style.display = (cards.length && shown===0) ? 'none' : ''; }
+    var cnt = document.getElementById('auctionCount'); if(cnt) cnt.textContent = shown;
+    renderApplied();
+  };
+
+  function renderApplied(){
+    var wrap = document.getElementById('appliedChips'); if(!wrap) return;
+    var chips = [];
+    ['fuel','grade','trans'].forEach(function(g){ state[g].forEach(function(v){ chips.push({g:g, v:v}); }); });
+    var total = chips.length;
+    var badge = document.getElementById('filterCountM'); if(badge){ badge.style.display = total ? '' : 'none'; badge.textContent = total; }
+    if(!total){ wrap.style.display='none'; wrap.innerHTML=''; return; }
+    wrap.style.display='flex';
+    wrap.innerHTML = chips.map(function(c){
+      var label = (GROUP_LABEL[c.g]||'') + (c.g==='grade' ? c.v.toUpperCase() : c.v.charAt(0).toUpperCase()+c.v.slice(1));
+      return '<span class="cf-applied-chip">'+label+' <svg class="i" onclick="cfRemoveFilter(\''+c.g+'\',\''+c.v+'\')"><use href="#ic-x"/></svg></span>';
+    }).join('');
+  }
+
+  window.cfRemoveFilter = function(g, v){
+    state[g].delete(v); syncTwins(g, v, false); cfApplyFilters();
+  };
+
+  window.cfClearFilters = function(e){
+    if(e) e.preventDefault();
+    state.fuel.clear(); state.grade.clear(); state.trans.clear(); state.search='';
+    document.querySelectorAll('.cf-fchip.is-on').forEach(function(c){ c.classList.remove('is-on'); });
+    document.querySelectorAll('.cf-filter-search').forEach(function(i){ i.value=''; });
+    cfApplyFilters();
+  };
+
+  // ── sort ──
+  var SORTS = [ {k:'ending', label:'Ending soon'}, {k:'highest', label:'Highest bid'} ];
+  var sortIdx = 0;
+  window.cfCycleSort = function(){
+    sortIdx = (sortIdx + 1) % SORTS.length;
+    var s = SORTS[sortIdx];
+    ['sortLabel','sortLabelD'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent = s.label; });
+    var grid = document.getElementById('auctionGrid'); if(!grid) return;
+    var cards = Array.prototype.slice.call(grid.querySelectorAll('.cf-ac'));
+    cards.sort(function(a,b){
+      if(s.k==='highest') return (parseInt(b.dataset.highest,10)||0) - (parseInt(a.dataset.highest,10)||0);
+      return (parseInt(a.dataset.end,10)||0) - (parseInt(b.dataset.end,10)||0);
+    });
+    cards.forEach(function(c){ grid.appendChild(c); });
+  };
 })();
 </script>
 {% endblock %}
