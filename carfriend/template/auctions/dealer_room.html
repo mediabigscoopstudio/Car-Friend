@@ -1,306 +1,277 @@
-{% extends "www/base.html" %}
-{% block title %}{{ a.vehicle.name }} — Live Auction{% endblock %}
+{% extends "base/base_www.html" %}
+{% block title %}{{ a.vehicle.name }} — Live Auction — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_dealer.html" with active="auctions" %}{% endblock %}
 
-{% block extra_css %}
-.dr2 { background:var(--cf-gray-1, #f5f7f5); min-height:100vh; }
+{% block extra_head %}
+<style>
+/* Bidding room — re-themed to green-on-white. Every id/class the socket + accordion
+   JS depends on (#cd #hb #bid-state #bid-form #amt #quick #floor-hint #bid-msg #feed
+   .au-inr .feed-row .f-who .f-amt .f-time .you .qbtn .bid-msg .insp-*) is preserved. */
+.dr-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;padding:clamp(12px,2vw,18px) 0}
+.dr-left{display:flex;align-items:center;gap:.9rem}
+.dr2-name{font-weight:800;color:var(--cf-ink);font-size:1.02rem;letter-spacing:-.01em}
+.dr2-name span{color:var(--cf-muted);font-weight:500}
+.dr2-meta{font-size:.75rem;color:var(--cf-muted);margin-top:.1rem}
+.dr2-stat-l{font-size:.6rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--cf-muted)}
+.dr-timer{font-weight:800;font-size:1.25rem;color:var(--cf-green);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.dr-timer.ended{color:var(--cf-muted)}
 
-/* sticky header */
-.dr2-sticky { position:sticky; top:62px; z-index:100; background:#fff; border-bottom:1px solid #e5e7eb; box-shadow:0 2px 12px rgba(0,0,0,.06); padding:11px 0; }
-.dr2-sticky-inner { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
-.dr2-back { color:#64748b; text-decoration:none; font-size:.82rem; font-weight:600; display:inline-flex; align-items:center; gap:5px; padding:6px 12px; border:1px solid #e5e7eb; border-radius:7px; transition:all .2s; }
-.dr2-back:hover { border-color:#166534; color:#166534; }
-.dr2-left { display:flex; align-items:center; gap:14px; }
-.dr2-name { font-family:var(--font-h); font-weight:700; color:#0f172a; font-size:.95rem; }
-.dr2-name span { color:#64748b; font-weight:400; }
-.dr2-meta { font-size:.72rem; color:#64748b; }
-.dr2-right { display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
-.dr2-stat { text-align:center; }
-.dr2-stat-l { font-size:.6rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:#94a3b8; }
-.dr-timer { font-family:var(--font-h); font-weight:800; font-size:1.25rem; color:#166534; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
-.dr-timer.ended { color:#94a3b8; }
-.dr2-live { display:inline-flex; align-items:center; gap:6px; background:rgba(239,68,68,.1); color:#dc2626; padding:5px 13px; border-radius:20px; font-size:.7rem; font-weight:800; letter-spacing:.08em; }
-.dr2-dot { width:7px; height:7px; border-radius:50%; background:#dc2626; animation:dr2pulse 1.2s infinite; }
-@keyframes dr2pulse { 0%,100%{ opacity:1; } 50%{ opacity:.3; } }
+.dr2-card{background:var(--cf-surface);border:1px solid var(--cf-line);border-radius:var(--cf-radius);overflow:hidden;margin-bottom:1rem;box-shadow:var(--cf-shadow-card)}
+.dr2-card-pad{padding:1.1rem 1.25rem}
+.dr2-card-head{padding:.95rem 1.25rem;border-bottom:1px solid var(--cf-line);display:flex;align-items:center;justify-content:space-between;font-weight:800;color:var(--cf-ink);font-size:.92rem}
+.dr2-hero{border-radius:var(--cf-radius);overflow:hidden;margin-bottom:1rem;box-shadow:var(--cf-shadow-card);background:radial-gradient(120% 120% at 30% 12%,#EAF3EC,#CFE3D6);aspect-ratio:16/9;max-height:320px;display:grid;place-items:center;border:1px solid var(--cf-green-100)}
+.dr2-hero img{width:100%;height:100%;object-fit:cover;display:block}
+.dr2-hero .ph svg{width:80px;height:80px;stroke:#8FB6A0}
+.dr2-spec{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.dr2-spec .l{font-size:.66rem;color:var(--cf-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.2rem}
+.dr2-spec .v{font-weight:700;color:var(--cf-ink);font-size:.88rem}
+.insp-grade{display:inline-block;font-size:.82rem;font-weight:800;padding:.2rem .7rem;border-radius:999px;background:var(--cf-green-100);color:var(--cf-green-deep)}
 
-.dr2-body { padding:24px 12px 80px; }
-.dr2-card { background:#fff; border:1px solid #e5e7eb; border-radius:14px; overflow:hidden; margin-bottom:14px; }
-.dr2-card-pad { padding:18px 20px; }
-.dr2-card-head { padding:15px 20px; border-bottom:1px solid #e5e7eb; display:flex; align-items:center; justify-content:space-between; font-family:var(--font-h); font-weight:700; color:#0f172a; font-size:.9rem; }
-.dr2-hero { border-radius:16px; overflow:hidden; margin-bottom:14px; box-shadow:0 4px 20px rgba(0,0,0,.08); background:#eef2f6; aspect-ratio:16/9; max-height:300px; display:flex; align-items:center; justify-content:center; }
-.dr2-hero img { width:100%; height:100%; object-fit:cover; display:block; }
-.dr2-hero .ph { color:#cbd5e1; } .dr2-hero .ph svg { width:90px; height:90px; }
-
-.dr2-spec { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-.dr2-spec .l { font-size:.66rem; color:#94a3b8; text-transform:uppercase; letter-spacing:.07em; margin-bottom:3px; }
-.dr2-spec .v { font-weight:600; color:#0f172a; font-size:.86rem; }
-
-/* accordion */
-.dr2-acc-btn { width:100%; background:none; border:none; cursor:pointer; padding:15px 20px; display:flex; align-items:center; justify-content:space-between; text-align:left; }
-.dr2-acc-btn .t { font-family:var(--font-h); font-weight:700; color:#0f172a; font-size:.9rem; display:flex; align-items:center; gap:9px; }
-.dr2-chev { color:#94a3b8; font-size:.9rem; transition:transform .2s; }
-.dr2-acc-body { border-top:1px solid #e5e7eb; }
-.dr2-pill { background:rgba(22,101,52,.1); color:#166534; padding:2px 9px; border-radius:20px; font-size:.66rem; font-weight:700; }
-
-/* big bid card */
-.dr2-bigcard { background:linear-gradient(135deg,#0d4a24,#166534); border-radius:16px; padding:22px 24px; margin-bottom:14px; box-shadow:0 8px 28px rgba(22,101,52,.25); }
-.dr2-bigcard .l { font-size:.66rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:rgba(255,255,255,.55); margin-bottom:8px; }
-.dr-hb, #hb { font-family:var(--font-h); font-size:clamp(1.8rem,5vw,2.6rem); font-weight:800; color:#fff; letter-spacing:-.03em; line-height:1; transition:transform .3s; }
-.dr2-reserve { font-size:.72rem; color:rgba(255,255,255,.4); margin-top:8px; }
+/* big highest-bid card — the one bold spot */
+.dr2-bigcard{background:linear-gradient(135deg,var(--cf-green-deep),var(--cf-green));border-radius:var(--cf-radius);padding:1.4rem 1.5rem;margin-bottom:1rem;box-shadow:0 10px 30px -12px rgba(21,96,62,.5)}
+.dr2-bigcard .l{font-size:.66rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:.5rem}
+.dr-hb,#hb{font-size:clamp(1.8rem,5vw,2.5rem);font-weight:800;color:#fff;letter-spacing:-.03em;line-height:1;transition:transform .3s;font-variant-numeric:tabular-nums}
+.dr2-reserve{font-size:.72rem;color:rgba(255,255,255,.65);margin-top:.5rem}
 
 /* place bid */
-.bid-state { font-size:.82rem; font-weight:700; margin-bottom:10px; min-height:18px; }
-.bid-state.mine { color:#15803d; } .bid-state.outbid { color:#b45309; }
-.bid-input-row { display:flex; border:1.5px solid #cbd5e1; border-radius:10px; overflow:hidden; margin-bottom:10px; transition:border-color .2s; }
-.bid-input-row:focus-within { border-color:#166534; }
-.bid-input-row .r { padding:0 13px; background:#f8fafc; font-weight:700; color:#64748b; display:flex; align-items:center; }
-.bid-input-row input { flex:1; border:none; padding:12px 14px; font-family:var(--font-h); font-size:1rem; font-weight:600; outline:none; color:#0f172a; }
-#quick { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
-.qbtn { flex:1; padding:8px; border:1.5px solid #e5e7eb; color:#0f172a; background:#fff; border-radius:8px; font-size:.8rem; font-weight:600; cursor:pointer; transition:all .2s; }
-.qbtn:hover { border-color:#166534; color:#166534; }
-.btn-bid { width:100%; padding:14px; background:linear-gradient(135deg,#22c55e,#166534); color:#fff; border:none; border-radius:10px; font-family:var(--font-h); font-weight:700; font-size:1rem; cursor:pointer; transition:all .25s; }
-.btn-bid:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 8px 22px rgba(34,197,94,.35); }
-.btn-bid:disabled { background:#cbd5e1; cursor:not-allowed; transform:none; box-shadow:none; }
-.floor-hint { font-size:.76rem; color:#64748b; margin-top:9px; text-align:center; }
-.bid-msg { font-size:.78rem; margin-top:8px; min-height:18px; text-align:center; } .bid-msg.err { color:#dc2626; }
-.verify-note { background:rgba(251,191,36,.08); border:1px solid rgba(251,191,36,.35); color:#92400e; border-radius:10px; padding:13px 15px; font-size:.82rem; }
-.verify-note a { color:#92400e; font-weight:700; }
+.bid-state{font-size:.82rem;font-weight:700;margin-bottom:.7rem;min-height:18px}
+.bid-state.mine{color:var(--cf-green)} .bid-state.outbid{color:var(--cf-amber)}
+.bid-input-row{display:flex;border:1.5px solid var(--cf-line-strong);border-radius:12px;overflow:hidden;margin-bottom:.7rem;transition:border-color .18s var(--ease)}
+.bid-input-row:focus-within{border-color:var(--cf-green-bright);box-shadow:0 0 0 3px rgba(31,164,99,.14)}
+.bid-input-row .r{padding:0 .85rem;background:var(--cf-green-050);font-weight:700;color:var(--cf-muted);display:flex;align-items:center}
+.bid-input-row input{flex:1;border:0;padding:.75rem .9rem;font-size:1rem;font-weight:700;outline:none;color:var(--cf-ink);font-family:inherit}
+#quick{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.8rem}
+.qbtn{flex:1;padding:.5rem;border:1.5px solid var(--cf-line-strong);color:var(--cf-ink);background:#fff;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .18s var(--ease);font-family:inherit}
+.qbtn:hover{border-color:var(--cf-green-200);color:var(--cf-green)}
+.btn-bid{width:100%;padding:.85rem;background:var(--cf-green);color:#fff;border:none;border-radius:12px;font-weight:700;font-size:1rem;cursor:pointer;transition:all .2s var(--ease);box-shadow:0 8px 18px -9px rgba(21,96,62,.75)}
+.btn-bid:hover:not(:disabled){background:var(--cf-green-deep);transform:translateY(-1px)}
+.btn-bid:disabled{background:var(--cf-line-strong);cursor:not-allowed;transform:none;box-shadow:none}
+.floor-hint{font-size:.76rem;color:var(--cf-muted);margin-top:.6rem;text-align:center}
+.bid-msg{font-size:.78rem;margin-top:.5rem;min-height:18px;text-align:center} .bid-msg.err{color:var(--cf-amber)}
+.verify-note{background:var(--cf-amber-bg);border:1px solid var(--cf-amber-line);color:var(--cf-amber);border-radius:12px;padding:.85rem 1rem;font-size:.82rem}
+.verify-note a{color:var(--cf-amber);font-weight:700}
 
-/* feed */
-#feed { max-height:360px; overflow-y:auto; }
-.feed-row { display:flex; align-items:center; padding:11px 18px; border-bottom:1px solid #f1f5f9; font-size:.82rem; }
-.f-who { flex:1; color:#475569; } .f-who .you { color:#166534; font-weight:700; }
-.f-amt { font-family:var(--font-h); font-weight:700; color:#0f172a; margin-right:10px; } .f-time { font-size:.68rem; color:#94a3b8; }
-.feed-empty { text-align:center; color:#94a3b8; padding:36px 18px; font-size:.85rem; }
+/* bid feed */
+#feed{max-height:360px;overflow-y:auto}
+.feed-row{display:flex;align-items:center;padding:.7rem 1.1rem;border-bottom:1px solid var(--cf-line);font-size:.82rem}
+.f-who{flex:1;color:var(--cf-ink-soft)} .f-who .you{color:var(--cf-green);font-weight:700}
+.f-amt{font-weight:700;color:var(--cf-ink);margin-right:.65rem;font-variant-numeric:tabular-nums} .f-time{font-size:.68rem;color:var(--cf-muted)}
+.feed-empty{text-align:center;color:var(--cf-muted);padding:2.2rem 1.1rem;font-size:.85rem}
 
-/* inspection table */
-.insp-grade { display:inline-block; font-size:.82rem; font-weight:800; padding:3px 12px; border-radius:999px; }
-.g-A,.g-B { background:#dcfce7; color:#15803d; } .g-C { background:#fef9c3; color:#a16207; } .g-D { background:#fee2e2; color:#b91c1c; }
-.isec { margin-bottom:14px; } .isec-h { font-size:.82rem; font-weight:700; color:#0f172a; margin:10px 0 6px; }
-.itab { width:100%; border-collapse:collapse; font-size:.78rem; }
-.itab th { text-align:left; font-size:.62rem; text-transform:uppercase; color:#94a3b8; padding:5px 8px; border-bottom:1px solid #eef0f2; }
-.itab td { padding:6px 8px; border-bottom:1px solid #f4f6f8; vertical-align:top; }
-.s-ok { color:#15803d; font-weight:700; } .s-issue { color:#b91c1c; font-weight:700; } .s-na { color:#94a3b8; }
-.iph { display:flex; flex-wrap:wrap; gap:7px; margin:4px 0 14px; }
-.iph img { width:96px; height:72px; object-fit:cover; border-radius:9px; border:1px solid #e5e7eb; }
-.cp-th { width:70px; height:54px; object-fit:cover; border-radius:6px; border:1px solid #e5e7eb; margin:4px 4px 0 0; }
-
-/* per-section inspection accordion */
-.insp-sec-btn { width:100%; background:none; border:none; cursor:pointer; padding:14px 20px; display:flex; align-items:center; justify-content:space-between; text-align:left; transition:background .15s; }
-.insp-sec-btn:hover { background:rgba(0,0,0,.02); }
-.insp-ico { width:34px; height:34px; border-radius:9px; flex-shrink:0; background:rgba(22,101,52,.08); display:flex; align-items:center; justify-content:center; color:#166534; font-size:.82rem; }
-.insp-chev { color:#94a3b8; font-size:.82rem; transition:transform .2s; flex-shrink:0; }
-.insp-chev.open { transform:rotate(180deg); }
-.insp-body { display:none; background:#f5f7f5; border-top:1px solid #e5e7eb; }
-.insp-body.open { display:block; }
-.ip-pill { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:.68rem; font-weight:700; white-space:nowrap; }
-.ip-ok { background:rgba(22,101,52,.08); color:#166534; }
-.ip-issue { background:rgba(239,68,68,.08); color:#dc2626; }
-.ip-na { background:rgba(0,0,0,.05); color:#94a3b8; }
-#photoModal { display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.9); align-items:center; justify-content:center; cursor:zoom-out; }
-#photoModal.open { display:flex; }
-#photoModal img { max-width:92vw; max-height:88vh; border-radius:10px; box-shadow:0 20px 60px rgba(0,0,0,.5); }
-.pm-close { position:absolute; top:16px; right:20px; background:rgba(255,255,255,.12); border:none; color:#fff; font-size:1.3rem; width:40px; height:40px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+/* inspection accordion */
+.insp-ico{width:34px;height:34px;border-radius:9px;flex-shrink:0;background:var(--cf-green-050);display:grid;place-items:center;color:var(--cf-green)}
+.insp-ico svg.i{width:18px;height:18px}
+.insp-sec-btn{width:100%;background:none;border:none;cursor:pointer;padding:.9rem 1.25rem;display:flex;align-items:center;justify-content:space-between;text-align:left;transition:background .15s}
+.insp-sec-btn:hover{background:var(--cf-green-050)}
+.insp-chev{color:var(--cf-muted);transition:transform .2s;flex-shrink:0;display:inline-flex}
+.insp-chev svg.i{width:16px;height:16px}
+.insp-chev.open{transform:rotate(180deg)}
+.insp-body{display:none;background:var(--cf-green-050);border-top:1px solid var(--cf-line)}
+.insp-body.open{display:block}
+.ip-pill{display:inline-flex;align-items:center;gap:.25rem;padding:.15rem .55rem;border-radius:20px;font-size:.68rem;font-weight:700;white-space:nowrap}
+.ip-pill svg.i{width:12px;height:12px}
+.ip-ok{background:var(--cf-green-100);color:var(--cf-green-deep)} .ip-ok svg.i{stroke:var(--cf-green-bright)}
+.ip-issue{background:var(--cf-amber-bg);color:var(--cf-amber)} .ip-issue svg.i{stroke:var(--cf-amber-bright)}
+.ip-na{background:rgba(0,0,0,.05);color:var(--cf-muted)}
+#photoModal{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.9);align-items:center;justify-content:center;cursor:zoom-out}
+#photoModal.open{display:flex}
+#photoModal img{max-width:92vw;max-height:88vh;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.pm-close{position:absolute;top:16px;right:20px;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:1.3rem;width:40px;height:40px;border-radius:50%;cursor:pointer;display:grid;place-items:center}
+@media(prefers-reduced-motion:reduce){.dr-hb,#hb{transition:none}}
+</style>
 {% endblock %}
 
-{% block content %}
-<div class="dr2">
+{% block body %}
+<main class="cf-main"><div class="cf-container">
 
-  <!-- STICKY HEADER -->
-  <div class="dr2-sticky">
-    <div class="container dr2-sticky-inner">
-      <div class="dr2-left">
-        <a class="dr2-back" href="/auctions/">← Back to auctions</a>
-        <div>
-          <div class="dr2-name">{{ a.vehicle.name }} <span>{{ a.vehicle.year }}</span></div>
-          <div class="dr2-meta">{{ a.vehicle.fuel }}{% if a.vehicle.transmission %} · {{ a.vehicle.transmission }}{% endif %}{% if a.vehicle.km %} · {{ a.vehicle.km }} km{% endif %}</div>
-        </div>
+  <div class="dr-head">
+    <div class="dr-left">
+      <a class="cf-btn cf-btn-ghost" href="/auctions/" style="padding:.5rem .9rem"><svg class="i" style="transform:rotate(180deg)"><use href="#ic-out"/></svg>Auctions</a>
+      <div>
+        <div class="dr2-name">{{ a.vehicle.name }} <span>{{ a.vehicle.year }}</span></div>
+        <div class="dr2-meta">{{ a.vehicle.fuel }}{% if a.vehicle.transmission %} · {{ a.vehicle.transmission }}{% endif %}{% if a.vehicle.km %} · {{ a.vehicle.km }} km{% endif %}</div>
       </div>
-      <div class="dr2-right">
-        <div class="dr2-stat"><div class="dr2-stat-l">Time Left</div><div class="dr-timer" id="cd">—</div></div>
-        <span class="dr2-live"><span class="dr2-dot"></span> LIVE</span>
-      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:1.1rem;flex-wrap:wrap">
+      <div style="text-align:center"><div class="dr2-stat-l">Time left</div><div class="dr-timer" id="cd">—</div></div>
+      <span class="cf-live"><span class="d"></span>LIVE</span>
     </div>
   </div>
 
-  <div class="container dr2-body">
-    <div class="row g-3">
+  <div class="row g-4">
+    <!-- LEFT — car + inspection -->
+    <div class="col-lg-7">
 
-      <!-- LEFT — car + inspection -->
-      <div class="col-lg-7">
+      <div class="dr2-hero">
+        {% if inspection.hero %}<img src="{{ inspection.hero }}" alt="{{ a.vehicle.name }}">
+        {% else %}<div class="ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l1.6-4.8A2 2 0 0 1 8.5 7h7a2 2 0 0 1 1.9 1.2L19 13M5 13h14M5 13v4a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1h8v1a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-4"/><circle cx="7.5" cy="16.5" r=".6"/><circle cx="16.5" cy="16.5" r=".6"/></svg></div>{% endif %}
+      </div>
 
-        <div class="dr2-hero">
-          {% if inspection.hero %}<img src="{{ inspection.hero }}" alt="{{ a.vehicle.name }}">
-          {% else %}<div class="ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l1.6-4.8A2 2 0 0 1 8.5 7h7a2 2 0 0 1 1.9 1.2L19 13M5 13h14M5 13v4a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1h8v1a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-4"/><circle cx="7.5" cy="16.5" r=".6"/><circle cx="16.5" cy="16.5" r=".6"/></svg></div>{% endif %}
+      <div class="dr2-card">
+        <div class="dr2-card-head"><span>Vehicle details</span>{% if a.vehicle.grade %}<span class="insp-grade">Grade {{ a.vehicle.grade }}</span>{% endif %}</div>
+        <div class="dr2-card-pad dr2-spec">
+          <div><div class="l">Year</div><div class="v">{{ a.vehicle.year }}</div></div>
+          {% if a.vehicle.fuel %}<div><div class="l">Fuel</div><div class="v">{{ a.vehicle.fuel }}</div></div>{% endif %}
+          {% if a.vehicle.transmission %}<div><div class="l">Transmission</div><div class="v">{{ a.vehicle.transmission }}</div></div>{% endif %}
+          {% if a.vehicle.km %}<div><div class="l">Kilometres</div><div class="v">{{ a.vehicle.km }} km</div></div>{% endif %}
+          {% if a.vehicle.city %}<div><div class="l">City</div><div class="v">{{ a.vehicle.city }}</div></div>{% endif %}
+        </div>
+      </div>
+
+      {% if inspection and inspection.sections %}
+      <div class="dr2-card">
+        <div style="padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6rem">
+          <div style="display:flex;align-items:center;gap:.75rem">
+            <span style="font-weight:800;color:var(--cf-ink);font-size:.92rem">Inspection report</span>
+            {% if inspection.grade %}<span class="insp-grade">Grade {{ inspection.grade }}</span>{% endif %}
+            {% if inspection.score %}<span style="color:var(--cf-muted);font-size:.78rem;font-weight:500">{{ inspection.score }}/100</span>{% endif %}
+          </div>
+          <span style="display:inline-flex;align-items:center;gap:.35rem;padding:.25rem .7rem;border-radius:20px;font-size:.72rem;font-weight:700;{% if inspection.has_challans %}background:var(--cf-amber-bg);color:var(--cf-amber);border:1px solid var(--cf-amber-line){% else %}background:var(--cf-green-050);color:var(--cf-green-deep);border:1px solid var(--cf-green-100){% endif %}">{% if inspection.has_challans %}<svg class="i i-sm" style="stroke:var(--cf-amber-bright)"><use href="#ic-warn"/></svg>Pending challans{% else %}<svg class="i i-sm" style="stroke:var(--cf-green-bright)"><use href="#ic-check"/></svg>No challans{% endif %}</span>
         </div>
 
-        <!-- Vehicle details (dealer-safe fields only) -->
-        <div class="dr2-card">
-          <div class="dr2-card-head"><span>Vehicle Details</span>{% if a.vehicle.grade %}<span class="insp-grade g-{{ a.vehicle.grade }}">Grade {{ a.vehicle.grade }}</span>{% endif %}</div>
-          <div class="dr2-card-pad dr2-spec">
-            <div><div class="l">Year</div><div class="v">{{ a.vehicle.year }}</div></div>
-            {% if a.vehicle.fuel %}<div><div class="l">Fuel</div><div class="v">{{ a.vehicle.fuel }}</div></div>{% endif %}
-            {% if a.vehicle.transmission %}<div><div class="l">Transmission</div><div class="v">{{ a.vehicle.transmission }}</div></div>{% endif %}
-            {% if a.vehicle.km %}<div><div class="l">Kilometres</div><div class="v">{{ a.vehicle.km }} km</div></div>{% endif %}
-            {% if a.vehicle.city %}<div><div class="l">City</div><div class="v">{{ a.vehicle.city }}</div></div>{% endif %}
-          </div>
-        </div>
-
-        <!-- Inspection report — per-section accordion -->
-        {% if inspection and inspection.sections %}
-        <div class="dr2-card">
-          <div style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-            <div style="display:flex;align-items:center;gap:12px;">
-              <span style="font-family:var(--font-h);font-weight:700;color:#0f172a;font-size:.92rem;">Inspection Report</span>
-              {% if inspection.grade %}<span class="insp-grade g-{{ inspection.grade }}">Grade {{ inspection.grade }}</span>{% endif %}
-              {% if inspection.score %}<span style="color:#64748b;font-size:.78rem;font-weight:500;">{{ inspection.score }}/100</span>{% endif %}
-            </div>
-            <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:.72rem;font-weight:700;{% if inspection.has_challans %}background:rgba(239,68,68,.08);color:#dc2626;border:1px solid rgba(239,68,68,.2);{% else %}background:rgba(22,101,52,.08);color:#166534;border:1px solid rgba(22,101,52,.15);{% endif %}">{% if inspection.has_challans %}⚠ Pending Challans{% else %}✓ No Challans{% endif %}</span>
-          </div>
-
-          {% if inspection.score %}
-          <div style="padding:0 20px 14px;">
-            <div style="background:#e5e7eb;border-radius:99px;height:6px;overflow:hidden;">
-              <div style="height:100%;border-radius:99px;width:{{ inspection.score }}%;background:{% if inspection.score >= 80 %}linear-gradient(90deg,#22c55e,#166534){% elif inspection.score >= 60 %}linear-gradient(90deg,#f59e0b,#d97706){% else %}linear-gradient(90deg,#ef4444,#b91c1c){% endif %};"></div>
-            </div>
-          </div>
-          {% endif %}
-
-          <div style="border-top:1px solid #e5e7eb;">
-            {% for section in inspection.sections %}
-            <div class="insp-section" style="border-bottom:1px solid #e5e7eb;">
-              <button type="button" class="insp-sec-btn" onclick="toggleSection('{{ section.key }}')">
-                <div style="display:flex;align-items:center;gap:12px;">
-                  <div class="insp-ico"><i class="fas {{ section.icon }}"></i></div>
-                  <div>
-                    <div style="font-family:var(--font-h);font-weight:700;color:#0f172a;font-size:.88rem;">{{ section.label }}</div>
-                    <div style="font-size:.7rem;color:#64748b;margin-top:2px;">{{ section.ok_count }} OK{% if section.issue_count %} · <span style="color:#dc2626;">{{ section.issue_count }} issue{{ section.issue_count|pluralize }}</span>{% endif %}</div>
-                  </div>
-                </div>
-                <div style="display:flex;align-items:center;gap:8px;">
-                  <span style="background:rgba(22,101,52,.1);color:#166534;padding:2px 9px;border-radius:20px;font-size:.66rem;font-weight:700;">{{ section.ok_count }} ✓</span>
-                  {% if section.issue_count %}<span style="background:rgba(239,68,68,.1);color:#dc2626;padding:2px 9px;border-radius:20px;font-size:.66rem;font-weight:700;">{{ section.issue_count }} ✗</span>{% endif %}
-                  <span id="{{ section.key }}-chev" class="insp-chev"><i class="fas fa-chevron-down"></i></span>
-                </div>
-              </button>
-              <div id="{{ section.key }}-body" class="insp-body">
-                <div style="padding:8px 16px;">
-                  {% for item in section.items %}
-                  <div style="padding:10px 4px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid rgba(0,0,0,.04);">
-                    <div style="flex:1;min-width:0;">
-                      <div style="font-size:.82rem;font-weight:500;color:#0f172a;">{{ item.label }}</div>
-                      {% if item.note %}<div style="font-size:.72rem;color:#64748b;margin-top:3px;line-height:1.5;">{{ item.note }}</div>{% endif %}
-                    </div>
-                    <div style="flex-shrink:0;margin-top:1px;">
-                      {% if item.is_ok %}<span class="ip-pill ip-ok"><i class="fas fa-check" style="font-size:.6rem;"></i> OK</span>
-                      {% elif item.is_issue %}<span class="ip-pill ip-issue"><i class="fas fa-exclamation" style="font-size:.6rem;"></i> {% if item.sev == 1 %}Minor{% elif item.sev >= 2 %}Major{% else %}Issue{% endif %}</span>
-                      {% else %}<span class="ip-pill ip-na">N/A</span>{% endif %}
-                    </div>
-                  </div>
-                  {% endfor %}
-                  {% if section.photos %}
-                  <div style="padding:12px 0 4px;">
-                    <div style="font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#64748b;margin-bottom:8px;">Photos</div>
-                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
-                      {% for url in section.photos %}<div style="border-radius:8px;overflow:hidden;aspect-ratio:4/3;background:#e5e7eb;"><img src="{{ url }}" alt="" loading="lazy" onclick="openPhotoModal('{{ url }}')" style="width:100%;height:100%;object-fit:cover;display:block;cursor:pointer;"></div>{% endfor %}
-                    </div>
-                  </div>
-                  {% endif %}
-                </div>
-              </div>
-            </div>
-            {% endfor %}
-
-            <!-- Challan block -->
-            <div style="padding:14px 20px;display:flex;align-items:center;gap:12px;{% if inspection.has_challans %}background:rgba(239,68,68,.04);{% else %}background:rgba(22,101,52,.03);{% endif %}border-bottom:1px solid #e5e7eb;">
-              <div style="width:34px;height:34px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.9rem;{% if inspection.has_challans %}background:rgba(239,68,68,.12);{% else %}background:rgba(22,101,52,.1);{% endif %}">{% if inspection.has_challans %}⚠️{% else %}✅{% endif %}</div>
-              <div>
-                <div style="font-family:var(--font-h);font-weight:700;font-size:.85rem;color:{% if inspection.has_challans %}#dc2626{% else %}#166534{% endif %};">Challan / Traffic Violations</div>
-                <div style="font-size:.72rem;color:#64748b;margin-top:2px;">{% if inspection.has_challans %}Pending challans detected — verify before purchase{% else %}No pending challans found on this vehicle{% endif %}</div>
-              </div>
-            </div>
-
-            {% if inspection.drive %}
-            <div style="padding:14px 20px;border-bottom:1px solid #e5e7eb;">
-              <div style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#64748b;margin-bottom:8px;">Test Drive</div>
-              {% if inspection.drive.is_drivable %}
-              <div style="display:flex;flex-wrap:wrap;gap:18px;font-size:.82rem;color:#0f172a;">
-                <div><span style="color:#64748b;">Distance</span> &nbsp;<strong>{{ inspection.drive.distance_km|default:0 }} km</strong></div>
-                {% if inspection.drive.duration_min %}<div><span style="color:#64748b;">Duration</span> &nbsp;<strong>{{ inspection.drive.duration_min }} min</strong></div>{% endif %}
-                {% if inspection.drive.suspension %}<div><span style="color:#64748b;">Suspension</span> &nbsp;<strong>{{ inspection.drive.suspension }}</strong></div>{% endif %}
-                {% if inspection.drive.brake %}<div><span style="color:#64748b;">Brakes</span> &nbsp;<strong>{{ inspection.drive.brake }}</strong></div>{% endif %}
-              </div>
-              <div style="font-size:.68rem;color:#94a3b8;margin-top:6px;">Route map is available to the CarFriend team only.</div>
-              {% else %}
-              <div style="font-size:.82rem;color:#dc2626;font-weight:600;">Not drivable{% if inspection.drive.towing_needed %} · towing needed{% endif %}</div>
-              {% endif %}
-            </div>
-            {% endif %}
-
-            {% if inspection.audio_url %}
-            <div style="padding:16px 20px;">
-              <div style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#64748b;margin-bottom:12px;">Inspection Media</div>
-              <div style="background:#f5f7f5;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;">
-                <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-                  <div style="width:38px;height:38px;border-radius:9px;flex-shrink:0;background:rgba(22,101,52,.1);display:flex;align-items:center;justify-content:center;color:#166534;font-size:.9rem;"><i class="fas fa-wave-square"></i></div>
-                  <div><div style="font-family:var(--font-h);font-weight:700;color:#0f172a;font-size:.85rem;">Engine Sound</div><div style="font-size:.72rem;color:#64748b;">Recorded during the inspection</div></div>
-                </div>
-                <audio controls style="width:100%;height:36px;"><source src="{{ inspection.audio_url }}"></audio>
-              </div>
-            </div>
-            {% endif %}
+        {% if inspection.score %}
+        <div style="padding:0 1.25rem 1rem">
+          <div style="background:var(--cf-line);border-radius:99px;height:6px;overflow:hidden">
+            <div style="height:100%;border-radius:99px;width:{{ inspection.score }}%;background:{% if inspection.score >= 80 %}var(--cf-green){% elif inspection.score >= 60 %}var(--cf-amber-bright){% else %}var(--cf-amber){% endif %}"></div>
           </div>
         </div>
         {% endif %}
 
-      </div>
+        <div style="border-top:1px solid var(--cf-line)">
+          {% for section in inspection.sections %}
+          <div class="insp-section" style="border-bottom:1px solid var(--cf-line)">
+            <button type="button" class="insp-sec-btn" onclick="toggleSection('{{ section.key }}')">
+              <div style="display:flex;align-items:center;gap:.75rem">
+                <div class="insp-ico"><svg class="i"><use href="#ic-list"/></svg></div>
+                <div>
+                  <div style="font-weight:700;color:var(--cf-ink);font-size:.88rem">{{ section.label }}</div>
+                  <div style="font-size:.7rem;color:var(--cf-muted);margin-top:.1rem">{{ section.ok_count }} OK{% if section.issue_count %} · <span style="color:var(--cf-amber)">{{ section.issue_count }} issue{{ section.issue_count|pluralize }}</span>{% endif %}</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:.5rem">
+                <span style="background:var(--cf-green-100);color:var(--cf-green-deep);padding:.15rem .55rem;border-radius:20px;font-size:.66rem;font-weight:700">{{ section.ok_count }} ✓</span>
+                {% if section.issue_count %}<span style="background:var(--cf-amber-bg);color:var(--cf-amber);padding:.15rem .55rem;border-radius:20px;font-size:.66rem;font-weight:700">{{ section.issue_count }} ✗</span>{% endif %}
+                <span id="{{ section.key }}-chev" class="insp-chev"><svg class="i"><use href="#ic-chevd"/></svg></span>
+              </div>
+            </button>
+            <div id="{{ section.key }}-body" class="insp-body">
+              <div style="padding:.5rem 1rem">
+                {% for item in section.items %}
+                <div style="padding:.6rem .25rem;display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;border-bottom:1px solid rgba(0,0,0,.04)">
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:.82rem;font-weight:500;color:var(--cf-ink)">{{ item.label }}</div>
+                    {% if item.note %}<div style="font-size:.72rem;color:var(--cf-muted);margin-top:.2rem;line-height:1.5">{{ item.note }}</div>{% endif %}
+                  </div>
+                  <div style="flex-shrink:0;margin-top:1px">
+                    {% if item.is_ok %}<span class="ip-pill ip-ok"><svg class="i"><use href="#ic-check"/></svg> OK</span>
+                    {% elif item.is_issue %}<span class="ip-pill ip-issue"><svg class="i"><use href="#ic-warn"/></svg> {% if item.sev == 1 %}Minor{% elif item.sev >= 2 %}Major{% else %}Issue{% endif %}</span>
+                    {% else %}<span class="ip-pill ip-na">N/A</span>{% endif %}
+                  </div>
+                </div>
+                {% endfor %}
+                {% if section.photos %}
+                <div style="padding:.75rem 0 .25rem">
+                  <div style="font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cf-muted);margin-bottom:.5rem">Photos</div>
+                  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.4rem">
+                    {% for url in section.photos %}<div style="border-radius:8px;overflow:hidden;aspect-ratio:4/3;background:var(--cf-line)"><img src="{{ url }}" alt="" loading="lazy" onclick="openPhotoModal('{{ url }}')" style="width:100%;height:100%;object-fit:cover;display:block;cursor:pointer"></div>{% endfor %}
+                  </div>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
 
-      <!-- RIGHT — bidding -->
-      <div class="col-lg-5">
+          <!-- Challan block -->
+          <div style="padding:.9rem 1.25rem;display:flex;align-items:center;gap:.75rem;{% if inspection.has_challans %}background:var(--cf-amber-bg){% else %}background:var(--cf-green-050){% endif %};border-bottom:1px solid var(--cf-line)">
+            <div style="width:34px;height:34px;border-radius:9px;flex-shrink:0;display:grid;place-items:center;font-size:.9rem;{% if inspection.has_challans %}background:rgba(201,138,23,.15){% else %}background:var(--cf-green-100){% endif %}">{% if inspection.has_challans %}⚠️{% else %}✅{% endif %}</div>
+            <div>
+              <div style="font-weight:700;font-size:.85rem;color:{% if inspection.has_challans %}var(--cf-amber){% else %}var(--cf-green-deep){% endif %}">Challan / traffic violations</div>
+              <div style="font-size:.72rem;color:var(--cf-muted);margin-top:.1rem">{% if inspection.has_challans %}Pending challans detected — verify before purchase{% else %}No pending challans found on this vehicle{% endif %}</div>
+            </div>
+          </div>
 
-        <div class="dr2-bigcard">
-          <div class="l">Current Highest Bid</div>
-          <div id="hb">{% if a.highest %}&#8377;{{ a.highest }}{% else %}No bids yet{% endif %}</div>
-          <div class="dr2-reserve">Reserve: <span class="au-inr" data-v="{{ a.reserve }}"></span></div>
-        </div>
-
-        <div class="dr2-card">
-          <div class="dr2-card-head"><span>Place a Bid</span></div>
-          <div class="dr2-card-pad">
-            {% if can_bid %}
-            <div class="bid-state" id="bid-state"></div>
-            <form id="bid-form">
-              <div class="bid-input-row"><span class="r">&#8377;</span><input type="number" id="amt" placeholder="Enter amount" inputmode="numeric"></div>
-              <div id="quick"></div>
-              <button type="submit" class="btn-bid">Place Bid</button>
-              <div class="floor-hint" id="floor-hint"></div>
-              <div class="bid-msg" id="bid-msg"></div>
-            </form>
-            <div style="font-size:.72rem;color:#94a3b8;margin-top:8px;">Raise your bid any time by entering a higher amount. Bids can't be lowered.</div>
+          {% if inspection.drive %}
+          <div style="padding:.9rem 1.25rem;border-bottom:1px solid var(--cf-line)">
+            <div style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--cf-muted);margin-bottom:.5rem">Test drive</div>
+            {% if inspection.drive.is_drivable %}
+            <div style="display:flex;flex-wrap:wrap;gap:1.1rem;font-size:.82rem;color:var(--cf-ink)">
+              <div><span style="color:var(--cf-muted)">Distance</span> &nbsp;<strong>{{ inspection.drive.distance_km|default:0 }} km</strong></div>
+              {% if inspection.drive.duration_min %}<div><span style="color:var(--cf-muted)">Duration</span> &nbsp;<strong>{{ inspection.drive.duration_min }} min</strong></div>{% endif %}
+              {% if inspection.drive.suspension %}<div><span style="color:var(--cf-muted)">Suspension</span> &nbsp;<strong>{{ inspection.drive.suspension }}</strong></div>{% endif %}
+              {% if inspection.drive.brake %}<div><span style="color:var(--cf-muted)">Brakes</span> &nbsp;<strong>{{ inspection.drive.brake }}</strong></div>{% endif %}
+            </div>
+            <div style="font-size:.68rem;color:var(--cf-muted);margin-top:.4rem">Route map is available to the Car Friend team only.</div>
             {% else %}
-            <div class="verify-note">Complete dealer verification to place bids. <a href="/auth/dealer/onboard/">Complete verification →</a></div>
+            <div style="font-size:.82rem;color:var(--cf-amber);font-weight:600">Not drivable{% if inspection.drive.towing_needed %} · towing needed{% endif %}</div>
             {% endif %}
           </div>
-        </div>
+          {% endif %}
 
-        <div class="dr2-card">
-          <div class="dr2-card-head"><span>Bid History</span></div>
-          <div id="feed">
-            {% for b in bids %}
-            <div class="feed-row">
-              <span class="f-who">{% if b.is_me %}<span class="you">You</span>{% else %}Dealer ••••{% endif %}</span>
-              <span class="f-amt"><span class="au-inr" data-v="{{ b.amount }}"></span></span>
-              <span class="f-time">{{ b.ts|date:"d M H:i:s" }}</span>
+          {% if inspection.audio_url %}
+          <div style="padding:1rem 1.25rem">
+            <div style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--cf-muted);margin-bottom:.75rem">Inspection media</div>
+            <div style="background:var(--cf-green-050);border:1px solid var(--cf-green-100);border-radius:10px;padding:.85rem 1rem">
+              <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.65rem">
+                <div style="width:38px;height:38px;border-radius:9px;flex-shrink:0;background:var(--cf-green-100);display:grid;place-items:center;color:var(--cf-green)"><svg class="i"><use href="#ic-broadcast"/></svg></div>
+                <div><div style="font-weight:700;color:var(--cf-ink);font-size:.85rem">Engine sound</div><div style="font-size:.72rem;color:var(--cf-muted)">Recorded during the inspection</div></div>
+              </div>
+              <audio controls style="width:100%;height:36px"><source src="{{ inspection.audio_url }}"></audio>
             </div>
-            {% empty %}
-            <div class="feed-empty">No bids yet — be the first to bid.</div>
-            {% endfor %}
           </div>
+          {% endif %}
         </div>
-
       </div>
+      {% endif %}
+
+    </div>
+
+    <!-- RIGHT — bidding -->
+    <div class="col-lg-5">
+
+      <div class="dr2-bigcard">
+        <div class="l">Current highest bid</div>
+        <div id="hb">{% if a.highest %}&#8377;{{ a.highest }}{% else %}No bids yet{% endif %}</div>
+        <div class="dr2-reserve">Reserve: <span class="au-inr" data-v="{{ a.reserve }}"></span></div>
+      </div>
+
+      <div class="dr2-card">
+        <div class="dr2-card-head"><span>Place a bid</span></div>
+        <div class="dr2-card-pad">
+          {% if can_bid %}
+          <div class="bid-state" id="bid-state"></div>
+          <form id="bid-form">
+            <div class="bid-input-row"><span class="r">&#8377;</span><input type="number" id="amt" placeholder="Enter amount" inputmode="numeric"></div>
+            <div id="quick"></div>
+            <button type="submit" class="btn-bid">Place bid</button>
+            <div class="floor-hint" id="floor-hint"></div>
+            <div class="bid-msg" id="bid-msg"></div>
+          </form>
+          <div style="font-size:.72rem;color:var(--cf-muted);margin-top:.7rem">Raise your bid any time by entering a higher amount. Bids can't be lowered.</div>
+          {% else %}
+          <div class="verify-note">Complete dealer verification to place bids. <a href="/auth/dealer/onboard/">Complete verification →</a></div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="dr2-card">
+        <div class="dr2-card-head"><span>Bid history</span></div>
+        <div id="feed">
+          {% for b in bids %}
+          <div class="feed-row">
+            <span class="f-who">{% if b.is_me %}<span class="you">You</span>{% else %}Dealer ••••{% endif %}</span>
+            <span class="f-amt"><span class="au-inr" data-v="{{ b.amount }}"></span></span>
+            <span class="f-time">{{ b.ts|date:"d M H:i:s" }}</span>
+          </div>
+          {% empty %}
+          <div class="feed-empty">No bids yet — be the first to bid.</div>
+          {% endfor %}
+        </div>
+      </div>
+
     </div>
   </div>
-</div>
+</div></main>
 
 <!-- Fullscreen photo viewer -->
 <div id="photoModal" onclick="closePhotoModal()">
