@@ -33,7 +33,7 @@
         {% for r in rows %}
         <tr>
           <td class="ck"><input class="lck" type="checkbox" name="lead_ids" value="{{ r.id }}"></td>
-          <td class="car">{{ r.car }}</td>
+          <td class="car"><a href="/crm/retail-head/lead/{{ r.id }}/" style="color:var(--cf-blue);text-decoration:none;font-weight:600">{{ r.car }}</a></td>
           <td>{{ r.plate }}</td>
           <td>{{ r.seller }}</td>
           <td>{% if r.price %}₹{{ r.price }}{% else %}—{% endif %}</td>

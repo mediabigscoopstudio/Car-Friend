@@ -197,3 +197,60 @@ def rh_reallocate(request):
     else:
         messages.error(request, "That lead is already assigned to this associate.")
     return redirect("/crm/retail-head/lead-tracking/")
+
+
+# ── Lead detail + start auction (the SOLE auction-start path) ──────────────────
+
+def rh_lead_detail(request, lead_id):
+    """Full view of one approved lead: car + seller details, the inspection report
+    (reusing the report PDF viewer), and the Start-auction form. The only surface
+    from which an auction can be started."""
+    guard = _require_retail_head(request)
+    if guard:
+        return guard
+    from inspections.models import InspectionReport
+    from auctions.services import DURATION_PRESETS
+
+    lead = get_object_or_404(Lead.objects.select_related("vehicle", "seller"), id=lead_id)
+    vehicle = lead.vehicle
+    report = report_url = auction = suggested = None
+    if vehicle:
+        report = (InspectionReport.objects.filter(visit__vehicle=vehicle)
+                  .select_related("visit").order_by("-id").first())
+        if report and report.decision == "approved" and report.pdf:
+            report_url = report.pdf.url
+        auction = (Auction.objects.filter(vehicle=vehicle)
+                   .exclude(status=Auction.Status.CLOSED).order_by("-created_at").first())
+        suggested = (int(vehicle.expected_price or 0)
+                     or (report.est_market_value if report else 0) or None)
+    return render(request, "teams/retail_head/lead_detail.html", {
+        "lead": lead, "vehicle": vehicle, "seller": lead.seller,
+        "report": report, "report_url": report_url, "auction": auction,
+        "durations": DURATION_PRESETS, "suggested": suggested,
+    })
+
+
+@require_POST
+def rh_start_auction(request, lead_id):
+    guard = _require_retail_head(request)
+    if guard:
+        return guard
+    from auctions.services import start_auction
+
+    lead = get_object_or_404(Lead.objects.select_related("vehicle"), id=lead_id)
+    if not lead.vehicle:
+        messages.error(request, "This lead has no car to auction.")
+        return redirect(f"/crm/retail-head/lead/{lead_id}/")
+    raw = (request.POST.get("base_price") or "").replace(",", "").replace("₹", "").strip()
+    try:
+        base_price = int(float(raw))
+    except (TypeError, ValueError):
+        base_price = 0
+    try:
+        start_auction(lead.vehicle, base_price, request.POST.get("duration_minutes"),
+                      started_by=request.user)
+    except ValueError as e:
+        messages.error(request, str(e))
+        return redirect(f"/crm/retail-head/lead/{lead_id}/")
+    messages.success(request, f"Auction started for {_car(lead.vehicle)}.")
+    return redirect("/crm/retail-head/auctions/")

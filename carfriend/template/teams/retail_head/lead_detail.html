@@ -1,0 +1,84 @@
+{% extends "teams/dash_base.html" %}
+{% block title %}Lead · {{ vehicle.display_name|default:"Lead" }}{% endblock %}
+{% block page_title %}Retail Head · Lead{% endblock %}
+{% block nav %}{% include "teams/retail_head/_nav.html" with active="approved" %}{% endblock %}
+{% block head_extra %}
+<style>
+  .rh-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px;align-items:start}
+  @media(max-width:900px){.rh-grid{grid-template-columns:1fr}}
+  .kv{display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-bottom:1px solid var(--cf-mist)}
+  .kv:last-child{border-bottom:0}
+  .kv .k{color:var(--cf-slate);font-size:13px}
+  .kv .v{font-weight:600;font-size:13px;text-align:right}
+  .rh-form label.field-label{display:block;font-size:13px;color:var(--cf-slate);margin:12px 0 5px}
+  .rh-form input,.rh-form select{width:100%;padding:10px 12px;border:1px solid var(--cf-mist);border-radius:9px;font-size:14px}
+  .rh-start{margin-top:14px;width:100%;padding:11px;border:none;border-radius:9px;background:var(--cf-blue);color:#fff;font-weight:700;font-size:14px;cursor:pointer}
+  .rh-start:hover{background:var(--cf-blue-700)}
+  .rh-report a.btn{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:9px 14px;border:1px solid var(--cf-mist);border-radius:9px;font-size:13px;font-weight:600;text-decoration:none;color:var(--cf-ink)}
+  .rh-hint{font-size:12px;color:var(--cf-slate);margin-top:6px}
+  .rh-live{padding:12px 14px;border:1px solid var(--cf-mist);border-radius:10px;background:#f7faff}
+</style>
+{% endblock %}
+{% block content %}
+<div style="margin-bottom:14px"><a href="/crm/retail-head/" style="font-size:13px;color:var(--cf-blue);text-decoration:none">&larr; Approved leads</a></div>
+
+<div class="rh-grid">
+  <div>
+    <div class="panel">
+      <h2>{{ vehicle.display_name|default:"Lead" }}</h2>
+      {% if vehicle %}
+      <div class="kv"><span class="k">Plate</span><span class="v">{{ vehicle.plate_number }}</span></div>
+      <div class="kv"><span class="k">Make / Model</span><span class="v">{{ vehicle.make }} {{ vehicle.model }} {{ vehicle.variant }}</span></div>
+      <div class="kv"><span class="k">Year</span><span class="v">{{ vehicle.year }}</span></div>
+      <div class="kv"><span class="k">Fuel / Transmission</span><span class="v">{{ vehicle.get_fuel_type_display }} &middot; {{ vehicle.get_transmission_display }}</span></div>
+      {% if vehicle.odometer_km %}<div class="kv"><span class="k">Odometer</span><span class="v">{{ vehicle.odometer_km }} km</span></div>{% endif %}
+      <div class="kv"><span class="k">Owner</span><span class="v">{{ vehicle.owner_name|default:"—" }} ({{ vehicle.owner_number }})</span></div>
+      <div class="kv"><span class="k">RTO / State</span><span class="v">{{ vehicle.rto|default:"—" }} &middot; {{ vehicle.registration_state|default:"—" }}</span></div>
+      <div class="kv"><span class="k">City</span><span class="v">{{ vehicle.city|default:"—" }}</span></div>
+      {% endif %}
+      <div class="kv"><span class="k">Seller</span><span class="v">{{ seller.get_full_name|default:seller.username }}</span></div>
+      {% if seller.phone %}<div class="kv"><span class="k">Phone</span><span class="v">{{ seller.phone }}</span></div>{% endif %}
+      <div class="kv"><span class="k">Lead stage</span><span class="v">{{ lead.get_stage_display }}</span></div>
+    </div>
+
+    <div class="panel rh-report">
+      <h2>Inspection report</h2>
+      {% if report %}
+      <div class="kv"><span class="k">Condition grade</span><span class="v">{{ report.condition_grade|default:"—" }}</span></div>
+      <div class="kv"><span class="k">Score</span><span class="v">{{ report.score|default:"—" }}</span></div>
+      <div class="kv"><span class="k">Estimated value</span><span class="v">{% if report.est_market_value %}₹{{ report.est_market_value }}{% else %}—{% endif %}</span></div>
+      <div class="kv"><span class="k">Decision</span><span class="v">{{ report.get_decision_display }}</span></div>
+      {% if report_url %}<a class="btn" href="{{ report_url }}" target="_blank" rel="noopener">&#128196; Full inspection report</a>
+      {% else %}<div class="rh-hint">The full report PDF appears here once the report is approved.</div>{% endif %}
+      {% else %}
+      <div style="font-size:13px;color:var(--cf-slate)">No inspection report for this car yet.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <h2>Start auction</h2>
+      {% if auction %}
+      <div class="rh-live">
+        <div style="font-weight:700;margin-bottom:4px">Auction #{{ auction.id }} &middot; {{ auction.get_status_display }}</div>
+        <div style="font-size:13px;color:var(--cf-slate)">Reserve &#8377;{{ auction.reserve_price }} &middot; ends {{ auction.end_at|date:"d M, g:i A" }}</div>
+        <a href="/crm/retail-head/auctions/" style="display:inline-block;margin-top:8px;font-size:13px;color:var(--cf-blue);text-decoration:none">View auctions &rarr;</a>
+      </div>
+      {% else %}
+      <form method="post" action="/crm/retail-head/lead/{{ lead.id }}/start-auction/" class="rh-form">
+        {% csrf_token %}
+        <label class="field-label">Starting price (seller base &#8377;)</label>
+        <input type="text" inputmode="numeric" name="base_price" value="{{ suggested|default:'' }}" placeholder="e.g. 500000" required>
+        <div class="rh-hint">Dealers bid on the grossed reserve (base + margin + GST). The price locks once the auction starts.</div>
+        <label class="field-label">Duration</label>
+        <select name="duration_minutes">
+          {% for m, label in durations %}<option value="{{ m }}"{% if m == 30 %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        <button type="submit" class="rh-start">Start auction</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
