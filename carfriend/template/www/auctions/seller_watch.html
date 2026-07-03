@@ -88,10 +88,7 @@
       {% if highest_bid %}
       <div class="cf-card cf-reveal d1" style="padding:1.2rem 1.3rem;margin-top:1rem;background:var(--cf-green-050);border-color:var(--cf-green-100)">
         <div class="cf-flabel" style="margin-bottom:.8rem">If you accept the highest bid</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-          <div><div class="cf-bid-l">Highest bid</div><div class="cf-bid-v" style="color:var(--cf-green)">₹{{ highest_fmt }}</div></div>
-          <div><div class="cf-bid-l">You receive (after ~2% fee)</div><div class="cf-bid-v">₹{{ net_fmt }}</div><div style="font-size:.66rem;color:var(--cf-muted);margin-top:.15rem">Platform fee ≈ ₹{{ fee_fmt }} · confirmed at closure</div></div>
-        </div>
+        <div><div class="cf-bid-l">You receive</div><div class="cf-bid-v" style="color:var(--cf-green);font-size:1.6rem">₹{{ highest_fmt }}</div><div style="font-size:.66rem;color:var(--cf-muted);margin-top:.2rem">Paid to you after handover — no platform fee deducted.</div></div>
       </div>
       {% endif %}
     </div>
@@ -153,10 +150,15 @@
 
   function fmt(n) { return '₹' + Number(n).toLocaleString('en-IN'); }
 
+  // Seller sees BASE — de-gross the GROSS amount the WS broadcasts, using the
+  // same constants as core.margin.base_from_gross (no divergent JS money math).
+  var CF_K = {{ cf_k }}, CF_BOUND = {{ cf_boundary }}, CF_FLOORGST = {{ cf_floor_gst }};
+  function cfBase(g) { if (!g) return g; var bp = g / CF_K; var b = (bp >= CF_BOUND) ? bp : (g - CF_FLOORGST); return Math.max(0, Math.round(b)); }
+
   function applyHighest(amount, total) {
     if (total != null) { count = total; if (countEl) countEl.textContent = count; }
     if (highestEl && amount) {
-      highestEl.textContent = fmt(amount);
+      highestEl.textContent = fmt(cfBase(amount));
       highestEl.style.transform = 'scale(1.08)';
       setTimeout(function () { highestEl.style.transform = 'scale(1)'; }, 300);
     }
@@ -174,7 +176,7 @@
           '<div><div style="font-weight:700;font-size:.88rem;">Dealer #' + count + '</div>' +
           '<div style="font-size:.7rem;color:var(--cf-muted);margin-top:.1rem;">Just now</div></div>' +
         '</div>' +
-        '<div style="text-align:right;"><div style="font-weight:800;font-size:1.15rem;color:var(--cf-green);font-variant-numeric:tabular-nums;">' + fmt(amount) + '</div>' +
+        '<div style="text-align:right;"><div style="font-weight:800;font-size:1.15rem;color:var(--cf-green);font-variant-numeric:tabular-nums;">' + fmt(cfBase(amount)) + '</div>' +
           '<div class="highest-badge" style="font-size:.62rem;color:var(--cf-green);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-top:.1rem;">Highest bid</div></div>';
       feed.insertBefore(row, feed.firstChild);
     }
@@ -182,7 +184,7 @@
 
   function applyHighestQuiet(amount, total) {
     if (total != null && countEl) countEl.textContent = total;
-    if (highestEl && amount) highestEl.textContent = fmt(amount);
+    if (highestEl && amount) highestEl.textContent = fmt(cfBase(amount));
   }
 
   try {

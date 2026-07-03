@@ -14,11 +14,11 @@
   {% csrf_token %}
 
   <article class="cf-card cf-reveal d1" style="padding:1.4rem 1.4rem">
-    <div class="cf-bid-l">Highest bid received</div>
+    <div class="cf-bid-l">You receive if you accept</div>
     {% if highest_bid %}
       <div class="cf-bid-v" style="color:var(--cf-green);font-size:2rem">₹{{ highest_fmt }}</div>
       <div style="display:flex;flex-wrap:wrap;gap:.4rem 1.4rem;margin-top:.7rem;color:var(--cf-muted);font-size:.86rem">
-        <span>You receive <b style="color:var(--cf-ink)">₹{{ net_fmt }}</b> after a 2% fee (₹{{ fee_fmt }})</span>
+        <span>Paid to you after handover — no platform fee deducted</span>
         <span>{{ bid_count }} bid{{ bid_count|pluralize }}</span>
         {% if expected_fmt %}<span>Your expected: ₹{{ expected_fmt }}</span>{% endif %}
       </div>

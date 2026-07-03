@@ -158,10 +158,14 @@ def inspection_decide(request, id):
         v.vehicle.save()
         v.save()
         from auctions.models import Auction
+        from core.margin import gross_breakdown
         start = timezone.now()
+        # Dealer-facing reserve is GROSS (base seller price + margin + GST).
+        _base = v.vehicle.expected_price or 0
+        _reserve = gross_breakdown(_base)["gross"] if _base else 0
         a = Auction.objects.create(
             vehicle=v.vehicle,
-            reserve_price=v.vehicle.expected_price,
+            reserve_price=_reserve,
             created_by=request.user,
             start_at=start,
             end_at=start + datetime.timedelta(minutes=duration),

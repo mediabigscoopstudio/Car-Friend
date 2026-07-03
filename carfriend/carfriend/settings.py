@@ -261,6 +261,16 @@ FCM_SERVER_KEY = os.environ.get("FCM_SERVER_KEY", "")
 WHATSAPP = {"TOKEN": os.environ.get("WA_TOKEN", ""), "PHONE_ID": os.environ.get("WA_PHONE_ID", "")}
 SMS = {"API_KEY": os.environ.get("SMS_API_KEY", ""), "SENDER": os.environ.get("SMS_SENDER", "CARFRD")}
 
+# ── Car Friend money model (grossing) — see core/margin.py ───────────────────
+# Dealer-facing prices are GROSS (base + margin + GST); seller-facing are BASE.
+# GST applies to the MARGIN only. margin = max(CF_MARGIN_PERCENT% of base,
+# CF_MARGIN_FLOOR). CF_RC_HOLD is a separate RC-transfer charge, not part of the
+# car gross. All env-overridable.
+CF_GST_PERCENT    = config("CF_GST_PERCENT",    default=18,    cast=int)
+CF_MARGIN_PERCENT = config("CF_MARGIN_PERCENT", default=7,     cast=int)
+CF_MARGIN_FLOOR   = config("CF_MARGIN_FLOOR",   default=10000, cast=int)
+CF_RC_HOLD        = config("CF_RC_HOLD",        default=5000,  cast=int)
+
 NOTIFY_SYNC_FALLBACK = True
 
 # Default primary key field type

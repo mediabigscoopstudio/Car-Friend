@@ -52,7 +52,7 @@
       </div>
       {% if not pd.decision %}
         {% if pd.highest_bid %}
-        <div style="margin:.75rem 0"><div class="cf-bid-l">Highest bid received</div><div class="cf-bid-v" style="color:var(--cf-green);font-size:1.5rem">₹{{ pd.highest_fmt }}</div></div>
+        <div style="margin:.75rem 0"><div class="cf-bid-l">You'll receive</div><div class="cf-bid-v" style="color:var(--cf-green);font-size:1.5rem">₹{{ pd.highest_fmt }}</div></div>
         <div class="cf-sale-btns">
           <button type="button" class="cf-btn cf-btn-primary" onclick="cfDecision({{ pd.auction.id }},'accept')"><svg class="i"><use href="#ic-check"/></svg>Accept bid</button>
           <button type="button" class="cf-btn cf-btn-ghost" onclick="cfCounter({{ pd.auction.id }})">Counter</button>

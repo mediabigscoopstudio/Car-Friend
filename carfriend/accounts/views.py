@@ -364,6 +364,7 @@ def seller_dashboard(request):
     # any decision already made + the linked OCB status (read-only display of the
     # real CRM pipeline). Live auctions are not shown here.
     from auctions.models import Auction, OCBListing
+    from core.margin import base_from_gross
     pending_decisions = []
     for a in (Auction.objects.filter(vehicle__seller=request.user,
                                       status__in=["closed", "reauction", "completed"])
@@ -375,7 +376,7 @@ def seller_dashboard(request):
             "vehicle":       a.vehicle,
             "decision":      a.seller_decisions.order_by("-id").first(),
             "highest_bid":   hb,
-            "highest_fmt":   f"{hb.amount:,}" if hb else None,
+            "highest_fmt":   f'{base_from_gross(hb.amount)["base"]:,}' if hb else None,
             "counter_fmt":   None,
             "bid_count":     a.bids.filter(is_voided=False).count(),
             "ocb":           ocb,

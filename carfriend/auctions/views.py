@@ -5,6 +5,7 @@ from django.views.decorators.http import require_POST
 
 from accounts.decorators import admin_required, role_required
 from core.models import log
+from core.margin import base_from_gross, inverse_params
 from notifications.services import notify
 from .models import Auction, Bid
 
@@ -23,27 +24,30 @@ def seller_auction_watch(request, auction_id):
 
     bids = list(auction.bids.filter(is_voided=False).order_by("-amount")[:50])
     total = auction.bids.filter(is_voided=False).count()
+    # Seller sees BASE: de-gross every dealer bid into the seller's own terms.
     bid_list = [{
-        "amount":     b.amount,
-        "amount_fmt": f"{b.amount:,}",
+        "amount_fmt": f'{base_from_gross(b.amount)["base"]:,}',
         "label":      f"Dealer #{i + 1}",   # masked — identity never exposed
         "created_at": b.created_at,
         "is_highest": i == 0,
     } for i, b in enumerate(bids)]
     hb = bids[0] if bids else None
+    payout = base_from_gross(hb.amount)["base"] if hb else None
+    p = inverse_params()   # constants so the live WS ticker de-grosses in JS
 
     return render(request, "www/auctions/seller_watch.html", {
         "auction":           auction,
         "vehicle":           vehicle,
         "bids":              bid_list,
         "highest_bid":       hb,
-        "highest_fmt":       f"{hb.amount:,}" if hb else None,
-        "reserve_fmt":       f"{auction.reserve_price:,}",
+        "highest_fmt":       f"{payout:,}" if payout is not None else None,
+        "reserve_fmt":       f"{int(vehicle.expected_price):,}" if vehicle.expected_price else f'{base_from_gross(auction.reserve_price)["base"]:,}',
         "min_increment_fmt": f"{auction.min_increment:,}",
-        "net_fmt":           f"{int(hb.amount * 0.98):,}" if hb else None,
-        "fee_fmt":           f"{int(hb.amount * 0.02):,}" if hb else None,
         "expected_fmt":      f"{int(vehicle.expected_price):,}" if vehicle.expected_price else None,
         "bid_count":         total,
+        "cf_k":              repr(p["k"]),          # JS numeric literals — repr()
+        "cf_boundary":       repr(p["boundary"]),   # keeps a '.' decimal regardless
+        "cf_floor_gst":      repr(p["floor_gst"]),  # of any template number locale
     })
 
 
@@ -118,14 +122,13 @@ def seller_auction_result(request, auction_id):
     ocb = OCBListing.objects.filter(auction=auction).order_by("-id").first()
     awaiting = auction.status in ("closed", "reauction") and decision is None
 
+    payout = base_from_gross(hb.amount)["base"] if hb else None
     return render(request, "www/auctions/seller_result.html", {
         "auction":      auction,
         "vehicle":      vehicle,
         "highest_bid":  hb,
-        "highest_fmt":  f"{hb.amount:,}" if hb else None,
-        "net_fmt":      f"{int(hb.amount * 0.98):,}" if hb else None,
-        "fee_fmt":      f"{int(hb.amount * 0.02):,}" if hb else None,
-        "reserve_fmt":  f"{auction.reserve_price:,}",
+        "highest_fmt":  f"{payout:,}" if payout is not None else None,
+        "reserve_fmt":  f"{int(vehicle.expected_price):,}" if vehicle.expected_price else f'{base_from_gross(auction.reserve_price)["base"]:,}',
         "expected_fmt": f"{int(vehicle.expected_price):,}" if vehicle.expected_price else None,
         "bid_count":    auction.bids.filter(is_voided=False).count(),
         "decision":     decision,
@@ -151,12 +154,14 @@ def seller_ocb(request, auction_id):
 
     ocb = OCBListing.objects.filter(auction=auction).order_by("-id").first()
     deal = Deal.objects.filter(vehicle=vehicle, seller=request.user).order_by("-id").first()
+    # OCB price is stored GROSS (dealer-facing) — de-gross to the seller's base.
+    ocb_base = base_from_gross(ocb.ocb_price)["base"] if ocb and ocb.ocb_price else None
     return render(request, "www/auctions/seller_ocb.html", {
         "auction":       auction,
         "vehicle":       vehicle,
         "ocb":           ocb,
         "ocb_status":    ocb.get_status_display() if ocb else None,
-        "ocb_price_fmt": f"{int(ocb.ocb_price):,}" if ocb and ocb.ocb_price else None,
+        "ocb_price_fmt": f"{ocb_base:,}" if ocb_base is not None else None,
         "ocb_signable":  bool(ocb and ocb.status in ("winner_accepted", "seller_accepted", "agreement")),
         "deal":          deal,
     })
