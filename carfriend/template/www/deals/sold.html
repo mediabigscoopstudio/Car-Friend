@@ -1,0 +1,51 @@
+{% extends "base/base_www.html" %}
+{% block title %}Sold — {{ deal.vehicle.display_name }} — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_seller.html" with active="cars" %}{% endblock %}
+
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="cf-focus">
+
+  <div class="cf-reveal" style="padding-top:clamp(14px,2.5vw,22px)">
+    <a href="{% url 'seller_dashboard' %}" class="cf-btn cf-btn-ghost" style="padding:.5rem .9rem"><svg class="i" style="transform:rotate(180deg)"><use href="#ic-out"/></svg>My Cars</a>
+  </div>
+
+  <article class="cf-tile cf-reveal d1" style="margin-top:.6rem">
+    <div style="padding:clamp(20px,3vw,28px);text-align:center">
+      <div class="cf-grade" style="width:66px;height:66px;margin:0 auto .9rem;border-radius:18px"><svg class="i" style="width:32px;height:32px;stroke:#fff"><use href="#ic-check"/></svg></div>
+      <h1 style="font-size:clamp(1.3rem,2.6vw,1.7rem);font-weight:800;letter-spacing:-.02em;margin:0">Sold. Well done.</h1>
+      <p style="color:var(--cf-muted);margin:.4rem 0 0">{{ deal.vehicle.display_name }} has a buyer.</p>
+      {% if sale_fmt %}
+      <div class="cf-bid-l" style="margin-top:1.2rem">Your sale price</div>
+      <div class="cf-bid-v" style="color:var(--cf-green);font-size:2rem">₹{{ sale_fmt }}</div>
+      {% endif %}
+    </div>
+  </article>
+
+  <div class="cf-card cf-reveal d1" style="padding:1.2rem 1.3rem;margin-top:1rem">
+    <div class="cf-flabel" style="margin-bottom:.7rem">Payout</div>
+    {% if payment and payment.status == 'confirmed' %}
+      <div style="display:flex;align-items:center;gap:.7rem"><span class="cf-status"><svg class="i"><use href="#ic-check"/></svg>Payment confirmed</span></div>
+      <div class="cf-foot-note" style="margin-top:.6rem"><svg class="i"><use href="#ic-wallet"/></svg>Your payout has been released to your saved account.</div>
+    {% elif has_payout %}
+      <div style="display:flex;align-items:center;gap:.7rem"><span class="cf-chip pend"><svg class="i"><use href="#ic-clock"/></svg>Payout in progress</span></div>
+      <div class="cf-foot-note" style="margin-top:.6rem"><svg class="i"><use href="#ic-shield"/></svg>We'll transfer your payout to your saved account after handover of the car and documents.</div>
+    {% else %}
+      <div class="cf-ribbon">
+        <div class="cf-ribbon-top" style="padding:.9rem 1rem">
+          <div class="cf-warn-ic"><svg class="i"><use href="#ic-wallet"/></svg></div>
+          <div class="cf-ribbon-txt"><h2>Add your payout details</h2><p>We need a bank account or UPI to send your money.</p></div>
+          <a href="{% url 'profile_payout' %}" class="cf-btn cf-btn-primary">Add now</a>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="cf-card cf-reveal d2" style="padding:1.2rem 1.3rem;margin-top:1rem">
+    <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+      <div style="flex:1 1 auto"><div style="font-weight:800">Sell another car?</div><div style="color:var(--cf-muted);font-size:.88rem">The whole journey again, start to finish.</div></div>
+      <a href="{% url 'list_car' %}" class="cf-btn cf-btn-ghost"><svg class="i"><use href="#ic-plus"/></svg>List a car</a>
+    </div>
+  </div>
+
+</div></div></main>
+{% endblock %}

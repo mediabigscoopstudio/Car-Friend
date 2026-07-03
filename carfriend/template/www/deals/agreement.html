@@ -1,0 +1,65 @@
+{% extends "base/base_www.html" %}
+{% block title %}Sale agreement — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_seller.html" with active="cars" %}{% endblock %}
+
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="cf-focus">
+
+  <div class="cf-reveal" style="padding-top:clamp(14px,2.5vw,22px)">
+    <a href="{% url 'car_detail' deal.vehicle.pk %}" class="cf-btn cf-btn-ghost" style="padding:.5rem .9rem"><svg class="i" style="transform:rotate(180deg)"><use href="#ic-out"/></svg>{{ deal.vehicle.display_name }}</a>
+  </div>
+
+  <div class="cf-page-head cf-reveal"><h1>Sale agreement</h1></div>
+
+  <article class="cf-card cf-reveal d1" style="padding:1.4rem 1.4rem">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap">
+      <div>
+        <div style="font-weight:800;font-size:1.1rem">{{ deal.vehicle.display_name }}</div>
+        <div class="cf-bid-l" style="margin-top:.6rem">Your sale price</div>
+        <div class="cf-bid-v" style="color:var(--cf-green);font-size:1.7rem">{% if sale_fmt %}₹{{ sale_fmt }}{% else %}—{% endif %}</div>
+      </div>
+      {% if agreement.seller_signed %}<span class="cf-status"><svg class="i"><use href="#ic-check"/></svg>Signed</span>{% endif %}
+    </div>
+
+    {% if agreement.pdf %}
+    <div style="margin-top:1rem"><a href="{{ agreement.pdf.url }}" target="_blank" rel="noopener" class="cf-btn cf-btn-ghost"><svg class="i"><use href="#ic-file"/></svg>Read the full agreement (PDF)</a></div>
+    {% endif %}
+
+    <div class="cf-div" style="margin:1.1rem 0"></div>
+    <div class="cf-flabel" style="margin-bottom:.6rem">Summary of terms</div>
+    <ul style="margin:0;padding-left:1.1rem;color:var(--cf-ink-soft);line-height:1.7;font-size:.9rem">
+      <li>You agree to sell the vehicle above at the sale price shown.</li>
+      <li>You confirm you are the lawful owner and the details you gave are accurate.</li>
+      <li>Payout is released to your saved bank or UPI after handover of the car and documents.</li>
+      <li>Car Friend's platform fee is already reflected in your sale price.</li>
+    </ul>
+  </article>
+
+  {% if agreement.seller_signed %}
+  <div class="cf-card cf-reveal d1" style="padding:1.3rem 1.4rem;margin-top:1rem">
+    <div class="cf-foot-note" style="margin:0"><svg class="i"><use href="#ic-check"/></svg>You e-signed this agreement. Reference: {{ agreement.seller_esign_ref }}</div>
+    <div style="margin-top:1rem"><a href="{% url 'deal_sold' deal.pk %}" class="cf-btn cf-btn-primary"><svg class="i"><use href="#ic-check"/></svg>View closing summary</a></div>
+  </div>
+  {% else %}
+  <div class="cf-card cf-reveal d1" style="padding:1.3rem 1.4rem;margin-top:1rem">
+    {% if error %}
+    <div class="cf-foot-note" style="color:var(--cf-amber);margin:0 0 1rem"><svg class="i" style="stroke:var(--cf-amber-bright)"><use href="#ic-warn"/></svg>{{ error }}</div>
+    {% endif %}
+    <form method="post" action="{% url 'deal_agreement' deal.pk %}">
+      {% csrf_token %}
+      <div class="cf-field">
+        <label for="id_name">Type your full legal name to sign</label>
+        <input class="cf-input" id="id_name" name="full_name" type="text" maxlength="120" placeholder="As per your PAN / Aadhaar" required>
+      </div>
+      <label class="cf-check" style="padding:.6rem .1rem;align-items:flex-start;font-size:.9rem">
+        <input type="checkbox" name="agree" required style="margin-top:.15rem">
+        <span>I have read and agree to the sale agreement, and I authorise Car Friend to proceed with this sale.</span>
+      </label>
+      <div class="cf-foot-note" style="margin:.4rem 0 1rem"><svg class="i"><use href="#ic-shield"/></svg>This is a binding in-app consent. We record your name and the time you sign.</div>
+      <button type="submit" class="cf-btn cf-btn-primary"><svg class="i"><use href="#ic-check"/></svg>E-sign agreement</button>
+    </form>
+  </div>
+  {% endif %}
+
+</div></div></main>
+{% endblock %}
