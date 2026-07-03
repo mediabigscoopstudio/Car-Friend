@@ -1,0 +1,127 @@
+{% extends "base/base_www.html" %}
+{% block title %}{{ v.display_name }} — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_seller.html" with active="cars" %}{% endblock %}
+
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="cf-focus">
+
+  <div class="cf-reveal" style="padding-top:clamp(14px,2.5vw,22px)">
+    <a href="{% url 'seller_dashboard' %}" class="cf-btn cf-btn-ghost" style="padding:.5rem .9rem"><svg class="i" style="transform:rotate(180deg)"><use href="#ic-out"/></svg>My Cars</a>
+  </div>
+
+  <div class="cf-page-head cf-reveal">
+    <h1 style="font-size:clamp(1.25rem,2.5vw,1.7rem)">{{ v.display_name }}</h1>
+    <span class="cf-status">{{ v.status_label }}</span>
+  </div>
+
+  <article class="cf-tile cf-reveal d1">
+    <div class="cf-tile-head">
+      <div class="cf-media">
+        <svg class="i car-glyph"><use href="#ic-car"/></svg>
+        <span class="cf-media-tag"><svg class="i"><use href="#ic-shield"/></svg>{% if v.condition_grade %}Inspected{% else %}Listed{% endif %}</span>
+        <span class="cf-plate"><i>P</i>Plate hidden</span>
+      </div>
+      <div class="cf-tile-meta">
+        <div class="cf-cartitle">{{ v.display_name }}</div>
+        <div class="cf-facts">
+          {% if v.year %}<span><svg class="i"><use href="#ic-clock"/></svg>{{ v.year }}</span>{% endif %}
+          <span><svg class="i"><use href="#ic-fuel"/></svg>{{ v.get_fuel_type_display }}</span>
+          {% if v.odometer_km %}<span><svg class="i"><use href="#ic-gauge"/></svg>{{ v.odometer_km }} km</span>{% endif %}
+          {% if v.city %}<span><svg class="i"><use href="#ic-pin"/></svg>{{ v.city }}</span>{% endif %}
+        </div>
+        {% if v.expected_price %}<div class="cf-facts" style="margin-top:.4rem"><span style="color:var(--cf-green);font-weight:700"><svg class="i"><use href="#ic-tag"/></svg>₹{{ v.expected_price }} expected</span></div>{% endif %}
+      </div>
+    </div>
+
+    <div class="cf-div"></div>
+    <div class="cf-insp">
+      {% if v.condition_grade %}
+        <div class="cf-grade"><b>{{ v.condition_grade }}</b><small>GRADE</small></div>
+        <div class="cf-insp-body"><div class="t">Inspection complete</div><div class="d">Certified · 300+ checkpoints</div></div>
+        <a href="{% url 'car_inspection' v.pk %}" class="cf-btn cf-btn-ghost" style="margin-left:auto"><svg class="i"><use href="#ic-file"/></svg>Report</a>
+      {% else %}
+        <div class="cf-grade" style="background:var(--cf-line-strong);box-shadow:none"><svg class="i" style="stroke:#fff"><use href="#ic-clock"/></svg></div>
+        <div class="cf-insp-body"><div class="t">Inspection pending</div><div class="d">We'll schedule your free home inspection.</div></div>
+        <a href="{% url 'car_inspection' v.pk %}" class="cf-btn cf-btn-ghost" style="margin-left:auto">Track</a>
+      {% endif %}
+    </div>
+
+    {% include "www/_journey.html" with stages=stages step_of=step_of %}
+
+    <div class="cf-tile-foot">
+      {% if kyc_ok %}
+      <div class="cf-sale-btns">
+        {% if live_auction %}
+          <a href="{% url 'seller_auction_watch' live_auction.id %}" class="cf-btn cf-btn-primary"><span class="cf-live" style="padding:.1rem .3rem"><span class="d"></span></span>Live Auction</a>
+        {% else %}
+          <span class="cf-btn cf-btn-ghost" style="opacity:.6"><svg class="i"><use href="#ic-broadcast"/></svg>Live Auction</span>
+        {% endif %}
+        <span class="cf-btn cf-btn-ghost" style="opacity:.6"><svg class="i"><use href="#ic-bolt"/></svg>Live OCB</span>
+      </div>
+      {% else %}
+      <div class="cf-sale-btns">
+        <span class="cf-btn cf-btn-lock"><svg class="i"><use href="#ic-lock"/></svg>Live Auction</span>
+        <span class="cf-btn cf-btn-lock"><svg class="i"><use href="#ic-lock"/></svg>Live OCB</span>
+      </div>
+      <div class="cf-foot-note"><svg class="i"><use href="#ic-warn"/></svg>Complete your Aadhaar &amp; PAN verification to send this car to auction. <a href="/kyc/" style="color:var(--cf-green);font-weight:700">Verify now</a></div>
+      {% endif %}
+    </div>
+  </article>
+
+  {# What's next — one focal action for the car's current state. #}
+  <div class="cf-card cf-reveal d1" style="padding:1.2rem 1.3rem;margin-top:1.1rem">
+    <div class="cf-flabel" style="margin-bottom:.6rem">What's next</div>
+    {% if v.status == 'sold' %}
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+        <div style="flex:1 1 auto"><div style="font-weight:800">Sold</div><div style="color:var(--cf-muted);font-size:.88rem">Congratulations. View your closing summary and payout status.</div></div>
+        {% if deal %}<a href="{% url 'deal_sold' deal.pk %}" class="cf-btn cf-btn-primary">View summary</a>{% endif %}
+      </div>
+    {% elif deal and deal.status == 'agreement' or deal and deal.status == 'signed' %}
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+        <div style="flex:1 1 auto"><div style="font-weight:800">Sign your agreement</div><div style="color:var(--cf-muted);font-size:.88rem">Review and e-sign the sale agreement to close the deal.</div></div>
+        <a href="{% url 'deal_agreement' deal.pk %}" class="cf-btn cf-btn-primary">Open agreement</a>
+      </div>
+    {% elif decidable_auction %}
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+        <div style="flex:1 1 auto"><div style="font-weight:800">Your auction has ended</div><div style="color:var(--cf-muted);font-size:.88rem">Review the highest bid and choose to accept, counter, or re-auction.</div></div>
+        <a href="{% url 'seller_auction_result' decidable_auction.id %}" class="cf-btn cf-btn-primary">Review offer</a>
+      </div>
+    {% elif live_auction %}
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+        <div style="flex:1 1 auto"><div style="font-weight:800">Your car is live</div><div style="color:var(--cf-muted);font-size:.88rem">Watch the bids come in. You decide once the auction ends.</div></div>
+        <a href="{% url 'seller_auction_watch' live_auction.id %}" class="cf-btn cf-btn-primary">Watch auction</a>
+      </div>
+    {% elif v.status == 'approved' %}
+      <div><div style="font-weight:800">Approved and ready</div><div style="color:var(--cf-muted);font-size:.88rem">Your car passed inspection. We'll notify you the moment it goes to auction.</div></div>
+    {% elif v.status == 'inspection_done' %}
+      <div><div style="font-weight:800">Report under review</div><div style="color:var(--cf-muted);font-size:.88rem">The inspection is done and our team is finalising the grade.</div></div>
+    {% elif v.status == 'inspection_scheduled' %}
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+        <div style="flex:1 1 auto"><div style="font-weight:800">Inspection scheduled</div><div style="color:var(--cf-muted);font-size:.88rem">A certified inspector will visit you soon.</div></div>
+        <a href="{% url 'car_inspection' v.pk %}" class="cf-btn cf-btn-ghost">View status</a>
+      </div>
+    {% elif v.status == 'rejected' %}
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+        <div style="flex:1 1 auto"><div style="font-weight:800">Not accepted</div><div style="color:var(--cf-muted);font-size:.88rem">This car couldn't be listed for auction. Our team can explain the next options.</div></div>
+        <a href="{% url 'support_home' %}" class="cf-btn cf-btn-ghost">Get help</a>
+      </div>
+    {% else %}
+      <div><div style="font-weight:800">Listed</div><div style="color:var(--cf-muted);font-size:.88rem">Thanks for listing. We'll schedule your free home inspection shortly.</div></div>
+    {% endif %}
+  </div>
+
+  <div class="cf-card cf-reveal d2" style="padding:1.2rem 1.3rem;margin-top:1rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:.8rem">
+      <div class="cf-flabel" style="margin:0">Documents</div>
+      <a href="{% url 'car_documents' v.pk %}" class="cf-btn cf-btn-ghost" style="padding:.45rem .85rem"><svg class="i"><use href="#ic-upload"/></svg>Manage</a>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:.55rem">
+      <span class="cf-chip {% if docs.rc %}ok{% else %}pend{% endif %}"><svg class="i"><use href="{% if docs.rc %}#ic-check{% else %}#ic-file{% endif %}"/></svg>RC</span>
+      <span class="cf-chip {% if docs.insurance %}ok{% else %}pend{% endif %}"><svg class="i"><use href="{% if docs.insurance %}#ic-check{% else %}#ic-file{% endif %}"/></svg>Insurance</span>
+      <span class="cf-chip {% if docs.service %}ok{% else %}pend{% endif %}"><svg class="i"><use href="{% if docs.service %}#ic-check{% else %}#ic-file{% endif %}"/></svg>Service history</span>
+      <span class="cf-chip {% if docs.noc %}ok{% else %}pend{% endif %}"><svg class="i"><use href="{% if docs.noc %}#ic-check{% else %}#ic-file{% endif %}"/></svg>NOC</span>
+    </div>
+  </div>
+
+</div></div></main>
+{% endblock %}

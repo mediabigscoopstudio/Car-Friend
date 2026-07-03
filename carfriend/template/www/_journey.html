@@ -1,0 +1,13 @@
+{% comment %}
+Server-rendered journey tracker (skill 7.7). Pass: stages (list of {label, state}
+where state is done|current|todo) and optional step_of string. carfriend-ui.js
+centers the current step on load and enables drag to peek. No auto-scroll.
+{% endcomment %}
+<div class="cf-journey">
+  <div class="cf-journey-h">{{ journey_title|default:"Your car's journey" }}{% if step_of %}<span class="step-of">{{ step_of }}</span>{% endif %}</div>
+  <div class="cf-carousel"><div class="cf-carousel-track">
+    <span class="cf-cap"><i></i><i></i><i></i></span>
+    {% for s in stages %}<span class="cf-chip-step is-{{ s.state }}">{% if s.state == 'done' %}<span class="cf-node done"><svg class="i"><use href="#ic-check"/></svg></span>{% elif s.state == 'current' %}<span class="cf-node current"><span class="core"></span></span>{% else %}<span class="cf-node todo"></span>{% endif %}<span><span class="cf-step-label">{{ s.label }}</span></span></span>{% endfor %}
+    <span class="cf-cap"><i></i><i></i><i></i></span>
+  </div></div>
+</div>

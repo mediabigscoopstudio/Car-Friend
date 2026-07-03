@@ -1,0 +1,61 @@
+{% extends "base/base_www.html" %}
+{% block title %}Documents — {{ v.display_name }} — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_seller.html" with active="cars" %}{% endblock %}
+
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="cf-focus">
+
+  <div class="cf-reveal" style="padding-top:clamp(14px,2.5vw,22px)">
+    <a href="{% url 'car_detail' v.pk %}" class="cf-btn cf-btn-ghost" style="padding:.5rem .9rem"><svg class="i" style="transform:rotate(180deg)"><use href="#ic-out"/></svg>{{ v.display_name }}</a>
+  </div>
+
+  <div class="cf-page-head cf-reveal"><h1>Documents</h1></div>
+  <p class="cf-reveal d1" style="color:var(--cf-muted);margin:0 0 1.2rem;max-width:52ch">Upload clear photos or PDFs of your car papers. These help us verify ownership and speed up your sale.</p>
+
+  <div class="cf-card cf-reveal d1" style="padding:1.3rem 1.35rem">
+    <form method="post" action="{% url 'car_documents' v.pk %}" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <div class="cf-field">
+        <label for="id_rc" style="display:flex;align-items:center;justify-content:space-between">
+          <span>RC (Registration Certificate)</span>
+          {% if docs.rc %}<a href="{{ docs.rc.url }}" target="_blank" rel="noopener" class="cf-chip ok"><svg class="i"><use href="#ic-check"/></svg>Uploaded</a>{% else %}<span class="cf-chip pend"><svg class="i"><use href="#ic-file"/></svg>Pending</span>{% endif %}
+        </label>
+        <input class="cf-input" id="id_rc" name="rc_document" type="file" accept="image/*,application/pdf">
+      </div>
+
+      <div class="cf-field">
+        <label for="id_ins" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Insurance</span>
+          {% if docs.insurance %}<a href="{{ docs.insurance.url }}" target="_blank" rel="noopener" class="cf-chip ok"><svg class="i"><use href="#ic-check"/></svg>Uploaded</a>{% else %}<span class="cf-chip pend"><svg class="i"><use href="#ic-file"/></svg>Pending</span>{% endif %}
+        </label>
+        <input class="cf-input" id="id_ins" name="insurance_document" type="file" accept="image/*,application/pdf">
+      </div>
+
+      <div class="cf-field">
+        <label for="id_svc" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Service history</span>
+          {% if docs.service %}<a href="{{ docs.service.url }}" target="_blank" rel="noopener" class="cf-chip ok"><svg class="i"><use href="#ic-check"/></svg>Uploaded</a>{% else %}<span class="cf-chip pend"><svg class="i"><use href="#ic-file"/></svg>Optional</span>{% endif %}
+        </label>
+        <input class="cf-input" id="id_svc" name="service_history" type="file" accept="image/*,application/pdf">
+      </div>
+
+      <div class="cf-field">
+        <label for="id_noc" style="display:flex;align-items:center;justify-content:space-between">
+          <span>NOC (if applicable)</span>
+          {% if docs.noc %}<a href="{{ docs.noc.url }}" target="_blank" rel="noopener" class="cf-chip ok"><svg class="i"><use href="#ic-check"/></svg>Uploaded</a>{% else %}<span class="cf-chip pend"><svg class="i"><use href="#ic-file"/></svg>Optional</span>{% endif %}
+        </label>
+        <input class="cf-input" id="id_noc" name="noc_document" type="file" accept="image/*,application/pdf">
+      </div>
+
+      <div class="cf-foot-note" style="margin:.2rem 0 1rem"><svg class="i"><use href="#ic-shield"/></svg>Only add a file for a document you want to update. Existing files stay unless replaced.</div>
+
+      <div style="display:flex;gap:.65rem">
+        <button type="submit" class="cf-btn cf-btn-primary"><svg class="i"><use href="#ic-upload"/></svg>Upload documents</button>
+        <a href="{% url 'car_detail' v.pk %}" class="cf-btn cf-btn-ghost">Done</a>
+      </div>
+    </form>
+  </div>
+
+</div></div></main>
+{% endblock %}

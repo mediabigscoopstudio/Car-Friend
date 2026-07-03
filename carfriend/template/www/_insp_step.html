@@ -1,0 +1,14 @@
+{% comment %}
+One vertical step row for the inspection tracker. Pass: label, state (done|current|todo),
+optional desc, and last=1 on the final row (drops the connector line).
+{% endcomment %}
+<div style="display:flex;gap:.85rem;align-items:stretch">
+  <div style="display:flex;flex-direction:column;align-items:center">
+    {% if state == 'done' %}<span class="cf-node done"><svg class="i"><use href="#ic-check"/></svg></span>{% elif state == 'current' %}<span class="cf-node current"><span class="core"></span></span>{% else %}<span class="cf-node todo"></span>{% endif %}
+    {% if not last %}<span style="flex:1 1 auto;width:2px;background:var(--cf-line);margin:4px 0;min-height:20px"></span>{% endif %}
+  </div>
+  <div style="{% if not last %}padding-bottom:1.1rem{% endif %};padding-top:.2rem">
+    <div class="cf-step-label" style="{% if state == 'current' %}color:var(--cf-green-deep){% elif state == 'todo' %}color:var(--cf-muted){% endif %}">{{ label }}</div>
+    {% if desc %}<div class="cf-step-sub">{{ desc }}</div>{% endif %}
+  </div>
+</div>

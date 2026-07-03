@@ -1,0 +1,62 @@
+{% extends "base/base_www.html" %}
+{% block title %}Inspection — {{ v.display_name }} — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_seller.html" with active="cars" %}{% endblock %}
+
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="cf-focus">
+
+  <div class="cf-reveal" style="padding-top:clamp(14px,2.5vw,22px)">
+    <a href="{% url 'car_detail' v.pk %}" class="cf-btn cf-btn-ghost" style="padding:.5rem .9rem"><svg class="i" style="transform:rotate(180deg)"><use href="#ic-out"/></svg>{{ v.display_name }}</a>
+  </div>
+
+  <div class="cf-page-head cf-reveal"><h1>Inspection</h1></div>
+
+  {% if approved %}
+  <article class="cf-tile cf-reveal d1">
+    <div class="cf-insp" style="padding:clamp(16px,2.3vw,22px)">
+      <div class="cf-grade"><b>{{ approved.condition_grade|default:"—" }}</b><small>GRADE</small></div>
+      <div class="cf-insp-body">
+        <div class="t">Inspection approved</div>
+        <div class="d">Certified · 300+ checkpoints{% if approved.score %} · Score {{ approved.score }}{% endif %}</div>
+      </div>
+      {% if report_url %}<a href="{{ report_url }}" target="_blank" rel="noopener" class="cf-btn cf-btn-primary" style="margin-left:auto"><svg class="i"><use href="#ic-file"/></svg>Full report</a>{% endif %}
+    </div>
+    {% if approved.est_market_value %}
+    <div class="cf-div"></div>
+    <div style="padding:clamp(14px,2vw,18px) clamp(16px,2.3vw,22px)">
+      <div class="cf-bid-l">Estimated market value</div>
+      <div class="cf-bid-v" style="color:var(--cf-green);font-size:1.4rem">₹{{ approved.est_market_value }}</div>
+    </div>
+    {% endif %}
+  </article>
+  {% endif %}
+
+  <div class="cf-card cf-reveal d1" style="padding:1.3rem 1.35rem;margin-top:1rem">
+    <div class="cf-flabel" style="margin-bottom:1rem">Inspection status</div>
+
+    {% comment %} Small 3-step tracker: Scheduled, Inspected, Approved. {% endcomment %}
+    {% if v.status == 'approved' or approved %}
+      {% include "www/_insp_step.html" with label="Scheduled" state="done" %}
+      {% include "www/_insp_step.html" with label="Inspected" state="done" %}
+      {% include "www/_insp_step.html" with label="Approved" state="current" last=1 %}
+    {% elif v.status == 'inspection_done' %}
+      {% include "www/_insp_step.html" with label="Scheduled" state="done" %}
+      {% include "www/_insp_step.html" with label="Inspected" state="current" %}
+      {% include "www/_insp_step.html" with label="Approved" state="todo" desc="Report under review" last=1 %}
+    {% elif v.status == 'inspection_scheduled' %}
+      {% include "www/_insp_step.html" with label="Scheduled" state="current" %}
+      {% include "www/_insp_step.html" with label="Inspected" state="todo" %}
+      {% include "www/_insp_step.html" with label="Approved" state="todo" last=1 %}
+    {% else %}
+      {% include "www/_insp_step.html" with label="Scheduled" state="todo" desc="We'll schedule your free home inspection" %}
+      {% include "www/_insp_step.html" with label="Inspected" state="todo" %}
+      {% include "www/_insp_step.html" with label="Approved" state="todo" last=1 %}
+    {% endif %}
+  </div>
+
+  {% if not approved %}
+  <div class="cf-foot-note cf-reveal d2" style="margin-top:.9rem"><svg class="i"><use href="#ic-shield"/></svg>The inspection is free and there is no obligation to sell.</div>
+  {% endif %}
+
+</div></div></main>
+{% endblock %}

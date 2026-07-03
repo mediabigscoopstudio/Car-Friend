@@ -1,7 +1,7 @@
 import json
 from datetime import date
 from urllib.parse import urlencode
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login as auth_login
 from django.http import JsonResponse
@@ -362,4 +362,113 @@ def sell_estimate(request):
         },
         'already_listed': not created,
         'phone': phone,
+    })
+
+
+# ── Seller car detail / inspection / documents ────────────────────────────────
+
+# The seller journey stages (mirrors the JS on the My Cars dashboard).
+SELLER_STAGES = ['Listed', 'Inspected', 'Approved', 'Auction', 'Sold']
+_STAGE_BY_STATUS = {
+    'draft': 0, 'submitted': 0, 'inspection_scheduled': 1, 'inspection_done': 1,
+    'approved': 2, 'in_auction': 3, 'sold': 4,
+}
+
+
+def _journey_stages(status):
+    """Build (stages, step_of) for the server-rendered journey partial."""
+    cur = _STAGE_BY_STATUS.get(status)   # None for 'rejected'
+    stages = []
+    for i, label in enumerate(SELLER_STAGES):
+        if cur is not None and i < cur:
+            state = 'done'
+        elif i == cur:
+            state = 'current'
+        else:
+            state = 'todo'
+        stages.append({'label': label, 'state': state})
+    step_of = None if cur is None else f'Step {cur + 1} of {len(SELLER_STAGES)}'
+    return stages, step_of
+
+
+def _seller_vehicle_or_404(request, pk):
+    return get_object_or_404(Vehicle, pk=pk, seller=request.user)
+
+
+@login_required(login_url='/auth/login/')
+def car_detail(request, pk):
+    from django.utils import timezone
+    from inspections.models import InspectionReport
+    from auctions.models import Auction
+    from deals.models import Deal
+
+    v = _seller_vehicle_or_404(request, pk)
+
+    report = (InspectionReport.objects.filter(visit__vehicle=v, decision='approved')
+              .select_related('visit').order_by('-id').first())
+    report_url = report.pdf.url if report and report.pdf else None
+
+    now = timezone.now()
+    auctions = list(Auction.objects.filter(vehicle=v).order_by('-id'))
+    live_auction = next((a for a in auctions
+                         if a.status == 'live' and a.start_at <= now < a.end_at), None)
+    latest_auction = auctions[0] if auctions else None
+    decidable_auction = next((a for a in auctions
+                              if a.status in ('closed', 'reauction', 'completed')), None)
+    deal = Deal.objects.filter(vehicle=v, seller=request.user).order_by('-id').first()
+
+    stages, step_of = _journey_stages(v.status)
+    return render(request, 'www/vehicles/car_detail.html', {
+        'v': v,
+        'report': report,
+        'report_url': report_url,
+        'kyc_ok': request.user.is_kyc_done,
+        'live_auction': live_auction,
+        'latest_auction': latest_auction,
+        'decidable_auction': decidable_auction,
+        'deal': deal,
+        'stages': stages,
+        'step_of': step_of,
+        'docs': {
+            'rc': bool(v.rc_document), 'insurance': bool(v.insurance_document),
+            'service': bool(v.service_history), 'noc': bool(v.noc_document),
+        },
+    })
+
+
+@login_required(login_url='/auth/login/')
+def car_inspection(request, pk):
+    from inspections.models import InspectionReport
+
+    v = _seller_vehicle_or_404(request, pk)
+    report = (InspectionReport.objects.filter(visit__vehicle=v)
+              .select_related('visit').order_by('-id').first())
+    approved = report if (report and report.decision == 'approved') else None
+    report_url = approved.pdf.url if approved and approved.pdf else None
+    stages, step_of = _journey_stages(v.status)
+    return render(request, 'www/vehicles/inspection.html', {
+        'v': v, 'report': report, 'approved': approved, 'report_url': report_url,
+        'stages': stages, 'step_of': step_of,
+    })
+
+
+@login_required(login_url='/auth/login/')
+def car_documents(request, pk):
+    v = _seller_vehicle_or_404(request, pk)
+    if request.method == 'POST':
+        changed = []
+        for field in ['rc_document', 'insurance_document', 'service_history', 'noc_document']:
+            f = request.FILES.get(field)
+            if f:
+                setattr(v, field, f)
+                changed.append(field)
+        if changed:
+            v.save(update_fields=changed + ['updated_at'])
+        return redirect('car_documents', pk=v.pk)
+    return render(request, 'www/vehicles/documents.html', {
+        'v': v,
+        'docs': {
+            'rc': v.rc_document or None, 'insurance': v.insurance_document or None,
+            'service': v.service_history or None, 'noc': v.noc_document or None,
+        },
     })
