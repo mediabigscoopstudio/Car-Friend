@@ -30,8 +30,13 @@ load_dotenv(BASE_DIR / ".env")
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config("SECRET_KEY", default="django-insecure-ll@5=mw0mx%0rx92ed$4^3_u6)rr9ea+h@uo)+r^%h@d0^lhln")
-DEBUG      = config("DEBUG", default=True, cast=bool)
+# Required from the environment (.env on the VPS). No checked-in fallback — if
+# DJANGO_SECRET_KEY is unset the app refuses to start (by design; set it first).
+SECRET_KEY = config("DJANGO_SECRET_KEY")
+# Off by default so a fresh deploy is production-safe. One-var toggle: set
+# DJANGO_DEBUG=true in the VPS .env to flip it back instantly (no redeploy).
+DEBUG      = config("DJANGO_DEBUG", default=False, cast=bool)
+# Wildcards cover the django-hosts subdomains (www/master/teams/inspection/api).
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default=".localhost,.carfriend.in,localhost,127.0.0.1").split(",")
 # When True, the public www surface serves a maintenance page (staff hosts stay
 # up). Default False so deploying this never takes the live site down — flip it
@@ -247,11 +252,6 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880             # 5 MB → spool to disk past 
 CARFRIEND_LOGO_PATH = BASE_DIR / "static" / "images" / "carfriend-plate-logo.png"
 
 # Third-party integration keys (never hard-code real values)
-DIGIO = {
-    "BASE_URL": os.environ.get("DIGIO_BASE_URL", ""),
-    "CLIENT_ID": os.environ.get("DIGIO_CLIENT_ID", ""),
-    "CLIENT_SECRET": os.environ.get("DIGIO_CLIENT_SECRET", ""),
-}
 FCM_SERVER_KEY = os.environ.get("FCM_SERVER_KEY", "")
 WHATSAPP = {"TOKEN": os.environ.get("WA_TOKEN", ""), "PHONE_ID": os.environ.get("WA_PHONE_ID", "")}
 SMS = {"API_KEY": os.environ.get("SMS_API_KEY", ""), "SENDER": os.environ.get("SMS_SENDER", "CARFRD")}

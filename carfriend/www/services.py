@@ -11,9 +11,8 @@ Security notes:
   responsible for masking the owner name before sending anything to the client
   and for keeping the full record server-side only.
 
-NOTE: there is TEMPORARY debug logging of the Surepass status + body in
-_call_surepass_rc (marked "[TEMP surepass]"). Remove it once the lookup is
-verified in production — the body can contain owner PII.
+NOTE: Surepass response bodies are never logged — they can contain owner PII.
+Only non-identifying status codes and error reasons are logged.
 """
 
 import datetime
@@ -141,20 +140,20 @@ def _call_surepass_rc(plate_number):
             raw = exc.read().decode("utf-8", errors="replace")
         except Exception:
             raw = ""
-        # TEMP debug logging — remove once verified (body may contain PII).
-        logger.warning("[TEMP surepass] id_number=%s status=%s body=%s", plate_number, exc.code, raw[:2000])
+        # Never log id_number or the response body — both can carry PII.
+        logger.warning("Surepass RC HTTP error: status=%s", exc.code)
         if exc.code in (404, 422):
             raise SurepassNotFound("No vehicle found for that number plate.") from None
         raise SurepassError("RC lookup failed. Please try again.") from None
     except (socket.timeout, TimeoutError):
-        logger.warning("[TEMP surepass] id_number=%s status=timeout after %ss", plate_number, TIMEOUT_SECONDS)
+        logger.warning("Surepass RC timed out after %ss", TIMEOUT_SECONDS)
         raise SurepassTimeout("RC lookup timed out.") from None
     except urllib.error.URLError as exc:
-        logger.warning("[TEMP surepass] id_number=%s status=urlerror body=%s", plate_number, exc.reason)
+        logger.warning("Surepass RC connection error: %s", exc.reason)
         raise SurepassTimeout("Could not reach the RC service.") from None
 
-    # TEMP debug logging — remove once verified (body may contain PII).
-    logger.warning("[TEMP surepass] id_number=%s status=%s body=%s", plate_number, status, raw[:2000])
+    # Response body intentionally NOT logged — it contains owner PII.
+    logger.info("Surepass RC response: status=%s", status)
 
     try:
         payload = json.loads(raw)
@@ -252,8 +251,8 @@ def estimate_price_band(make, model, year, fuel):
 
 # ── Seller KYC: PAN + Aadhaar (Surepass) ─────────────────────────────────────
 # Reuses the same plumbing as the RC lookup: SUREPASS_TOKEN from env, sandbox
-# base URL. [TEMP kyc] logging mirrors [TEMP surepass] so the sandbox response
-# shapes can be confirmed and the parsing adjusted, then the logging removed.
+# base URL. Response bodies are never logged (they carry PAN/Aadhaar PII);
+# only status codes and error reasons are.
 
 PAN_ENDPOINT = "/api/v1/pan/pan-comprehensive"
 DIGILOCKER_INIT_ENDPOINT = "/api/v1/digilocker/initialize"
@@ -263,7 +262,8 @@ DIGILOCKER_AADHAAR_ENDPOINT = "/api/v1/digilocker/download-aadhaar"
 def _call_surepass(path, payload=None, tag="kyc", method="POST", timeout=None):
     """Generic Surepass call. Returns (status_code, parsed_json_dict).
 
-    Raises a SurepassError subclass on any failure. TEMP-logs status + body.
+    Raises a SurepassError subclass on any failure. Never logs the response
+    body (it can contain PAN/Aadhaar PII); only status codes / error reasons.
     """
     token = config("SUREPASS_TOKEN", default="")
     if not token:
@@ -290,22 +290,21 @@ def _call_surepass(path, payload=None, tag="kyc", method="POST", timeout=None):
             raw = exc.read().decode("utf-8", errors="replace")
         except Exception:
             raw = ""
-        # TEMP debug logging — remove once verified (body may contain PII).
-        logger.warning("[TEMP %s] status=%s body=%s", tag, exc.code, raw[:2000])
+        # Never log the response body — PAN/Aadhaar/challan responses carry PII.
+        logger.warning("Surepass %s HTTP error: status=%s", tag, exc.code)
         if exc.code in (401, 403):
             raise SurepassConfigError("Verification auth failed.") from None
         if exc.code in (404, 422):
             raise SurepassNotFound("No matching record found.") from None
         raise SurepassError("Verification failed. Please try again.") from None
     except (socket.timeout, TimeoutError):
-        logger.warning("[TEMP %s] status=timeout after %ss", tag, timeout)
+        logger.warning("Surepass %s timed out after %ss", tag, timeout)
         raise SurepassTimeout("Verification timed out.") from None
     except urllib.error.URLError as exc:
-        logger.warning("[TEMP %s] status=urlerror body=%s", tag, exc.reason)
+        logger.warning("Surepass %s connection error: %s", tag, exc.reason)
         raise SurepassTimeout("Could not reach the verification service.") from None
 
-    # TEMP debug logging — remove once verified (body may contain PII).
-    logger.warning("[TEMP %s] status=%s body=%s", tag, status, raw[:2000])
+    # Response body intentionally NOT logged — it contains PAN/Aadhaar PII.
 
     try:
         return status, json.loads(raw)
@@ -381,8 +380,8 @@ def digilocker_fetch_aadhaar(client_id):
 # Reuses the same auth/client (_call_surepass, SUREPASS_TOKEN, SUREPASS_BASE).
 # Surepass challan endpoint path + response field names must be confirmed from
 # console.surepass.app; the parser below is defensive (tries the common field
-# names) and the [TEMP challan] log prints the raw body once so the mapping can
-# be verified/adjusted against the live response, then the logging removed.
+# names). The raw response body is never logged (it may contain PII); only the
+# status code is.
 CHALLAN_ENDPOINT = "/api/v1/challan/challan"
 CHALLAN_TIMEOUT = 15  # challan lookups are slower than RC
 
