@@ -1,0 +1,41 @@
+{% extends "base/base_www.html" %}
+{% block title %}One Click Buy — {{ vehicle.display_name }} — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_seller.html" with active="cars" %}{% endblock %}
+
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="cf-focus">
+
+  <div class="cf-reveal" style="padding-top:clamp(14px,2.5vw,22px)">
+    <a href="{% url 'car_detail' vehicle.pk %}" class="cf-btn cf-btn-ghost" style="padding:.5rem .9rem"><svg class="i" style="transform:rotate(180deg)"><use href="#ic-out"/></svg>{{ vehicle.display_name }}</a>
+  </div>
+
+  <div class="cf-page-head cf-reveal"><h1>One Click Buy</h1></div>
+
+  {% if ocb %}
+  <article class="cf-card cf-reveal d1" style="padding:1.4rem 1.4rem">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem">
+      <div>
+        <div class="cf-bid-l">Offer price</div>
+        <div class="cf-bid-v" style="color:var(--cf-green);font-size:2rem">{% if ocb_price_fmt %}₹{{ ocb_price_fmt }}{% else %}Being finalised{% endif %}</div>
+      </div>
+      {% if ocb_status %}<span class="cf-chip"><svg class="i" style="stroke:var(--cf-green-bright)"><use href="#ic-bolt"/></svg>{{ ocb_status }}</span>{% endif %}
+    </div>
+    <div class="cf-foot-note" style="margin-top:.9rem"><svg class="i"><use href="#ic-shield"/></svg>Your Sales Associate is negotiating the best price with verified dealers. We'll notify you when it's ready to sign.</div>
+
+    {% if ocb_signable and deal %}
+    <div style="margin-top:1rem">
+      <a href="{% url 'deal_agreement' deal.pk %}" class="cf-btn cf-btn-primary"><svg class="i"><use href="#ic-file"/></svg>Review &amp; sign agreement</a>
+    </div>
+    {% endif %}
+  </article>
+  {% else %}
+  <div class="cf-empty cf-reveal d1">
+    <div class="ic"><svg class="i"><use href="#ic-bolt"/></svg></div>
+    <h3>No One Click Buy yet</h3>
+    <p>If your car moves to a One Click Buy offer after the auction, its price and status will appear here.</p>
+    <a href="{% url 'car_detail' vehicle.pk %}" class="cf-btn cf-btn-primary"><svg class="i"><use href="#ic-car"/></svg>Back to your car</a>
+  </div>
+  {% endif %}
+
+</div></div></main>
+{% endblock %}

@@ -97,6 +97,71 @@ def seller_decision(request, auction_id):
     return JsonResponse({"error": "invalid action"}, status=400)
 
 
+# ── Seller-facing auction result / decision + OCB (read-only) ─────────────────
+
+@login_required(login_url="/auth/login/")
+def seller_auction_result(request, auction_id):
+    """Post-auction decision surface for the seller: shows the highest bid and the
+    net payout, and offers Accept / Counter / Re-auction — which POST to the
+    existing seller_decision endpoint. Read-only once a decision is recorded."""
+    from .models import SellerDecision, OCBListing
+    from .utils import auto_close_expired_auctions
+    auto_close_expired_auctions()
+
+    auction = get_object_or_404(Auction.objects.select_related("vehicle"), id=auction_id)
+    vehicle = auction.vehicle
+    if vehicle.seller_id != request.user.id:
+        return redirect("/auth/seller/dashboard/")
+
+    hb = auction.highest_bid
+    decision = auction.seller_decisions.order_by("-id").first()
+    ocb = OCBListing.objects.filter(auction=auction).order_by("-id").first()
+    awaiting = auction.status in ("closed", "reauction") and decision is None
+
+    return render(request, "www/auctions/seller_result.html", {
+        "auction":      auction,
+        "vehicle":      vehicle,
+        "highest_bid":  hb,
+        "highest_fmt":  f"{hb.amount:,}" if hb else None,
+        "net_fmt":      f"{int(hb.amount * 0.98):,}" if hb else None,
+        "fee_fmt":      f"{int(hb.amount * 0.02):,}" if hb else None,
+        "reserve_fmt":  f"{auction.reserve_price:,}",
+        "expected_fmt": f"{int(vehicle.expected_price):,}" if vehicle.expected_price else None,
+        "bid_count":    auction.bids.filter(is_voided=False).count(),
+        "decision":     decision,
+        "counter_fmt":  f"{decision.counter_price:,}" if decision and decision.counter_price else None,
+        "ocb":          ocb,
+        "ocb_status":   ocb.get_status_display() if ocb else None,
+        "awaiting":     awaiting,
+    })
+
+
+@login_required(login_url="/auth/login/")
+def seller_ocb(request, auction_id):
+    """Read-only post-auction One Click Buy status for the seller. The OCB pipeline
+    itself is driven internally; the seller sees the price + status and, when the
+    agreement is ready, a link to sign it."""
+    from .models import OCBListing
+    from deals.models import Deal
+
+    auction = get_object_or_404(Auction.objects.select_related("vehicle"), id=auction_id)
+    vehicle = auction.vehicle
+    if vehicle.seller_id != request.user.id:
+        return redirect("/auth/seller/dashboard/")
+
+    ocb = OCBListing.objects.filter(auction=auction).order_by("-id").first()
+    deal = Deal.objects.filter(vehicle=vehicle, seller=request.user).order_by("-id").first()
+    return render(request, "www/auctions/seller_ocb.html", {
+        "auction":       auction,
+        "vehicle":       vehicle,
+        "ocb":           ocb,
+        "ocb_status":    ocb.get_status_display() if ocb else None,
+        "ocb_price_fmt": f"{int(ocb.ocb_price):,}" if ocb and ocb.ocb_price else None,
+        "ocb_signable":  bool(ocb and ocb.status in ("winner_accepted", "seller_accepted", "agreement")),
+        "deal":          deal,
+    })
+
+
 @admin_required
 def auctions_overview(request):
     auctions = Auction.objects.select_related("vehicle").prefetch_related("bids")

@@ -1,0 +1,89 @@
+{% extends "base/base_www.html" %}
+{% block title %}Auction result — {{ vehicle.display_name }} — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_seller.html" with active="cars" %}{% endblock %}
+
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="cf-focus">
+
+  <div class="cf-reveal" style="padding-top:clamp(14px,2.5vw,22px)">
+    <a href="{% url 'car_detail' vehicle.pk %}" class="cf-btn cf-btn-ghost" style="padding:.5rem .9rem"><svg class="i" style="transform:rotate(180deg)"><use href="#ic-out"/></svg>{{ vehicle.display_name }}</a>
+  </div>
+
+  <div class="cf-page-head cf-reveal"><h1>Auction result</h1></div>
+
+  {% csrf_token %}
+
+  <article class="cf-card cf-reveal d1" style="padding:1.4rem 1.4rem">
+    <div class="cf-bid-l">Highest bid received</div>
+    {% if highest_bid %}
+      <div class="cf-bid-v" style="color:var(--cf-green);font-size:2rem">₹{{ highest_fmt }}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:.4rem 1.4rem;margin-top:.7rem;color:var(--cf-muted);font-size:.86rem">
+        <span>You receive <b style="color:var(--cf-ink)">₹{{ net_fmt }}</b> after a 2% fee (₹{{ fee_fmt }})</span>
+        <span>{{ bid_count }} bid{{ bid_count|pluralize }}</span>
+        {% if expected_fmt %}<span>Your expected: ₹{{ expected_fmt }}</span>{% endif %}
+      </div>
+    {% else %}
+      <div class="cf-bid-v" style="font-size:1.3rem;color:var(--cf-muted)">No bids received</div>
+      <div class="cf-foot-note" style="margin-top:.5rem"><svg class="i"><use href="#ic-warn"/></svg>This auction closed without any bids. You can request a re-auction below.</div>
+    {% endif %}
+  </article>
+
+  {% if awaiting %}
+  <div class="cf-card cf-reveal d1" style="padding:1.3rem 1.4rem;margin-top:1rem">
+    <div class="cf-flabel" style="margin-bottom:.9rem">Your decision</div>
+    {% if highest_bid %}
+    <div class="cf-sale-btns">
+      <button type="button" class="cf-btn cf-btn-primary" onclick="cfDecision('accept')"><svg class="i"><use href="#ic-check"/></svg>Accept bid</button>
+      <button type="button" class="cf-btn cf-btn-ghost" onclick="cfToggleCounter()">Counter</button>
+      <button type="button" class="cf-btn cf-btn-ghost" onclick="cfDecision('reauction')">Re-auction</button>
+    </div>
+    <div id="counterBox" style="display:none;margin-top:.9rem">
+      <div class="cf-field" style="margin:0"><label for="counterVal">Your counter price</label><input type="text" inputmode="numeric" id="counterVal" class="cf-input" placeholder="₹ amount"></div>
+      <button type="button" class="cf-btn cf-btn-primary" style="margin-top:.6rem" onclick="cfSubmitCounter()"><svg class="i"><use href="#ic-tag"/></svg>Send counter</button>
+    </div>
+    <div class="cf-foot-note" style="margin-top:.9rem"><svg class="i"><use href="#ic-shield"/></svg>Accepting hands the sale to your Sales Associate. A counter or re-auction keeps you in control.</div>
+    {% else %}
+    <div class="cf-sale-btns">
+      <button type="button" class="cf-btn cf-btn-primary" onclick="cfDecision('reauction')"><svg class="i"><use href="#ic-broadcast"/></svg>Request re-auction</button>
+    </div>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="cf-card cf-reveal d1" style="padding:1.3rem 1.4rem;margin-top:1rem">
+    {% if decision %}
+      <span class="cf-status"><svg class="i"><use href="#ic-check"/></svg>{{ decision.get_decision_display }}</span>
+      <div class="cf-foot-note" style="margin-top:.7rem"><svg class="i"><use href="#ic-check"/></svg>
+        {% if decision.decision == 'accept' %}Bid accepted. Your Sales Associate is preparing the offer{% if ocb_status %} ({{ ocb_status }}){% endif %}.
+        {% elif decision.decision == 'counter' %}Counter of ₹{{ counter_fmt }} sent. We'll let you know the response.
+        {% else %}Re-auction requested. It goes live again once an admin approves.{% endif %}</div>
+      {% if ocb %}<div style="margin-top:.9rem"><a href="{% url 'seller_ocb' auction.id %}" class="cf-btn cf-btn-ghost"><svg class="i"><use href="#ic-bolt"/></svg>View One Click Buy status</a></div>{% endif %}
+    {% else %}
+      <div class="cf-foot-note"><svg class="i"><use href="#ic-clock"/></svg>This auction is not awaiting a decision right now.</div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div></div></main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function cfCsrf() { var t = document.querySelector('[name=csrfmiddlewaretoken]'); return t ? t.value : ''; }
+function cfToggleCounter() { var el = document.getElementById('counterBox'); if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
+function cfDecision(action, extra) {
+  if (action === 'accept' && !confirm('Accept the highest bid?')) return;
+  if (action === 'reauction' && !confirm('Request a re-auction for this car?')) return;
+  fetch('{% url "seller_decision" auction.id %}', { method: 'POST',
+    headers: { 'X-CSRFToken': cfCsrf(), 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'action=' + action + (extra ? '&' + extra : '') })
+    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+    .then(function (res) { if (res.ok) location.reload(); else alert((res.d && res.d.error) || 'Something went wrong.'); })
+    .catch(function () { alert('Network error — please try again.'); });
+}
+function cfSubmitCounter() {
+  var v = document.getElementById('counterVal');
+  if (!v || !v.value.trim()) { alert('Enter a counter price.'); return; }
+  cfDecision('counter', 'counter_price=' + encodeURIComponent(v.value));
+}
+</script>
+{% endblock %}
