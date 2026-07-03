@@ -1,0 +1,55 @@
+{% extends "base/base_www.html" %}
+{% block title %}Notifications — Car Friend{% endblock %}
+{% block nav %}{% if request.user.is_dealer %}{% include "www/_nav_dealer.html" %}{% else %}{% include "www/_nav_seller.html" %}{% endif %}{% endblock %}
+
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="cf-focus">
+
+  <div class="cf-page-head cf-reveal">
+    <h1>Notifications {% if unread %}<span class="count">{{ unread }} new</span>{% endif %}</h1>
+    {% if unread %}
+    <form method="post" action="{% url 'notifications_read_all' %}" style="margin:0">
+      {% csrf_token %}
+      <button type="submit" class="cf-btn cf-btn-ghost" style="padding:.55rem 1rem"><svg class="i"><use href="#ic-check"/></svg>Mark all read</button>
+    </form>
+    {% endif %}
+  </div>
+
+  {% if notes %}
+  <div class="d-flex flex-column cf-reveal d1" style="gap:.65rem">
+    {% for n in notes %}
+    <a href="{% url 'notification_open' n.pk %}" class="cf-card" style="padding:.95rem 1.1rem;text-decoration:none;color:inherit;display:flex;gap:.85rem;align-items:flex-start;{% if not n.is_read %}border-color:var(--cf-green-200);background:var(--cf-green-050){% endif %}">
+      <span class="cf-warn-ic" style="width:40px;height:40px;background:{% if n.is_read %}var(--cf-green-050){% else %}#fff{% endif %};border-color:var(--cf-green-100);color:var(--cf-green-bright)">
+        <svg class="i">
+          {% if n.event == 'auction_start' %}<use href="#ic-broadcast"/>
+          {% elif n.event == 'bid_update' %}<use href="#ic-bolt"/>
+          {% elif n.event == 'deal_confirmed' %}<use href="#ic-check"/>
+          {% elif n.event == 'doc_pending' %}<use href="#ic-file"/>
+          {% elif n.event == 'kyc_result' %}<use href="#ic-shield"/>
+          {% elif n.event == 'payment_ok' %}<use href="#ic-wallet"/>
+          {% elif n.event == 'insp_assigned' or n.event == 'insp_decision' %}<use href="#ic-gauge"/>
+          {% else %}<use href="#ic-bell"/>{% endif %}
+        </svg>
+      </span>
+      <div style="flex:1 1 auto;min-width:0">
+        <div style="display:flex;justify-content:space-between;gap:.6rem;align-items:baseline">
+          <span style="font-weight:800;letter-spacing:-.01em">{{ n.title }}</span>
+          <span style="color:var(--cf-muted);font-size:.74rem;white-space:nowrap">{{ n.created_at|date:"d M, g:i A" }}</span>
+        </div>
+        {% if n.body %}<div style="color:var(--cf-ink-soft);font-size:.88rem;line-height:1.45;margin-top:.15rem">{{ n.body }}</div>{% endif %}
+      </div>
+      {% if not n.is_read %}<span class="cf-dot" style="position:static;box-shadow:none;margin-top:.4rem"></span>{% endif %}
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="cf-empty cf-reveal d1">
+    <div class="ic"><svg class="i"><use href="#ic-bell"/></svg></div>
+    <h3>You're all caught up</h3>
+    <p>Updates about your inspection, auction, offers and payout will show up here.</p>
+    <a href="{% url 'seller_dashboard' %}" class="cf-btn cf-btn-primary"><svg class="i"><use href="#ic-car"/></svg>Go to My Cars</a>
+  </div>
+  {% endif %}
+
+</div></div></main>
+{% endblock %}
