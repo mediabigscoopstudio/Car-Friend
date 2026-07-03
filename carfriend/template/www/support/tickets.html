@@ -1,6 +1,6 @@
 {% extends "base/base_www.html" %}
 {% block title %}My tickets — Car Friend{% endblock %}
-{% block nav %}{% include "www/_nav_seller.html" with active="support" %}{% endblock %}
+{% block nav %}{% if request.user.is_dealer %}{% include "www/_nav_dealer.html" with active="support" %}{% else %}{% include "www/_nav_seller.html" with active="support" %}{% endif %}{% endblock %}
 
 {% block body %}
 <main class="cf-main"><div class="cf-container"><div class="cf-focus">
