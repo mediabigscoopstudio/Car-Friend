@@ -1,6 +1,8 @@
-{# Dealer dashboard nav. Usage: {% include "www/_nav_dealer.html" with active="auctions" %}
-   active ∈ auctions | ocb | bids | support | profile. Support/Profile/Notifications
-   routes are pending backend (flagged). "My Bids" interim → dealer_dashboard. #}
+{% comment %}
+Dealer dashboard nav. Include this partial with active set to one of: auctions,
+ocb, bids, support, or profile. Support / Profile / Notifications routes are
+pending backend (flagged). My Bids points at the dealer dashboard for now.
+{% endcomment %}
 <header class="cf-topbar d-none d-lg-block">
   <div class="cf-container"><div class="cf-topbar-inner">
     <a class="cf-logo" href="{% url 'dealer_auction_list' %}"><span class="cf-logo-mark"><svg class="i"><use href="#ic-car"/></svg></span><span class="cf-logo-name">Car<span>Friend</span></span></a>

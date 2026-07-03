@@ -1,6 +1,8 @@
-{# Seller dashboard nav. Usage: {% include "www/_nav_seller.html" with active="cars" %}
-   active ∈ cars | support | profile. Support/Profile/Notifications routes are
-   pending backend (flagged) — links point at their intended paths. #}
+{% comment %}
+Seller dashboard nav. Include this partial with active set to one of: cars,
+support, or profile. Support / Profile / Notifications routes are pending backend
+(flagged); their links point at the intended paths for now.
+{% endcomment %}
 <header class="cf-topbar d-none d-lg-block">
   <div class="cf-container"><div class="cf-topbar-inner">
     <a class="cf-logo" href="{% url 'seller_dashboard' %}"><span class="cf-logo-mark"><svg class="i"><use href="#ic-car"/></svg></span><span class="cf-logo-name">Car<span>Friend</span></span></a>
