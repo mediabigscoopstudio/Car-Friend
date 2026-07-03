@@ -1,0 +1,47 @@
+{% extends "base/base_www.html" %}
+{% block title %}Edit profile — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_seller.html" with active="profile" %}{% endblock %}
+
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="cf-focus">
+
+  <div class="cf-reveal" style="padding-top:clamp(14px,2.5vw,22px)">
+    <a href="{% url 'profile' %}" class="cf-btn cf-btn-ghost" style="padding:.5rem .9rem"><svg class="i" style="transform:rotate(180deg)"><use href="#ic-out"/></svg>Profile</a>
+  </div>
+
+  <div class="cf-page-head cf-reveal"><h1>Edit profile</h1></div>
+
+  <div class="cf-card cf-reveal d1" style="padding:1.3rem 1.35rem">
+    <form method="post" action="{% url 'profile_edit' %}">
+      {% csrf_token %}
+      <div class="d-flex" style="gap:.9rem;flex-wrap:wrap">
+        <div class="cf-field" style="flex:1 1 200px">
+          <label for="id_first">First name</label>
+          <input class="cf-input" id="id_first" name="first_name" type="text" maxlength="150" value="{{ request.user.first_name }}">
+        </div>
+        <div class="cf-field" style="flex:1 1 200px">
+          <label for="id_last">Last name</label>
+          <input class="cf-input" id="id_last" name="last_name" type="text" maxlength="150" value="{{ request.user.last_name }}">
+        </div>
+      </div>
+      <div class="cf-field">
+        <label for="id_phone">Phone</label>
+        <input class="cf-input" id="id_phone" name="phone" type="tel" maxlength="20" value="{{ request.user.phone }}" placeholder="10-digit mobile">
+      </div>
+      <div class="cf-field">
+        <label for="id_city">City</label>
+        <input class="cf-input" id="id_city" name="city" type="text" maxlength="120" value="{{ request.user.city }}">
+      </div>
+      <div class="cf-field">
+        <label for="id_addr">Address</label>
+        <textarea class="cf-input" id="id_addr" name="address" rows="3" placeholder="Where the car and documents are">{{ sp.address }}</textarea>
+      </div>
+      <div style="display:flex;gap:.65rem;margin-top:.3rem">
+        <button type="submit" class="cf-btn cf-btn-primary"><svg class="i"><use href="#ic-check"/></svg>Save details</button>
+        <a href="{% url 'profile' %}" class="cf-btn cf-btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+</div></div></main>
+{% endblock %}

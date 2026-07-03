@@ -1,0 +1,70 @@
+{% extends "base/base_www.html" %}
+{% block title %}Profile — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_seller.html" with active="profile" %}{% endblock %}
+
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="cf-focus">
+
+  <div class="cf-page-head cf-reveal">
+    <h1>Profile</h1>
+    <a href="{% url 'logout' %}" class="cf-btn cf-btn-ghost" style="padding:.55rem 1rem"><svg class="i"><use href="#ic-out"/></svg>Log out</a>
+  </div>
+
+  <div class="cf-card cf-reveal d1" style="padding:1.3rem 1.35rem;margin-bottom:1rem">
+    <div style="display:flex;gap:1rem;align-items:center">
+      <div class="cf-logo-mark" style="width:52px;height:52px;border-radius:15px"><svg class="i" style="width:26px;height:26px"><use href="#ic-user"/></svg></div>
+      <div style="flex:1 1 auto;min-width:0">
+        <div style="font-weight:800;font-size:1.15rem;letter-spacing:-.01em">{{ request.user.get_full_name|default:request.user.email|default:"Your account" }}</div>
+        <div style="color:var(--cf-muted);font-size:.86rem">{{ request.user.email }}{% if request.user.phone %} · {{ request.user.phone }}{% endif %}</div>
+      </div>
+      <a href="{% url 'profile_edit' %}" class="cf-btn cf-btn-ghost">Edit</a>
+    </div>
+  </div>
+
+  <div class="cf-card cf-reveal d1" style="padding:1.2rem 1.3rem;margin-bottom:1rem">
+    <div style="display:flex;align-items:center;gap:1rem">
+      <div class="cf-warn-ic" style="background:var(--cf-green-050);border-color:var(--cf-green-100);color:var(--cf-green-bright)"><svg class="i"><use href="#ic-shield"/></svg></div>
+      <div style="flex:1 1 auto;min-width:0">
+        <div style="font-weight:800;font-size:1.02rem">Verification</div>
+        <div style="margin-top:.3rem">
+          {% if kyc_status == 'verified' %}
+            <span class="cf-status"><svg class="i"><use href="#ic-check"/></svg>Verified</span>
+          {% elif kyc_status == 'failed' %}
+            <span class="cf-chip pend"><svg class="i"><use href="#ic-warn"/></svg>Needs attention</span>
+          {% else %}
+            <span class="cf-chip pend"><svg class="i"><use href="#ic-clock"/></svg>Aadhaar &amp; PAN pending</span>
+          {% endif %}
+        </div>
+      </div>
+      <a href="/kyc/" class="cf-btn {% if kyc_status == 'verified' %}cf-btn-ghost{% else %}cf-btn-primary{% endif %}">{% if kyc_status == 'verified' %}View{% else %}Verify{% endif %}</a>
+    </div>
+  </div>
+
+  <div class="cf-card cf-reveal d2" style="padding:1.2rem 1.3rem;margin-bottom:1rem">
+    <div style="display:flex;align-items:center;gap:1rem">
+      <div class="cf-warn-ic" style="background:var(--cf-green-050);border-color:var(--cf-green-100);color:var(--cf-green-bright)"><svg class="i"><use href="#ic-wallet"/></svg></div>
+      <div style="flex:1 1 auto;min-width:0">
+        <div style="font-weight:800;font-size:1.02rem">Payout details</div>
+        <div style="color:var(--cf-muted);font-size:.86rem;margin-top:.15rem">
+          {% if sp.has_payout %}{% if sp.upi_id %}UPI {{ sp.upi_id }}{% else %}{{ sp.bank_name|default:"Bank" }} ••••{{ sp.bank_account_number|slice:"-4:" }}{% endif %}{% else %}Add where we should pay you.{% endif %}
+        </div>
+      </div>
+      <a href="{% url 'profile_payout' %}" class="cf-btn cf-btn-ghost">{% if sp.has_payout %}Edit{% else %}Add{% endif %}</a>
+    </div>
+  </div>
+
+  <div class="cf-card cf-reveal d2" style="padding:1.2rem 1.3rem">
+    <div style="display:flex;align-items:center;gap:1rem">
+      <div class="cf-warn-ic" style="background:var(--cf-green-050);border-color:var(--cf-green-100);color:var(--cf-green-bright)"><svg class="i"><use href="#ic-bell"/></svg></div>
+      <div style="flex:1 1 auto;min-width:0">
+        <div style="font-weight:800;font-size:1.02rem">Notifications</div>
+        <div style="color:var(--cf-muted);font-size:.86rem;margin-top:.15rem">
+          {% if sp.notify_whatsapp %}WhatsApp · {% endif %}{% if sp.notify_sms %}SMS · {% endif %}{% if sp.notify_email %}Email · {% endif %}{% if sp.notify_push %}Push{% endif %}{% if not sp.notify_whatsapp and not sp.notify_sms and not sp.notify_email and not sp.notify_push %}All channels off{% endif %}
+        </div>
+      </div>
+      <a href="{% url 'profile_notifications' %}" class="cf-btn cf-btn-ghost">Manage</a>
+    </div>
+  </div>
+
+</div></div></main>
+{% endblock %}

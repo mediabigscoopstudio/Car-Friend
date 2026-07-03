@@ -99,10 +99,25 @@ class SellerProfile(models.Model):
     city       = models.CharField(max_length=120, blank=True)
     address    = models.TextField(blank=True)
     kyc_done   = models.BooleanField(default=False)
+    # Payout details (bank / UPI) — where the seller is paid after a closed deal.
+    bank_account_name   = models.CharField(max_length=150, blank=True)
+    bank_account_number = models.CharField(max_length=34, blank=True)
+    bank_ifsc           = models.CharField(max_length=15, blank=True)
+    bank_name           = models.CharField(max_length=120, blank=True)
+    upi_id              = models.CharField(max_length=64, blank=True)
+    # Notification channel preferences.
+    notify_whatsapp = models.BooleanField(default=True)
+    notify_sms      = models.BooleanField(default=True)
+    notify_email    = models.BooleanField(default=True)
+    notify_push     = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self): return f"Seller · {self.user}"
+
+    @property
+    def has_payout(self):
+        return bool(self.bank_account_number or self.upi_id)
 
 
 class DealerProfile(models.Model):

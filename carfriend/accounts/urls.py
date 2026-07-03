@@ -13,4 +13,9 @@ urlpatterns = [
     path("dealer/dashboard/", views.dealer_dashboard,   name="dealer_dashboard"),
     path("dealer/onboard/",   views.dealer_onboard,    name="dealer_onboard"),
     path("switch-role/",      views.switch_role,       name="switch_role"),
+    # Seller profile / account
+    path("profile/",               views.profile,               name="profile"),
+    path("profile/edit/",          views.profile_edit,          name="profile_edit"),
+    path("profile/payout/",        views.profile_payout,        name="profile_payout"),
+    path("profile/notifications/", views.profile_notifications, name="profile_notifications"),
 ]

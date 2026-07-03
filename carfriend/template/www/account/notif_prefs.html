@@ -1,0 +1,44 @@
+{% extends "base/base_www.html" %}
+{% block title %}Notification preferences — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_seller.html" with active="profile" %}{% endblock %}
+
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="cf-focus">
+
+  <div class="cf-reveal" style="padding-top:clamp(14px,2.5vw,22px)">
+    <a href="{% url 'profile' %}" class="cf-btn cf-btn-ghost" style="padding:.5rem .9rem"><svg class="i" style="transform:rotate(180deg)"><use href="#ic-out"/></svg>Profile</a>
+  </div>
+
+  <div class="cf-page-head cf-reveal"><h1>Notifications</h1></div>
+  <p class="cf-reveal d1" style="color:var(--cf-muted);margin:0 0 1.2rem;max-width:52ch">Choose how we reach you about your inspection, auction, offers and payout.</p>
+
+  <div class="cf-card cf-reveal d1" style="padding:1.3rem 1.35rem">
+    <form method="post" action="{% url 'profile_notifications' %}">
+      {% csrf_token %}
+
+      <label class="cf-check" style="padding:.7rem .1rem;font-size:.95rem">
+        <input type="checkbox" name="notify_whatsapp" {% if sp.notify_whatsapp %}checked{% endif %}>
+        <span>WhatsApp <span style="display:block;color:var(--cf-muted);font-weight:500;font-size:.82rem">Fastest updates on your phone</span></span>
+      </label>
+      <label class="cf-check" style="padding:.7rem .1rem;font-size:.95rem">
+        <input type="checkbox" name="notify_sms" {% if sp.notify_sms %}checked{% endif %}>
+        <span>SMS <span style="display:block;color:var(--cf-muted);font-weight:500;font-size:.82rem">Text messages for key events</span></span>
+      </label>
+      <label class="cf-check" style="padding:.7rem .1rem;font-size:.95rem">
+        <input type="checkbox" name="notify_email" {% if sp.notify_email %}checked{% endif %}>
+        <span>Email <span style="display:block;color:var(--cf-muted);font-weight:500;font-size:.82rem">Records and confirmations</span></span>
+      </label>
+      <label class="cf-check" style="padding:.7rem .1rem;font-size:.95rem">
+        <input type="checkbox" name="notify_push" {% if sp.notify_push %}checked{% endif %}>
+        <span>Push <span style="display:block;color:var(--cf-muted);font-weight:500;font-size:.82rem">In-app alerts on this device</span></span>
+      </label>
+
+      <div style="display:flex;gap:.65rem;margin-top:1rem">
+        <button type="submit" class="cf-btn cf-btn-primary"><svg class="i"><use href="#ic-check"/></svg>Save preferences</button>
+        <a href="{% url 'profile' %}" class="cf-btn cf-btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+</div></div></main>
+{% endblock %}

@@ -12,7 +12,7 @@ from core.models import log
 from kyc.models import KYCVerification
 from notifications.services import notify
 from .models import (
-    User, Role, DealerProfile,
+    User, Role, SellerProfile, DealerProfile,
     DealerVerification, DealerDocument,
     dealer_can_bid, latest_dealer_verification,
 )
@@ -439,6 +439,65 @@ def dealer_dashboard(request):
         "my_active_bids": my_active_bids,
         "bid_history": bid_history,
     })
+
+
+# ── Seller profile / account ─────────────────────────────────────────────────
+
+@login_required(login_url="/auth/login/")
+def profile(request):
+    sp, _ = SellerProfile.objects.get_or_create(user=request.user)
+    return render(request, "www/account/profile.html", {
+        "sp": sp,
+        "kyc_status": _seller_kyc_state(request.user),
+    })
+
+
+@login_required(login_url="/auth/login/")
+def profile_edit(request):
+    sp, _ = SellerProfile.objects.get_or_create(user=request.user)
+    if request.method == "POST":
+        u = request.user
+        u.first_name = (request.POST.get("first_name") or "").strip()[:150]
+        u.last_name  = (request.POST.get("last_name") or "").strip()[:150]
+        phone = (request.POST.get("phone") or "").strip()
+        if phone:
+            u.phone = phone[:20]
+        u.city = (request.POST.get("city") or "").strip()[:120]
+        u.save(update_fields=["first_name", "last_name", "phone", "city"])
+        sp.city = u.city
+        sp.address = (request.POST.get("address") or "").strip()
+        sp.save(update_fields=["city", "address", "updated_at"])
+        return redirect("profile")
+    return render(request, "www/account/profile_edit.html", {"sp": sp})
+
+
+@login_required(login_url="/auth/login/")
+def profile_payout(request):
+    sp, _ = SellerProfile.objects.get_or_create(user=request.user)
+    if request.method == "POST":
+        sp.bank_account_name   = (request.POST.get("bank_account_name") or "").strip()[:150]
+        sp.bank_account_number = (request.POST.get("bank_account_number") or "").strip()[:34]
+        sp.bank_ifsc           = (request.POST.get("bank_ifsc") or "").strip().upper()[:15]
+        sp.bank_name           = (request.POST.get("bank_name") or "").strip()[:120]
+        sp.upi_id              = (request.POST.get("upi_id") or "").strip()[:64]
+        sp.save(update_fields=["bank_account_name", "bank_account_number",
+                               "bank_ifsc", "bank_name", "upi_id", "updated_at"])
+        return redirect("profile")
+    return render(request, "www/account/payout.html", {"sp": sp})
+
+
+@login_required(login_url="/auth/login/")
+def profile_notifications(request):
+    sp, _ = SellerProfile.objects.get_or_create(user=request.user)
+    if request.method == "POST":
+        sp.notify_whatsapp = bool(request.POST.get("notify_whatsapp"))
+        sp.notify_sms      = bool(request.POST.get("notify_sms"))
+        sp.notify_email    = bool(request.POST.get("notify_email"))
+        sp.notify_push     = bool(request.POST.get("notify_push"))
+        sp.save(update_fields=["notify_whatsapp", "notify_sms",
+                               "notify_email", "notify_push", "updated_at"])
+        return redirect("profile")
+    return render(request, "www/account/notif_prefs.html", {"sp": sp})
 
 
 # ── Admin: dealer verification approval queue (super-admin) ──────────────────

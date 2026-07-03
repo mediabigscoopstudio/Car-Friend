@@ -1,0 +1,58 @@
+{% extends "base/base_www.html" %}
+{% block title %}Payout details — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_seller.html" with active="profile" %}{% endblock %}
+
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="cf-focus">
+
+  <div class="cf-reveal" style="padding-top:clamp(14px,2.5vw,22px)">
+    <a href="{% url 'profile' %}" class="cf-btn cf-btn-ghost" style="padding:.5rem .9rem"><svg class="i" style="transform:rotate(180deg)"><use href="#ic-out"/></svg>Profile</a>
+  </div>
+
+  <div class="cf-page-head cf-reveal"><h1>Payout details</h1></div>
+  <p class="cf-reveal d1" style="color:var(--cf-muted);margin:0 0 1.2rem;max-width:52ch">This is where we transfer your payment once the sale is complete. Add a bank account, a UPI ID, or both.</p>
+
+  <div class="cf-card cf-reveal d1" style="padding:1.3rem 1.35rem">
+    <form method="post" action="{% url 'profile_payout' %}">
+      {% csrf_token %}
+
+      <div class="cf-flabel" style="margin-bottom:.7rem">Bank account</div>
+      <div class="cf-field">
+        <label for="id_acname">Account holder name</label>
+        <input class="cf-input" id="id_acname" name="bank_account_name" type="text" maxlength="150" value="{{ sp.bank_account_name }}" placeholder="As per bank records">
+      </div>
+      <div class="d-flex" style="gap:.9rem;flex-wrap:wrap">
+        <div class="cf-field" style="flex:1 1 220px">
+          <label for="id_acnum">Account number</label>
+          <input class="cf-input" id="id_acnum" name="bank_account_number" type="text" inputmode="numeric" maxlength="34" value="{{ sp.bank_account_number }}">
+        </div>
+        <div class="cf-field" style="flex:1 1 160px">
+          <label for="id_ifsc">IFSC</label>
+          <input class="cf-input" id="id_ifsc" name="bank_ifsc" type="text" maxlength="15" value="{{ sp.bank_ifsc }}" style="text-transform:uppercase">
+        </div>
+      </div>
+      <div class="cf-field">
+        <label for="id_bank">Bank name</label>
+        <input class="cf-input" id="id_bank" name="bank_name" type="text" maxlength="120" value="{{ sp.bank_name }}">
+      </div>
+
+      <div class="cf-div" style="margin:1.1rem 0"></div>
+
+      <div class="cf-flabel" style="margin-bottom:.7rem">Or UPI</div>
+      <div class="cf-field">
+        <label for="id_upi">UPI ID</label>
+        <input class="cf-input" id="id_upi" name="upi_id" type="text" maxlength="64" value="{{ sp.upi_id }}" placeholder="name@bank">
+        <div class="cf-help">We verify the name before any transfer.</div>
+      </div>
+
+      <div class="cf-foot-note" style="margin:.2rem 0 1rem"><svg class="i"><use href="#ic-shield"/></svg>Your details are stored securely and only used for your payout.</div>
+
+      <div style="display:flex;gap:.65rem">
+        <button type="submit" class="cf-btn cf-btn-primary"><svg class="i"><use href="#ic-check"/></svg>Save payout details</button>
+        <a href="{% url 'profile' %}" class="cf-btn cf-btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+</div></div></main>
+{% endblock %}
