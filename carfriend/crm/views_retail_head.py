@@ -34,6 +34,15 @@ def _car(vehicle):
     return f"{vehicle.make} {vehicle.model} {vehicle.year}".strip()
 
 
+def _safe_next(request, default):
+    """Return a POSTed 'next' path only if it is a safe local path, else default.
+    Lets the shared /pipeline/<id>/ page send the RH back to itself after a POST."""
+    nxt = (request.POST.get("next") or "").strip()
+    if nxt.startswith("/") and not nxt.startswith("//"):
+        return nxt
+    return default
+
+
 def _retail_associates():
     return User.objects.filter(role=Role.RETAIL, is_suspended=False).order_by("first_name", "username")
 
@@ -238,9 +247,10 @@ def rh_start_auction(request, lead_id):
     from auctions.services import start_auction
 
     lead = get_object_or_404(Lead.objects.select_related("vehicle"), id=lead_id)
+    dest = _safe_next(request, f"/crm/retail-head/lead/{lead_id}/")
     if not lead.vehicle:
         messages.error(request, "This lead has no car to auction.")
-        return redirect(f"/crm/retail-head/lead/{lead_id}/")
+        return redirect(dest)
     raw = (request.POST.get("base_price") or "").replace(",", "").replace("₹", "").strip()
     try:
         base_price = int(float(raw))
@@ -251,6 +261,26 @@ def rh_start_auction(request, lead_id):
                       started_by=request.user)
     except ValueError as e:
         messages.error(request, str(e))
-        return redirect(f"/crm/retail-head/lead/{lead_id}/")
+        return redirect(dest)
     messages.success(request, f"Auction started for {_car(lead.vehicle)}.")
-    return redirect(f"/crm/retail-head/lead/{lead_id}/")
+    return redirect(dest)
+
+
+@require_POST
+def rh_assign(request, lead_id):
+    """Assign ONE lead to a retail associate from a lead page. Reuses _allocate
+    (LeadAllocation audit row + notify + transition_lead to 'assigned') — the exact
+    same path as the bulk rh_allocate inbox action, not a duplicate."""
+    guard = _require_retail_head(request)
+    if guard:
+        return guard
+    lead = get_object_or_404(Lead, id=lead_id)
+    dest = _safe_next(request, f"/crm/retail-head/lead/{lead_id}/")
+    associate = User.objects.filter(id=request.POST.get("associate_id"), role=Role.RETAIL).first()
+    if not associate:
+        messages.error(request, "Pick a valid retail associate.")
+    elif _allocate(lead, associate, request.user):
+        messages.success(request, f"Assigned to {associate.get_full_name() or associate.username}.")
+    else:
+        messages.error(request, "That lead is already assigned to this associate.")
+    return redirect(dest)

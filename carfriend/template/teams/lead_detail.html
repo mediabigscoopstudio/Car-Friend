@@ -114,6 +114,65 @@
     {% endif %}
     {% endif %}
 
+    {% if request.user.is_retail_head %}
+    <!-- Retail Head — Start auction (the sole auction-start path) -->
+    <div class="cf-card">
+      <div class="cf-card-title"><i class="bi bi-hammer"></i> Start auction</div>
+      {% if rh_auction %}
+      <div style="background:var(--gs);border-radius:8px;padding:12px 16px;font-size:13px">
+        Auction #{{ rh_auction.id }} · <span class="badge-stage badge-{{ rh_auction.status }}">{{ rh_auction.get_status_display }}</span><br>
+        <span style="color:var(--txt2)">Reserve ₹{{ rh_auction.reserve_price }} · ends {{ rh_auction.end_at|date:"d M Y, H:i" }}</span>
+      </div>
+      {% else %}
+      <form method="POST" action="{% url 'rh_start_auction' lead.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="/pipeline/{{ lead.id }}/">
+        <div class="row g-2">
+          <div class="col-12 col-sm-6">
+            <label class="cf-label">Starting price (seller base ₹)</label>
+            <input type="text" inputmode="numeric" name="base_price" class="cf-field" value="{{ rh_suggested|default:'' }}" placeholder="e.g. 500000" required>
+          </div>
+          <div class="col-12 col-sm-6">
+            <label class="cf-label">Duration</label>
+            <select name="duration_minutes" class="cf-field">
+              {% for m, label in rh_durations %}<option value="{{ m }}"{% if m == 30 %} selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-12">
+            <div style="font-size:11px;color:var(--txt3);margin:2px 0 8px">Dealers bid on the grossed reserve (base + margin + GST). Price locks once the auction starts.</div>
+            <button type="submit" class="btn-cf"><i class="bi bi-hammer me-1"></i>Start auction</button>
+          </div>
+        </div>
+      </form>
+      {% endif %}
+    </div>
+
+    <!-- Retail Head — Assign to retail associate -->
+    <div class="cf-card">
+      <div class="cf-card-title"><i class="bi bi-person-plus"></i> Assign to retail associate</div>
+      {% if lead.assigned_associate %}
+      <div style="background:var(--gs);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px">
+        Currently assigned: <strong style="color:var(--g1)">{{ lead.assigned_associate.get_full_name|default:lead.assigned_associate.username }}</strong>
+      </div>
+      {% endif %}
+      <form method="POST" action="{% url 'rh_assign' lead.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="/pipeline/{{ lead.id }}/">
+        <div class="row g-2">
+          <div class="col-12 col-sm-8">
+            <label class="cf-label">{% if lead.assigned_associate %}Reassign to{% else %}Retail associate{% endif %}</label>
+            <select name="associate_id" class="cf-field" required>
+              <option value="">— Choose associate —</option>
+              {% for a in rh_associates %}<option value="{{ a.id }}"{% if lead.assigned_associate_id == a.id %} selected{% endif %}>{{ a.get_full_name|default:a.username }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-12 col-sm-4" style="display:flex;align-items:flex-end">
+            <button type="submit" class="btn-cf" style="width:100%"><i class="bi bi-person-check me-1"></i>Assign</button>
+          </div>
+        </div>
+      </form>
+    </div>
+    {% else %}
     <!-- Assign / Reassign Inspector -->
     <div class="cf-card">
       <div class="cf-card-title"><i class="bi bi-person-check"></i> {% if inspection_visit %}Inspection{% else %}Assign Inspector{% endif %}</div>
@@ -155,6 +214,7 @@
         </div>
       </form>
     </div>
+    {% endif %}
 
     <!-- Bids -->
     {% if bids %}

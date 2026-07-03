@@ -116,6 +116,24 @@ def lead_detail(request, lead_id):
     can_create_more = (not ocb_rows) or all(
         r['ocb'].status in ('accepted', 'rejected') for r in ocb_rows)
 
+    # Retail Head actions on this shared page (start auction / assign associate).
+    # Computed only when a Retail Head is viewing — other roles are unaffected.
+    rh_associates = rh_durations = rh_suggested = rh_auction = None
+    if request.user.is_retail_head and lead.vehicle:
+        from crm.views_retail_head import _retail_associates
+        from auctions.services import DURATION_PRESETS
+        from auctions.models import Auction
+        rh_associates = _retail_associates()
+        rh_durations = DURATION_PRESETS
+        rh_auction = (Auction.objects.filter(vehicle=lead.vehicle)
+                      .exclude(status=Auction.Status.CLOSED).order_by('-created_at').first())
+        base = int(lead.vehicle.expected_price or 0)
+        if not base:
+            from inspections.models import InspectionReport
+            rep = InspectionReport.objects.filter(visit__vehicle=lead.vehicle).order_by('-id').first()
+            base = rep.est_market_value if rep else 0
+        rh_suggested = base or None
+
     ctx = {
         'lead':             lead,
         'vehicle':          lead.vehicle,
@@ -127,6 +145,10 @@ def lead_detail(request, lead_id):
         'ocb_rows':         ocb_rows,
         'can_create_more':  can_create_more,
         'lead_notes':       lead.call_notes.select_related('author').all(),
+        'rh_associates':    rh_associates,
+        'rh_durations':     rh_durations,
+        'rh_suggested':     rh_suggested,
+        'rh_auction':       rh_auction,
     }
     return render(request, 'teams/lead_detail.html', ctx)
 
