@@ -1,176 +1,144 @@
-{% extends "www/base.html" %}
-{% load static %}
-{% block title %}Live Auction — {{ vehicle.make }} {{ vehicle.model }} — Car Friend{% endblock %}
+{% extends "base/base_www.html" %}
+{% block title %}Live auction — {{ vehicle.make }} {{ vehicle.model }} — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_seller.html" with active="cars" %}{% endblock %}
 
-{% block content %}
+{% block extra_head %}
+<style>
+  .sw-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.7rem}
+  @media(max-width:560px){.sw-stats{grid-template-columns:1fr;gap:.6rem}}
+  .sw-stat{background:#fff;border:1px solid var(--cf-line);border-radius:16px;padding:1.1rem 1rem;text-align:center;box-shadow:var(--cf-shadow-card)}
+  .sw-stat .l{font-size:.64rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cf-muted);margin-bottom:.4rem}
+  .sw-stat .v{font-weight:800;font-size:clamp(1.3rem,3.5vw,1.7rem);letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums}
+  .sw-row{display:flex;justify-content:space-between;gap:1rem;padding-bottom:.6rem;margin-bottom:.6rem;border-bottom:1px solid var(--cf-line)}
+  .sw-row:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
+  .sw-row .k{font-size:.8rem;color:var(--cf-muted)} .sw-row .val{font-size:.85rem;font-weight:700;color:var(--cf-ink)}
+  .bid-row{padding:.85rem 1.1rem;border-bottom:1px solid var(--cf-line);display:flex;align-items:center;justify-content:space-between}
+  .bid-row-top{background:var(--cf-green-050)}
+  .bid-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--cf-green-deep),var(--cf-green));display:grid;place-items:center;font-weight:700;color:#fff;font-size:.72rem;flex:0 0 auto}
+  @keyframes bidFlash{0%{background:var(--cf-green-100)}100%{background:var(--cf-green-050)}}
+  @media(prefers-reduced-motion:reduce){.bid-row{animation:none !important}}
+</style>
+{% endblock %}
 
-<!-- HERO HEADER -->
-<div style="background:var(--cf-dark);padding:40px 0 0;border-bottom:1px solid rgba(74,222,128,.1);">
-  <div class="container">
+{% block body %}
+<main class="cf-main"><div class="cf-container">
 
-    <div class="d-flex align-items-start justify-content-between flex-wrap gap-3 pb-4">
-      <div>
-        <div class="d-flex align-items-center gap-3 mb-3">
-          {% if auction.status == 'live' %}
-          <span class="cf-action-btn-active-red" style="cursor:default;animation:none;padding:5px 14px;font-size:.7rem;letter-spacing:.1em;">
-            <span class="cf-pulse-dot"></span> LIVE AUCTION
-          </span>
-          {% else %}
-          <span style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.5);padding:5px 14px;border-radius:20px;font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;">AUCTION ENDED</span>
-          {% endif %}
-          <span style="font-size:.78rem;color:rgba(255,255,255,.35);">Auction #{{ auction.id }}</span>
-        </div>
-        <h1 style="font-family:var(--font-h);font-weight:800;color:#fff;font-size:clamp(1.6rem,4vw,2.6rem);letter-spacing:-.02em;margin:0;">
-          {{ vehicle.make }} {{ vehicle.model }}
-          <span style="font-weight:400;color:rgba(255,255,255,.45);">{{ vehicle.year }}</span>
-        </h1>
-        <div style="font-size:.85rem;color:rgba(255,255,255,.42);margin-top:6px;">
-          {{ vehicle.get_fuel_type_display }} &bull; {{ vehicle.get_transmission_display }}{% if vehicle.city %} &bull; {{ vehicle.city }}{% endif %}
-        </div>
-      </div>
-      <a href="/auth/seller/dashboard/" class="cf-btn-outline" style="margin-top:4px;">← Back to Dashboard</a>
+  <div class="cf-reveal" style="padding-top:clamp(14px,2.5vw,22px);display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+    <a href="{% url 'seller_dashboard' %}" class="cf-btn cf-btn-ghost" style="padding:.5rem .9rem"><svg class="i" style="transform:rotate(180deg)"><use href="#ic-out"/></svg>My Cars</a>
+    {% if auction.status == 'live' %}<span class="cf-live"><span class="d"></span>LIVE AUCTION</span>{% else %}<span class="cf-chip">Auction ended</span>{% endif %}
+    <span style="font-size:.78rem;color:var(--cf-muted)">Auction #{{ auction.id }}</span>
+  </div>
+
+  <div class="cf-page-head cf-reveal" style="padding-bottom:1rem">
+    <h1>{{ vehicle.make }} {{ vehicle.model }} <span class="count">{{ vehicle.year }}</span></h1>
+  </div>
+  <div class="cf-reveal" style="color:var(--cf-muted);font-size:.86rem;margin:-.6rem 0 1.1rem">{{ vehicle.get_fuel_type_display }} · {{ vehicle.get_transmission_display }}{% if vehicle.city %} · {{ vehicle.city }}{% endif %}</div>
+
+  <div class="sw-stats cf-reveal d1">
+    <div class="sw-stat">
+      <div class="l">{% if auction.status == 'live' %}Current highest bid{% else %}Final highest bid{% endif %}</div>
+      <div class="v" id="highestBid" style="color:var(--cf-green)">{% if highest_fmt %}₹{{ highest_fmt }}{% else %}No bids yet{% endif %}</div>
+      <div style="font-size:.72rem;color:var(--cf-muted);margin-top:.4rem">Reserve ₹{{ reserve_fmt }}</div>
     </div>
-
-    <!-- THREE KEY STATS -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:rgba(74,222,128,.1);border-radius:16px 16px 0 0;overflow:hidden;">
-
-      <div style="background:rgba(22,101,52,.15);padding:28px 24px;text-align:center;">
-        <div style="font-size:.65rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.38);margin-bottom:8px;">
-          {% if auction.status == 'live' %}Current Highest Bid{% else %}Final Highest Bid{% endif %}
-        </div>
-        <div id="highestBid" style="font-family:var(--font-h);font-size:clamp(1.6rem,4vw,2.6rem);font-weight:800;color:var(--cf-accent);letter-spacing:-.03em;line-height:1;transition:transform .3s;">
-          {% if highest_fmt %}₹{{ highest_fmt }}{% else %}No bids yet{% endif %}
-        </div>
-        <div style="font-size:.72rem;color:rgba(255,255,255,.3);margin-top:6px;">Reserve: ₹{{ reserve_fmt }}</div>
-      </div>
-
-      <div style="background:rgba(8,14,8,.6);padding:28px 24px;text-align:center;border-left:1px solid rgba(74,222,128,.1);border-right:1px solid rgba(74,222,128,.1);">
-        <div style="font-size:.65rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.38);margin-bottom:8px;">
-          {% if auction.status == 'live' %}Time Remaining{% else %}Auction Ended{% endif %}
-        </div>
-        <div id="countdown" data-end="{{ auction.end_at.isoformat }}" data-status="{{ auction.status }}" style="font-family:var(--font-h);font-size:clamp(1.6rem,4vw,2.6rem);font-weight:800;color:#fff;letter-spacing:-.02em;line-height:1;">--:--</div>
-        <div style="font-size:.72rem;color:rgba(255,255,255,.28);margin-top:6px;">Ends {{ auction.end_at|date:"d M Y, g:i A" }}</div>
-      </div>
-
-      <div style="background:rgba(22,101,52,.08);padding:28px 24px;text-align:center;">
-        <div style="font-size:.65rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.38);margin-bottom:8px;">Total Bids</div>
-        <div id="bidCount" style="font-family:var(--font-h);font-size:clamp(1.6rem,4vw,2.6rem);font-weight:800;color:#fff;letter-spacing:-.03em;line-height:1;">{{ bid_count }}</div>
-        <div style="font-size:.72rem;color:rgba(255,255,255,.3);margin-top:6px;">From verified dealers</div>
-      </div>
-
+    <div class="sw-stat">
+      <div class="l">{% if auction.status == 'live' %}Time remaining{% else %}Auction ended{% endif %}</div>
+      <div class="v" id="countdown" data-end="{{ auction.end_at.isoformat }}" data-status="{{ auction.status }}" style="color:var(--cf-ink)">--:--</div>
+      <div style="font-size:.72rem;color:var(--cf-muted);margin-top:.4rem">Ends {{ auction.end_at|date:"d M, g:i A" }}</div>
+    </div>
+    <div class="sw-stat">
+      <div class="l">Total bids</div>
+      <div class="v" id="bidCount" style="color:var(--cf-ink)">{{ bid_count }}</div>
+      <div style="font-size:.72rem;color:var(--cf-muted);margin-top:.4rem">From verified dealers</div>
     </div>
   </div>
-</div>
 
-<!-- MAIN CONTENT -->
-<div style="background:var(--cf-dark-2);min-height:60vh;padding:0 0 80px;">
-  <div class="container">
-    <div class="row g-4 pt-4">
-
-      <!-- LEFT — Live bid feed -->
-      <div class="col-lg-7">
-        <div style="background:rgba(255,255,255,.02);border:1px solid rgba(74,222,128,.12);border-radius:16px;overflow:hidden;">
-          <div style="background:rgba(22,101,52,.15);padding:16px 22px;border-bottom:1px solid rgba(74,222,128,.1);display:flex;align-items:center;justify-content:space-between;">
-            <span style="font-family:var(--font-h);font-weight:700;color:#fff;font-size:.9rem;">Live Bid Activity</span>
-            {% if auction.status == 'live' %}
-            <span style="display:inline-flex;align-items:center;gap:6px;font-size:.62rem;color:#f87171;font-weight:700;text-transform:uppercase;letter-spacing:.08em;"><span class="cf-pulse-dot"></span> Updating live</span>
-            {% endif %}
-          </div>
-
-          <div id="bidFeed" style="max-height:460px;overflow-y:auto;">
-            {% for bid in bids %}
-            <div class="bid-row {% if forloop.first %}bid-row-top{% endif %}" style="padding:16px 22px;border-bottom:1px solid rgba(255,255,255,.04);display:flex;align-items:center;justify-content:space-between;{% if forloop.first %}background:rgba(22,101,52,.12);{% endif %}transition:background .3s;">
-              <div style="display:flex;align-items:center;gap:12px;">
-                <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--cf-primary-dark),var(--cf-primary));display:flex;align-items:center;justify-content:center;font-family:var(--font-h);font-weight:700;color:#fff;font-size:.7rem;flex-shrink:0;">D{{ forloop.counter }}</div>
-                <div>
-                  <div style="font-family:var(--font-h);font-weight:600;color:#fff;font-size:.88rem;">{{ bid.label }}</div>
-                  <div style="font-size:.7rem;color:rgba(255,255,255,.35);margin-top:2px;">{{ bid.created_at|date:"g:i:s A" }}</div>
-                </div>
-              </div>
-              <div style="text-align:right;">
-                <div style="font-family:var(--font-h);font-weight:800;font-size:{% if forloop.first %}1.15rem{% else %}1rem{% endif %};color:{% if forloop.first %}var(--cf-accent){% else %}rgba(255,255,255,.7){% endif %};">₹{{ bid.amount_fmt }}</div>
-                {% if forloop.first %}<div class="highest-badge" style="font-size:.62rem;color:var(--cf-accent);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-top:2px;">Highest Bid</div>{% endif %}
+  <div class="row g-4 pt-4">
+    <!-- LEFT — live bid feed -->
+    <div class="col-lg-7">
+      <div class="cf-card cf-reveal d1" style="overflow:hidden">
+        <div style="padding:.9rem 1.1rem;border-bottom:1px solid var(--cf-line);display:flex;align-items:center;justify-content:space-between">
+          <span style="font-weight:800;font-size:.92rem">Live bid activity</span>
+          {% if auction.status == 'live' %}<span class="cf-live" style="font-size:.58rem"><span class="d"></span>Updating live</span>{% endif %}
+        </div>
+        <div id="bidFeed" style="max-height:460px;overflow-y:auto">
+          {% for bid in bids %}
+          <div class="bid-row {% if forloop.first %}bid-row-top{% endif %}">
+            <div style="display:flex;align-items:center;gap:.75rem">
+              <div class="bid-av">D{{ forloop.counter }}</div>
+              <div>
+                <div style="font-weight:700;font-size:.88rem">{{ bid.label }}</div>
+                <div style="font-size:.7rem;color:var(--cf-muted);margin-top:.1rem">{{ bid.created_at|date:"g:i:s A" }}</div>
               </div>
             </div>
-            {% empty %}
-            <div id="noBids" style="padding:60px 24px;text-align:center;">
-              <div style="font-size:2.5rem;margin-bottom:16px;">⏳</div>
-              <div style="font-family:var(--font-h);font-weight:700;color:#fff;margin-bottom:8px;">Waiting for first bid</div>
-              <div style="font-size:.82rem;color:rgba(255,255,255,.38);">Verified dealers are reviewing your car. Bids will appear here in real time.</div>
-            </div>
-            {% endfor %}
-          </div>
-        </div>
-
-        {% if highest_bid %}
-        <div style="background:rgba(22,101,52,.12);border:1px solid rgba(74,222,128,.18);border-radius:14px;padding:20px 22px;margin-top:16px;">
-          <div style="font-size:.68rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.38);margin-bottom:12px;">If you accept the highest bid</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-            <div>
-              <div style="font-size:.72rem;color:rgba(255,255,255,.38);margin-bottom:4px;">Highest Bid</div>
-              <div style="font-family:var(--font-h);font-size:1.3rem;font-weight:800;color:var(--cf-accent);">₹{{ highest_fmt }}</div>
-            </div>
-            <div>
-              <div style="font-size:.72rem;color:rgba(255,255,255,.38);margin-bottom:4px;">You receive (est., after ~2% fee)</div>
-              <div style="font-family:var(--font-h);font-size:1.3rem;font-weight:800;color:#fff;">₹{{ net_fmt }}</div>
-              <div style="font-size:.65rem;color:rgba(255,255,255,.25);margin-top:2px;">Platform fee ≈ ₹{{ fee_fmt }} · confirmed at deal closure</div>
+            <div style="text-align:right">
+              <div style="font-weight:800;font-size:{% if forloop.first %}1.15rem{% else %}1rem{% endif %};color:{% if forloop.first %}var(--cf-green){% else %}var(--cf-ink-soft){% endif %};font-variant-numeric:tabular-nums">₹{{ bid.amount_fmt }}</div>
+              {% if forloop.first %}<div class="highest-badge" style="font-size:.62rem;color:var(--cf-green);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-top:.1rem">Highest bid</div>{% endif %}
             </div>
           </div>
+          {% empty %}
+          <div id="noBids" style="padding:3.2rem 1.4rem;text-align:center">
+            <div class="ic" style="width:60px;height:60px;border-radius:16px;background:var(--cf-green-050);display:grid;place-items:center;margin:0 auto 1rem"><svg class="i" style="width:28px;height:28px;stroke:var(--cf-green-bright)"><use href="#ic-clock"/></svg></div>
+            <div style="font-weight:800;margin-bottom:.4rem">Waiting for the first bid</div>
+            <div style="font-size:.84rem;color:var(--cf-muted);max-width:34ch;margin:0 auto">Verified dealers are reviewing your car. Bids appear here in real time.</div>
+          </div>
+          {% endfor %}
         </div>
-        {% endif %}
       </div>
 
-      <!-- RIGHT — Car details + auction info -->
-      <div class="col-lg-5">
-
-        <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;overflow:hidden;margin-bottom:16px;">
-          <div style="background:rgba(22,101,52,.15);padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.06);"><span style="font-family:var(--font-h);font-weight:700;color:#fff;font-size:.85rem;">Your Car</span></div>
-          <div style="padding:18px;display:grid;gap:12px;">
-            <div style="display:flex;justify-content:space-between;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:.78rem;color:rgba(255,255,255,.38);">Make</span><span style="font-size:.82rem;font-weight:600;color:#fff;">{{ vehicle.make }}</span></div>
-            <div style="display:flex;justify-content:space-between;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:.78rem;color:rgba(255,255,255,.38);">Model</span><span style="font-size:.82rem;font-weight:600;color:#fff;">{{ vehicle.model }} {{ vehicle.variant|default:"" }}</span></div>
-            <div style="display:flex;justify-content:space-between;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:.78rem;color:rgba(255,255,255,.38);">Year</span><span style="font-size:.82rem;font-weight:600;color:#fff;">{{ vehicle.year }}</span></div>
-            <div style="display:flex;justify-content:space-between;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:.78rem;color:rgba(255,255,255,.38);">Fuel</span><span style="font-size:.82rem;font-weight:600;color:#fff;">{{ vehicle.get_fuel_type_display }}</span></div>
-            {% if vehicle.odometer_km %}<div style="display:flex;justify-content:space-between;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:.78rem;color:rgba(255,255,255,.38);">Kilometres</span><span style="font-size:.82rem;font-weight:600;color:#fff;">{{ vehicle.odometer_km|floatformat:0 }} km</span></div>{% endif %}
-            {% if expected_fmt %}<div style="display:flex;justify-content:space-between;"><span style="font-size:.78rem;color:rgba(255,255,255,.38);">Your asking price</span><span style="font-size:.82rem;font-weight:600;color:var(--cf-accent);">₹{{ expected_fmt }}</span></div>{% endif %}
-          </div>
+      {% if highest_bid %}
+      <div class="cf-card cf-reveal d1" style="padding:1.2rem 1.3rem;margin-top:1rem;background:var(--cf-green-050);border-color:var(--cf-green-100)">
+        <div class="cf-flabel" style="margin-bottom:.8rem">If you accept the highest bid</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div><div class="cf-bid-l">Highest bid</div><div class="cf-bid-v" style="color:var(--cf-green)">₹{{ highest_fmt }}</div></div>
+          <div><div class="cf-bid-l">You receive (after ~2% fee)</div><div class="cf-bid-v">₹{{ net_fmt }}</div><div style="font-size:.66rem;color:var(--cf-muted);margin-top:.15rem">Platform fee ≈ ₹{{ fee_fmt }} · confirmed at closure</div></div>
         </div>
-
-        <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;overflow:hidden;">
-          <div style="background:rgba(8,14,8,.5);padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.06);"><span style="font-family:var(--font-h);font-weight:700;color:#fff;font-size:.85rem;">Auction Details</span></div>
-          <div style="padding:18px;display:grid;gap:12px;">
-            <div style="display:flex;justify-content:space-between;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:.78rem;color:rgba(255,255,255,.38);">Status</span><span style="font-size:.82rem;font-weight:700;">{% if auction.status == 'live' %}<span style="color:var(--cf-accent);">● Live</span>{% else %}<span style="color:rgba(255,255,255,.5);">{{ auction.get_status_display }}</span>{% endif %}</span></div>
-            <div style="display:flex;justify-content:space-between;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:.78rem;color:rgba(255,255,255,.38);">Started</span><span style="font-size:.82rem;font-weight:600;color:#fff;">{{ auction.start_at|date:"d M, g:i A" }}</span></div>
-            <div style="display:flex;justify-content:space-between;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:.78rem;color:rgba(255,255,255,.38);">Ends</span><span style="font-size:.82rem;font-weight:600;color:#fff;">{{ auction.end_at|date:"d M, g:i A" }}</span></div>
-            <div style="display:flex;justify-content:space-between;{% if auction.reactivation_count %}padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.05);{% endif %}"><span style="font-size:.78rem;color:rgba(255,255,255,.38);">Min increment</span><span style="font-size:.82rem;font-weight:600;color:#fff;">₹{{ min_increment_fmt }}</span></div>
-            {% if auction.reactivation_count %}<div style="display:flex;justify-content:space-between;"><span style="font-size:.78rem;color:rgba(255,255,255,.38);">Re-auctions used</span><span style="font-size:.82rem;font-weight:600;color:#fff;">{{ auction.reactivation_count }} of 5</span></div>{% endif %}
-          </div>
-        </div>
-
-        <div style="margin-top:16px;padding:16px 18px;background:rgba(255,255,255,.03);border-radius:12px;border:1px solid rgba(255,255,255,.06);">
-          <div style="font-size:.75rem;color:rgba(255,255,255,.35);line-height:1.7;">
-            <strong style="color:rgba(255,255,255,.55);">Dealer identities are hidden.</strong> You see bids as Dealer #1, #2 etc. — this keeps the auction fair and unbiased. After it closes, you'll review the final bid from your dashboard.
-          </div>
-        </div>
-
       </div>
+      {% endif %}
+    </div>
+
+    <!-- RIGHT — car + auction details -->
+    <div class="col-lg-5">
+      <div class="cf-card cf-reveal d2" style="padding:1.2rem 1.3rem;margin-bottom:1rem">
+        <div class="cf-flabel" style="margin-bottom:.9rem">Your car</div>
+        <div class="sw-row"><span class="k">Make</span><span class="val">{{ vehicle.make }}</span></div>
+        <div class="sw-row"><span class="k">Model</span><span class="val">{{ vehicle.model }} {{ vehicle.variant|default:"" }}</span></div>
+        <div class="sw-row"><span class="k">Year</span><span class="val">{{ vehicle.year }}</span></div>
+        <div class="sw-row"><span class="k">Fuel</span><span class="val">{{ vehicle.get_fuel_type_display }}</span></div>
+        {% if vehicle.odometer_km %}<div class="sw-row"><span class="k">Kilometres</span><span class="val">{{ vehicle.odometer_km|floatformat:0 }} km</span></div>{% endif %}
+        {% if expected_fmt %}<div class="sw-row"><span class="k">Your asking price</span><span class="val" style="color:var(--cf-green)">₹{{ expected_fmt }}</span></div>{% endif %}
+      </div>
+
+      <div class="cf-card cf-reveal d2" style="padding:1.2rem 1.3rem">
+        <div class="cf-flabel" style="margin-bottom:.9rem">Auction details</div>
+        <div class="sw-row"><span class="k">Status</span><span class="val">{% if auction.status == 'live' %}<span style="color:var(--cf-green)">● Live</span>{% else %}{{ auction.get_status_display }}{% endif %}</span></div>
+        <div class="sw-row"><span class="k">Started</span><span class="val">{{ auction.start_at|date:"d M, g:i A" }}</span></div>
+        <div class="sw-row"><span class="k">Ends</span><span class="val">{{ auction.end_at|date:"d M, g:i A" }}</span></div>
+        <div class="sw-row"><span class="k">Min increment</span><span class="val">₹{{ min_increment_fmt }}</span></div>
+        {% if auction.reactivation_count %}<div class="sw-row"><span class="k">Re-auctions used</span><span class="val">{{ auction.reactivation_count }} of 5</span></div>{% endif %}
+      </div>
+
+      <div class="cf-foot-note cf-reveal d2" style="margin-top:1rem"><svg class="i"><use href="#ic-shield"/></svg><span><b>Dealer identities are hidden.</b> You see bids as Dealer #1, #2 and so on, which keeps the auction fair. After it closes, you review the final bid from My Cars.</span></div>
     </div>
   </div>
-</div>
 
+</div></main>
+{% endblock %}
+
+{% block extra_js %}
 <script>
 // ── COUNTDOWN ──────────────────────────────────────────
 (function () {
   var el = document.getElementById('countdown');
   if (!el) return;
-  if (el.dataset.status !== 'live') { el.textContent = 'Ended'; el.style.color = 'rgba(255,255,255,.35)'; return; }
+  if (el.dataset.status !== 'live') { el.textContent = 'Ended'; el.style.color = 'var(--cf-muted)'; return; }
   var endTime = new Date(el.dataset.end).getTime();
   window.__setAuctionEnd = function (iso) { endTime = new Date(iso).getTime(); };
   function tick() {
     var diff = endTime - Date.now();
-    if (diff <= 0) { el.textContent = 'Ended'; el.style.color = 'rgba(255,255,255,.35)'; return; }
+    if (diff <= 0) { el.textContent = 'Ended'; el.style.color = 'var(--cf-muted)'; return; }
     var h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000), s = Math.floor((diff % 60000) / 1000);
     el.textContent = (h > 0 ? h + ':' + String(m).padStart(2, '0') : String(m).padStart(2, '0')) + ':' + String(s).padStart(2, '0');
-    el.style.color = diff < 120000 ? '#f87171' : (diff < 300000 ? '#fbbf24' : '#ffffff');
+    el.style.color = diff < 120000 ? 'var(--cf-amber)' : (diff < 300000 ? 'var(--cf-amber-bright)' : 'var(--cf-ink)');
     setTimeout(tick, 1000);
   }
   tick();
@@ -199,17 +167,22 @@
     if (feed && amount) {
       var row = document.createElement('div');
       row.className = 'bid-row bid-row-top';
-      row.style.cssText = 'padding:16px 22px;border-bottom:1px solid rgba(255,255,255,.04);display:flex;align-items:center;justify-content:space-between;background:rgba(22,101,52,.18);animation:bidFlash .6s ease-out;';
+      row.style.cssText = 'animation:bidFlash .6s ease-out;';
       row.innerHTML =
-        '<div style="display:flex;align-items:center;gap:12px;">' +
-          '<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--cf-primary-dark),var(--cf-primary));display:flex;align-items:center;justify-content:center;font-family:var(--font-h);font-weight:700;color:#fff;font-size:.7rem;">D' + count + '</div>' +
-          '<div><div style="font-family:var(--font-h);font-weight:600;color:#fff;font-size:.88rem;">Dealer #' + count + '</div>' +
-          '<div style="font-size:.7rem;color:rgba(255,255,255,.35);margin-top:2px;">Just now</div></div>' +
+        '<div style="display:flex;align-items:center;gap:.75rem;">' +
+          '<div class="bid-av">D' + count + '</div>' +
+          '<div><div style="font-weight:700;font-size:.88rem;">Dealer #' + count + '</div>' +
+          '<div style="font-size:.7rem;color:var(--cf-muted);margin-top:.1rem;">Just now</div></div>' +
         '</div>' +
-        '<div style="text-align:right;"><div style="font-family:var(--font-h);font-weight:800;font-size:1.15rem;color:var(--cf-accent);">' + fmt(amount) + '</div>' +
-          '<div class="highest-badge" style="font-size:.62rem;color:var(--cf-accent);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-top:2px;">Highest Bid</div></div>';
+        '<div style="text-align:right;"><div style="font-weight:800;font-size:1.15rem;color:var(--cf-green);font-variant-numeric:tabular-nums;">' + fmt(amount) + '</div>' +
+          '<div class="highest-badge" style="font-size:.62rem;color:var(--cf-green);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-top:.1rem;">Highest bid</div></div>';
       feed.insertBefore(row, feed.firstChild);
     }
+  }
+
+  function applyHighestQuiet(amount, total) {
+    if (total != null && countEl) countEl.textContent = total;
+    if (highestEl && amount) highestEl.textContent = fmt(amount);
   }
 
   try {
@@ -221,17 +194,8 @@
       if (data.type === 'state') { if (data.count > 0) applyHighestQuiet(data.highest, data.count); }
       else if (data.type === 'bid') { applyHighest(data.highest, data.count); }
     };
-    // initial state: update numbers without injecting a synthetic row
-    function applyHighestQuiet(amount, total) {
-      if (total != null && countEl) countEl.textContent = total;
-      if (highestEl && amount) highestEl.textContent = fmt(amount);
-    }
     ws.onerror = function () {};
   } catch (e) {}
 })();
 </script>
-
-<style>
-@keyframes bidFlash { 0% { background: rgba(74,222,128,.25); } 100% { background: rgba(22,101,52,.18); } }
-</style>
 {% endblock %}

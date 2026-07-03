@@ -1,80 +1,68 @@
-{% extends 'www/base.html' %}
+{% extends "base/base_www.html" %}
 {% block title %}Verify your identity — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_seller.html" with active="cars" %}{% endblock %}
 
-{% block extra_css %}
-  .kyc-wrap { max-width: 620px; margin: 0 auto; padding: 40px 0 80px; }
-  .kyc-head { text-align: center; margin-bottom: 28px; }
-  .kyc-head h1 { font-family: var(--cf-font-display); font-size: clamp(24px,4vw,32px); color: var(--cf-azure); font-weight: 700; }
-  .kyc-head p { color: var(--cf-slate); font-size: 15px; max-width: 460px; margin: 6px auto 0; }
-
-  .kyc-card { background: var(--cf-white); border: 1px solid var(--cf-mist); border-radius: 14px; padding: 24px; margin-bottom: 18px; }
-  .kyc-card h2 { font-family: var(--cf-font-display); font-size: 18px; font-weight: 600; color: var(--cf-azure); display: flex; align-items: center; gap: 10px; }
-  .kyc-step-num { width: 26px; height: 26px; border-radius: 50%; background: var(--cf-sky-tint); color: var(--cf-blue); font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; font-family: var(--cf-font-display); }
-  .kyc-card .desc { color: var(--cf-slate); font-size: 13px; margin: 6px 0 16px; }
-
-  .kyc-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 999px; }
-  .kyc-chip--verified { background: var(--cf-teal-tint); color: var(--cf-teal-dark); }
-  .kyc-chip--pending  { background: var(--cf-sky-tint); color: var(--cf-azure); }
-  .kyc-chip--failed   { background: var(--cf-coral-tint); color: var(--cf-coral-dark); }
-
-  .kyc-input { width: 100%; box-sizing: border-box; border: 1px solid var(--cf-mist); border-radius: 10px; padding: 11px 14px; font-family: var(--cf-font-display); font-size: 16px; letter-spacing: 2px; text-transform: uppercase; color: var(--cf-ink); margin-bottom: 12px; }
-  .kyc-input:focus { outline: none; border-color: var(--cf-blue); box-shadow: 0 0 0 3px var(--cf-blue-100); }
-
-  .kyc-btn { background: var(--cf-blue); color: #fff; border: none; border-radius: 10px; font-family: var(--cf-font-sans); font-weight: 600; font-size: 14px; padding: 12px 18px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
-  .kyc-btn:hover { background: var(--cf-blue-700); }
-  .kyc-btn:disabled { opacity: .6; cursor: not-allowed; }
-  .kyc-btn--block { width: 100%; }
-
-  .kyc-msg { font-size: 13px; margin-top: 10px; }
-  .kyc-msg.err { color: var(--cf-danger); }
-  .kyc-msg.ok { color: var(--cf-teal-dark); }
-  .hidden { display: none !important; }
-  .spinner { width: 15px; height: 15px; border: 2px solid rgba(255,255,255,.5); border-top-color: #fff; border-radius: 50%; animation: kycspin .7s linear infinite; }
-  @keyframes kycspin { to { transform: rotate(360deg); } }
+{% block extra_head %}
+<style>
+  .hidden{display:none !important}
+  .kyc-msg{font-size:.85rem;margin-top:.7rem;display:flex;align-items:center;gap:.4rem;font-weight:500}
+  .kyc-msg.err{color:var(--cf-amber)} .kyc-msg.err svg.i{stroke:var(--cf-amber-bright);width:16px;height:16px}
+  .kyc-msg.ok{color:var(--cf-green-deep)} .kyc-msg.ok svg.i{stroke:var(--cf-green-bright);width:16px;height:16px}
+  .spinner{display:inline-block;width:15px;height:15px;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:kycspin .7s linear infinite;vertical-align:-2px}
+  @keyframes kycspin{to{transform:rotate(360deg)}}
+  @media(prefers-reduced-motion:reduce){.spinner{animation:none}}
+</style>
 {% endblock %}
 
-{% block content %}
-<div class="container">
-  <div class="kyc-wrap">
-    <div class="kyc-head">
-      <h1>Verify your identity</h1>
-      <p>A one-time KYC keeps Car Friend safe for everyone. Verify your PAN and Aadhaar — it takes about two minutes.</p>
-    </div>
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="cf-focus">
 
-    <!-- PAN -->
-    <div class="kyc-card">
-      <h2><span class="kyc-step-num">1</span> PAN verification
-        <span id="panChip" class="kyc-chip {% if pan_status == 'approved' %}kyc-chip--verified{% elif pan_status == 'rejected' %}kyc-chip--failed{% else %}kyc-chip--pending{% endif %}" style="margin-left:auto">
-          {% if pan_status == 'approved' %}<i class="bi bi-check-circle-fill"></i> Verified{% elif pan_status == 'rejected' %}<i class="bi bi-x-circle-fill"></i> Failed{% else %}Not verified{% endif %}
-        </span>
-      </h2>
-      <p class="desc">Enter your PAN. We check it instantly and only store the masked number and the registered name.</p>
-      <div id="panForm" class="{% if pan_status == 'approved' %}hidden{% endif %}">
-        <input id="panInput" class="kyc-input" maxlength="10" placeholder="ABCDE1234F" autocomplete="off">
-        <button id="panBtn" class="kyc-btn kyc-btn--block" type="button"><span class="label">Verify PAN</span></button>
-        <div id="panMsg" class="kyc-msg err hidden"></div>
-      </div>
-      <div id="panDone" class="kyc-msg ok {% if pan_status != 'approved' %}hidden{% endif %}"><i class="bi bi-check-circle-fill"></i> PAN verified.</div>
-    </div>
+  <div class="cf-page-head cf-reveal" style="justify-content:center;text-align:center"><h1>Verify your identity</h1></div>
+  <p class="cf-reveal d1" style="text-align:center;color:var(--cf-muted);max-width:46ch;margin:0 auto 1.4rem">A one-time KYC keeps Car Friend safe for everyone. Verify your PAN and Aadhaar, it takes about two minutes.</p>
 
-    <!-- Aadhaar -->
-    <div class="kyc-card">
-      <h2><span class="kyc-step-num">2</span> Aadhaar verification
-        <span id="aadChip" class="kyc-chip {% if aadhaar_status == 'approved' %}kyc-chip--verified{% else %}kyc-chip--pending{% endif %}" style="margin-left:auto">
-          {% if aadhaar_status == 'approved' %}<i class="bi bi-check-circle-fill"></i> Verified{% else %}Not verified{% endif %}
-        </span>
-      </h2>
-      <p class="desc">Verify securely through DigiLocker. Your Aadhaar number is never stored — only a masked value and verification status.</p>
-      <div id="aadForm" class="{% if aadhaar_status == 'approved' %}hidden{% endif %}">
-        <button id="aadBtn" class="kyc-btn kyc-btn--block" type="button"><span class="label"><i class="bi bi-shield-lock"></i> Verify with DigiLocker</span></button>
-        <div id="aadMsg" class="kyc-msg err hidden"></div>
-      </div>
-      <div id="aadDone" class="kyc-msg ok {% if aadhaar_status != 'approved' %}hidden{% endif %}"><i class="bi bi-check-circle-fill"></i> Aadhaar verified.</div>
-    </div>
-
-    <p style="text-align:center;margin-top:18px"><a href="/auth/seller/dashboard/" class="view-all" style="color:var(--cf-blue);font-weight:600;text-decoration:none">← Back to dashboard</a></p>
+  {% if pan_status == 'approved' and aadhaar_status == 'approved' %}
+  <div class="cf-card cf-reveal d1" style="padding:1.2rem 1.3rem;margin-bottom:1rem;display:flex;align-items:center;gap:1rem">
+    <div class="cf-warn-ic" style="background:var(--cf-green-050);border-color:var(--cf-green-100);color:var(--cf-green-bright)"><svg class="i"><use href="#ic-check"/></svg></div>
+    <div><div style="font-weight:800">You're verified</div><div style="color:var(--cf-muted);font-size:.88rem">Your identity is confirmed. Your cars can go to auction.</div></div>
   </div>
-</div>
+  {% endif %}
+
+  <!-- PAN -->
+  <div class="cf-card cf-reveal d1" style="padding:1.3rem 1.35rem;margin-bottom:1rem">
+    <h2 style="font-size:1.05rem;font-weight:800;display:flex;align-items:center;gap:.6rem;margin:0">
+      <span class="step-circle" style="width:26px;height:26px;border-radius:50%;background:var(--cf-green-050);color:var(--cf-green-deep);font-size:.8rem;font-weight:800;display:grid;place-items:center">1</span> PAN verification
+      <span id="panChip" class="{% if pan_status == 'approved' %}cf-status{% elif pan_status == 'rejected' %}cf-chip pend{% else %}cf-chip{% endif %}" style="margin-left:auto">
+        {% if pan_status == 'approved' %}<svg class="i"><use href="#ic-check"/></svg> Verified{% elif pan_status == 'rejected' %}<svg class="i"><use href="#ic-warn"/></svg> Failed{% else %}Not verified{% endif %}
+      </span>
+    </h2>
+    <p style="color:var(--cf-muted);font-size:.86rem;margin:.5rem 0 1rem">Enter your PAN. We check it instantly and only store the masked number and the registered name.</p>
+    <div id="panForm" class="{% if pan_status == 'approved' %}hidden{% endif %}">
+      <input id="panInput" class="cf-input" maxlength="10" placeholder="ABCDE1234F" autocomplete="off" style="text-transform:uppercase;letter-spacing:2px;font-weight:700;margin-bottom:.7rem">
+      <button id="panBtn" class="cf-btn cf-btn-primary" style="width:100%" type="button"><span class="label"><svg class="i"><use href="#ic-shield"/></svg>Verify PAN</span></button>
+      <div id="panMsg" class="kyc-msg err hidden"><svg class="i"><use href="#ic-warn"/></svg><span></span></div>
+    </div>
+    <div id="panDone" class="kyc-msg ok {% if pan_status != 'approved' %}hidden{% endif %}"><svg class="i"><use href="#ic-check"/></svg> PAN verified.</div>
+  </div>
+
+  <!-- Aadhaar -->
+  <div class="cf-card cf-reveal d1" style="padding:1.3rem 1.35rem">
+    <h2 style="font-size:1.05rem;font-weight:800;display:flex;align-items:center;gap:.6rem;margin:0">
+      <span style="width:26px;height:26px;border-radius:50%;background:var(--cf-green-050);color:var(--cf-green-deep);font-size:.8rem;font-weight:800;display:grid;place-items:center">2</span> Aadhaar verification
+      <span id="aadChip" class="{% if aadhaar_status == 'approved' %}cf-status{% else %}cf-chip{% endif %}" style="margin-left:auto">
+        {% if aadhaar_status == 'approved' %}<svg class="i"><use href="#ic-check"/></svg> Verified{% else %}Not verified{% endif %}
+      </span>
+    </h2>
+    <p style="color:var(--cf-muted);font-size:.86rem;margin:.5rem 0 1rem">Verify securely through DigiLocker. Your Aadhaar number is never stored, only a masked value and verification status.</p>
+    <div id="aadForm" class="{% if aadhaar_status == 'approved' %}hidden{% endif %}">
+      <button id="aadBtn" class="cf-btn cf-btn-primary" style="width:100%" type="button"><span class="label"><svg class="i"><use href="#ic-lock"/></svg>Verify with DigiLocker</span></button>
+      <div id="aadMsg" class="kyc-msg err hidden"><svg class="i"><use href="#ic-warn"/></svg><span></span></div>
+    </div>
+    <div id="aadDone" class="kyc-msg ok {% if aadhaar_status != 'approved' %}hidden{% endif %}"><svg class="i"><use href="#ic-check"/></svg> Aadhaar verified.</div>
+  </div>
+
+  <p style="text-align:center;margin-top:1.3rem"><a href="{% url 'seller_dashboard' %}" style="color:var(--cf-green);font-weight:700;text-decoration:none">Back to My Cars</a></p>
+
+</div></div></main>
 {% endblock %}
 
 {% block extra_js %}
@@ -96,7 +84,7 @@
     return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') }, body: JSON.stringify(payload || {}) })
       .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); });
   }
-  function showMsg(el, text) { el.textContent = text; el.classList.remove('hidden'); }
+  function showMsg(el, text) { var s = el.querySelector('span'); if (s) { s.textContent = text; } else { el.textContent = text; } el.classList.remove('hidden'); }
 
   // PAN
   var panInput = $('panInput'), panBtn = $('panBtn'), panMsg = $('panMsg');
@@ -109,8 +97,8 @@
       panBtn.disabled = true; panBtn.innerHTML = '<span class="spinner"></span> Verifying…';
       post('/kyc/pan/', { pan: pan }).then(function (res) {
         panBtn.disabled = false; panBtn.innerHTML = '<span class="label">Verify PAN</span>';
-        if (res.ok && res.data.ok) { $('panForm').classList.add('hidden'); $('panDone').classList.remove('hidden'); $('panChip').className = 'kyc-chip kyc-chip--verified'; $('panChip').innerHTML = '<i class="bi bi-check-circle-fill"></i> Verified'; }
-        else { showMsg(panMsg, (res.data && res.data.error) || 'PAN verification failed.'); $('panChip').className = 'kyc-chip kyc-chip--failed'; $('panChip').innerHTML = '<i class="bi bi-x-circle-fill"></i> Failed'; }
+        if (res.ok && res.data.ok) { $('panForm').classList.add('hidden'); $('panDone').classList.remove('hidden'); $('panChip').className = 'cf-status'; $('panChip').innerHTML = '<svg class="i"><use href="#ic-check"/></svg> Verified'; }
+        else { showMsg(panMsg, (res.data && res.data.error) || 'PAN verification failed.'); $('panChip').className = 'cf-chip pend'; $('panChip').innerHTML = '<svg class="i"><use href="#ic-warn"/></svg> Failed'; }
       }).catch(function () { panBtn.disabled = false; panBtn.innerHTML = '<span class="label">Verify PAN</span>'; showMsg(panMsg, 'Network error. Please try again.'); });
     });
   }
@@ -123,9 +111,9 @@
       aadBtn.disabled = true; aadBtn.innerHTML = '<span class="spinner"></span> Starting…';
       post('/kyc/aadhaar/start/', {}).then(function (res) {
         if (res.ok && res.data.ok && res.data.url) { window.location.href = res.data.url; return; }
-        aadBtn.disabled = false; aadBtn.innerHTML = '<span class="label"><i class="bi bi-shield-lock"></i> Verify with DigiLocker</span>';
+        aadBtn.disabled = false; aadBtn.innerHTML = '<span class="label">Verify with DigiLocker</span>';
         showMsg(aadMsg, (res.data && res.data.error) || 'Could not start Aadhaar verification.');
-      }).catch(function () { aadBtn.disabled = false; aadBtn.innerHTML = '<span class="label"><i class="bi bi-shield-lock"></i> Verify with DigiLocker</span>'; showMsg(aadMsg, 'Network error. Please try again.'); });
+      }).catch(function () { aadBtn.disabled = false; aadBtn.innerHTML = '<span class="label">Verify with DigiLocker</span>'; showMsg(aadMsg, 'Network error. Please try again.'); });
     });
   }
 
