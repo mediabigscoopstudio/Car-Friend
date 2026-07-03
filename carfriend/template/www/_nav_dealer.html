@@ -12,9 +12,9 @@ pending backend (flagged). My Bids points at the dealer dashboard for now.
       <a href="{% url 'dealer_dashboard' %}" class="{% if active == 'bids' %}active{% endif %}"><svg class="i"><use href="#ic-list"/></svg>My Bids</a>
     </nav>
     <div class="cf-navright">
-      <a href="/support/" class="cf-iconbtn" aria-label="Support"><svg class="i"><use href="#ic-life"/></svg></a>
-      <a href="/notifications/" class="cf-iconbtn" aria-label="Notifications"><svg class="i"><use href="#ic-bell"/></svg><span class="cf-dot"></span></a>
-      <a href="/profile/" class="cf-iconbtn" aria-label="Profile"><svg class="i"><use href="#ic-user"/></svg></a>
+      <a href="{% url 'support_home' %}" class="cf-iconbtn" aria-label="Support"><svg class="i"><use href="#ic-life"/></svg></a>
+      <a href="{% url 'notifications_inbox' %}" class="cf-iconbtn" aria-label="Notifications"><svg class="i"><use href="#ic-bell"/></svg><span class="cf-dot"></span></a>
+      <a href="{% url 'profile' %}" class="cf-iconbtn" aria-label="Profile"><svg class="i"><use href="#ic-user"/></svg></a>
     </div>
   </div></div>
 </header>
@@ -22,7 +22,7 @@ pending backend (flagged). My Bids points at the dealer dashboard for now.
 <header class="cf-mobilebar d-lg-none">
   <div class="cf-container"><div class="cf-mobilebar-inner" style="justify-content:space-between">
     <a class="cf-logo" href="{% url 'dealer_auction_list' %}"><span class="cf-logo-mark"><svg class="i"><use href="#ic-car"/></svg></span><span class="cf-logo-name">Car<span>Friend</span></span></a>
-    <a href="/notifications/" class="cf-iconbtn" aria-label="Notifications"><svg class="i"><use href="#ic-bell"/></svg><span class="cf-dot"></span></a>
+    <a href="{% url 'notifications_inbox' %}" class="cf-iconbtn" aria-label="Notifications"><svg class="i"><use href="#ic-bell"/></svg><span class="cf-dot"></span></a>
   </div></div>
 </header>
 
@@ -30,6 +30,6 @@ pending backend (flagged). My Bids points at the dealer dashboard for now.
   <a href="{% url 'dealer_auction_list' %}" class="cf-tab {% if active == 'auctions' %}active{% endif %}"><svg class="i"><use href="#ic-broadcast"/></svg>Auctions</a>
   <a href="{% url 'winner_ocb_list' %}" class="cf-tab {% if active == 'ocb' %}active{% endif %}"><svg class="i"><use href="#ic-bolt"/></svg>OCB</a>
   <a href="{% url 'dealer_dashboard' %}" class="cf-tab {% if active == 'bids' %}active{% endif %}"><svg class="i"><use href="#ic-list"/></svg>My Bids</a>
-  <a href="/support/" class="cf-tab {% if active == 'support' %}active{% endif %}"><svg class="i"><use href="#ic-life"/></svg>Support</a>
-  <a href="/profile/" class="cf-tab {% if active == 'profile' %}active{% endif %}"><svg class="i"><use href="#ic-user"/></svg>Profile</a>
+  <a href="{% url 'support_home' %}" class="cf-tab {% if active == 'support' %}active{% endif %}"><svg class="i"><use href="#ic-life"/></svg>Support</a>
+  <a href="{% url 'profile' %}" class="cf-tab {% if active == 'profile' %}active{% endif %}"><svg class="i"><use href="#ic-user"/></svg>Profile</a>
 </nav>

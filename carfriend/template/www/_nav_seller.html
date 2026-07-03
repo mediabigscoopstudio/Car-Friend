@@ -8,11 +8,11 @@ support, or profile. Support / Profile / Notifications routes are pending backen
     <a class="cf-logo" href="{% url 'seller_dashboard' %}"><span class="cf-logo-mark"><svg class="i"><use href="#ic-car"/></svg></span><span class="cf-logo-name">Car<span>Friend</span></span></a>
     <nav class="cf-seg" aria-label="Primary">
       <a href="{% url 'seller_dashboard' %}" class="{% if active == 'cars' %}active{% endif %}"><svg class="i"><use href="#ic-car"/></svg>My Cars</a>
-      <a href="/support/" class="{% if active == 'support' %}active{% endif %}"><svg class="i"><use href="#ic-life"/></svg>Support</a>
-      <a href="/profile/" class="{% if active == 'profile' %}active{% endif %}"><svg class="i"><use href="#ic-user"/></svg>Profile</a>
+      <a href="{% url 'support_home' %}" class="{% if active == 'support' %}active{% endif %}"><svg class="i"><use href="#ic-life"/></svg>Support</a>
+      <a href="{% url 'profile' %}" class="{% if active == 'profile' %}active{% endif %}"><svg class="i"><use href="#ic-user"/></svg>Profile</a>
     </nav>
     <div class="cf-navright">
-      <a href="/notifications/" class="cf-iconbtn" aria-label="Notifications"><svg class="i"><use href="#ic-bell"/></svg><span class="cf-dot"></span></a>
+      <a href="{% url 'notifications_inbox' %}" class="cf-iconbtn" aria-label="Notifications"><svg class="i"><use href="#ic-bell"/></svg><span class="cf-dot"></span></a>
     </div>
   </div></div>
 </header>
@@ -20,12 +20,12 @@ support, or profile. Support / Profile / Notifications routes are pending backen
 <header class="cf-mobilebar d-lg-none">
   <div class="cf-container"><div class="cf-mobilebar-inner" style="justify-content:space-between">
     <a class="cf-logo" href="{% url 'seller_dashboard' %}"><span class="cf-logo-mark"><svg class="i"><use href="#ic-car"/></svg></span><span class="cf-logo-name">Car<span>Friend</span></span></a>
-    <a href="/notifications/" class="cf-iconbtn" aria-label="Notifications"><svg class="i"><use href="#ic-bell"/></svg><span class="cf-dot"></span></a>
+    <a href="{% url 'notifications_inbox' %}" class="cf-iconbtn" aria-label="Notifications"><svg class="i"><use href="#ic-bell"/></svg><span class="cf-dot"></span></a>
   </div></div>
 </header>
 
 <nav class="cf-tabbar d-lg-none" aria-label="Primary">
   <a href="{% url 'seller_dashboard' %}" class="cf-tab {% if active == 'cars' %}active{% endif %}"><svg class="i"><use href="#ic-car"/></svg>My Cars</a>
-  <a href="/support/" class="cf-tab {% if active == 'support' %}active{% endif %}"><svg class="i"><use href="#ic-life"/></svg>Support</a>
-  <a href="/profile/" class="cf-tab {% if active == 'profile' %}active{% endif %}"><svg class="i"><use href="#ic-user"/></svg>Profile</a>
+  <a href="{% url 'support_home' %}" class="cf-tab {% if active == 'support' %}active{% endif %}"><svg class="i"><use href="#ic-life"/></svg>Support</a>
+  <a href="{% url 'profile' %}" class="cf-tab {% if active == 'profile' %}active{% endif %}"><svg class="i"><use href="#ic-user"/></svg>Profile</a>
 </nav>
