@@ -87,35 +87,15 @@ def retail_lead_detail(request, lead_id):
 
 @require_POST
 def retail_create_auction(request, lead_id):
+    """DEPRECATED start path. Auctions are now started ONLY by the Retail Head
+    (auctions.services.start_auction, via rh_start_auction) — a single creation
+    path. This associate route no longer creates anything; it just redirects so an
+    old bookmark can't spawn an auction."""
     guard = _require_retail(request)
     if guard:
         return guard
-    from django.utils import timezone
-    import datetime
-    from auctions.models import Auction
-    from crm.services import transition_lead
-    lead = get_object_or_404(Lead.objects.select_related("vehicle"), id=lead_id)
-    # Guard: a SCRAP-disposition car must never be pushed to auction / OCB.
-    if lead.vehicle.disposition == "scrap":
-        messages.error(request, "This car is marked SCRAP and cannot be sent to auction.")
-        return redirect(f"/crm/retail/lead/{lead.id}/")
-    # Reuse a still-open auction for this vehicle if one exists (one was created
-    # at inspection approval); otherwise create one. Either way, advance the lead.
-    auction = (Auction.objects.filter(vehicle=lead.vehicle)
-               .exclude(status=Auction.Status.CLOSED).order_by("-created_at").first())
-    if not auction:
-        from auctions.utils import reserve_gross
-        start = timezone.now()
-        # Dealer-facing reserve is GROSS (base + margin + GST); expected_price
-        # with an est_market_value fallback (see auctions.utils.reserve_gross).
-        auction = Auction.objects.create(
-            vehicle=lead.vehicle, reserve_price=reserve_gross(lead.vehicle),
-            created_by=request.user, start_at=start,
-            end_at=start + datetime.timedelta(minutes=30), status=Auction.Status.LIVE)
-    transition_lead(lead, "auction_created", actor=request.user)
-    transition_lead(lead, "auction_live", actor=request.user)
-    messages.success(request, "Auction is live for this lead.")
-    return redirect(f"/crm/retail/lead/{lead.id}/")
+    messages.info(request, "Auctions are now started by the Retail Head.")
+    return redirect(f"/crm/retail/lead/{lead_id}/")
 
 
 # ── OCB ──────────────────────────────────────────────────────────────────────

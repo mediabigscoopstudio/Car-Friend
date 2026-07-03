@@ -83,15 +83,10 @@
   <div class="decide">
     <form method="post" action="/inspection_decide/{{ r.id }}">
       {% csrf_token %}<input type="hidden" name="action" value="approve">
-      <h3>Approve &amp; launch auction</h3>
-      <div class="du">
-        <label><input type="radio" name="duration_minutes" value="15"> 15m</label>
-        <label><input type="radio" name="duration_minutes" value="30" checked> 30m</label>
-        <label><input type="radio" name="duration_minutes" value="60"> 60m</label>
-        <label><input type="radio" name="duration_minutes" value="120"> 2h</label>
-      </div>
+      <h3>Approve report</h3>
+      <p style="font-size:13px;color:var(--txt-2);margin:0 0 8px">The Retail Head sets the price and starts the auction.</p>
       <textarea name="note" rows="2" placeholder="Internal note…"></textarea>
-      <button class="b-approve" type="submit">Approve &amp; launch</button>
+      <button class="b-approve" type="submit">Approve report</button>
     </form>
     <form method="post" action="/inspection_decide/{{ r.id }}">
       {% csrf_token %}<input type="hidden" name="action" value="redo">

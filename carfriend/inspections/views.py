@@ -149,38 +149,28 @@ def inspection_decide(request, id):
     r.decision_note = request.POST.get("note", "")
 
     if action == "approve":
-        duration = int(request.POST.get("duration_minutes", 30))
+        # Approval NO LONGER starts an auction. It certifies the report and hands
+        # the lead to the Retail Head, who sets the price and starts the auction
+        # (auctions.services.start_auction). An auction can no longer exist without
+        # a human pricing it — this permanently kills the ₹0-reserve bug.
         r.decision = "approved"
         r.save()
         v = r.visit
-        v.status = "approved"
-        v.vehicle.status = "listed"
-        v.vehicle.save()
+        v.status = "approved"                        # signal -> Lead: admin_approved
+        v.vehicle.status = v.vehicle.STATUS_APPROVED
+        v.vehicle.inspection_report_ready = True
+        v.vehicle.save(update_fields=["status", "inspection_report_ready", "updated_at"])
         v.save()
-        from auctions.models import Auction
-        from auctions.utils import reserve_gross
-        start = timezone.now()
-        # Dealer-facing reserve is GROSS (base + margin + GST). Base = seller
-        # expected_price, falling back to this report's est_market_value.
-        a = Auction.objects.create(
-            vehicle=v.vehicle,
-            reserve_price=reserve_gross(v.vehicle, report=r),
-            created_by=request.user,
-            start_at=start,
-            end_at=start + datetime.timedelta(minutes=duration),
-            status="live",
-        )
-        # Pipeline: the InspectionVisit post_save signal advances the lead to
-        # Admin Approved (it rests there for the Retail Head inbox — allocation
-        # comes next; the auction entity created here does not auto-advance it).
-        log(request.user, "inspection.approve", r, request, duration=duration, auction=a.id)
+        # Lead advances to admin_approved via the InspectionVisit post_save signal
+        # (inspections/signals.py) and lands in the Retail Head approved-leads inbox.
+        log(request.user, "inspection.approve", r, request)
         notify(v.inspector, "insp_decision",
                title=f"Approved: {v.vehicle.display_name}",
-               body=f"Auction is live for {duration} min.")
-        notify(v.vehicle.seller, "auction_start",
-               title=f"Auction live: {v.vehicle.display_name}",
-               body=f"Live for {duration} minutes.")
-        return redirect(f"/auction/{a.id}")
+               body="Report approved — sent to the Retail Head to price and auction.")
+        notify(v.vehicle.seller, "insp_decision",
+               title=f"Inspection approved: {v.vehicle.display_name}",
+               body="Your inspection report is approved. Your car goes to auction shortly.")
+        return redirect("/inspection_queue")
 
     if action == "redo":
         r.decision = "redo"

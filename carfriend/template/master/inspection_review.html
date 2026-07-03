@@ -553,23 +553,16 @@
 <!-- ──────────────────── MODALS ──────────────────── -->
 <div id="modal-approve" class="modal-overlay" style="display:none">
   <div class="modal-box">
-    <h3>Approve &amp; Start Auction</h3>
-    <p>Set the auction duration for <strong>{{ r.visit.vehicle }}</strong>.</p>
+    <h3>Approve report</h3>
+    <p>Approve the inspection for <strong>{{ r.visit.vehicle }}</strong>. It moves to the Retail Head, who sets the price and starts the auction.</p>
     <form method="post" action="/inspection_decide/{{ r.id }}">
       {% csrf_token %}
       <input type="hidden" name="action" value="approve">
-      <label class="field-label">Duration</label>
-      <div class="duration-pills">
-        <label><input type="radio" name="duration_minutes" value="15"> 15 min</label>
-        <label><input type="radio" name="duration_minutes" value="30" checked> 30 min</label>
-        <label><input type="radio" name="duration_minutes" value="60"> 60 min</label>
-        <label><input type="radio" name="duration_minutes" value="120"> 2 hr</label>
-      </div>
       <label class="field-label">Note (optional)</label>
       <textarea name="note" class="field-input" rows="2" placeholder="Internal note…"></textarea>
       <div class="modal-actions">
         <button type="button" class="btn-cancel" onclick="closeModals()">Cancel</button>
-        <button type="submit" class="btn-approve-submit">Approve &amp; Launch</button>
+        <button type="submit" class="btn-approve-submit">Approve report</button>
       </div>
     </form>
   </div>
