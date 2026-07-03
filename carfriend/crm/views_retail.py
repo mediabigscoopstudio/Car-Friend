@@ -104,13 +104,12 @@ def retail_create_auction(request, lead_id):
     auction = (Auction.objects.filter(vehicle=lead.vehicle)
                .exclude(status=Auction.Status.CLOSED).order_by("-created_at").first())
     if not auction:
-        from core.margin import gross_breakdown
+        from auctions.utils import reserve_gross
         start = timezone.now()
-        # Dealer-facing reserve is GROSS (base seller price + margin + GST).
-        _base = int(lead.vehicle.expected_price or 0)
-        _reserve = gross_breakdown(_base)["gross"] if _base else 0
+        # Dealer-facing reserve is GROSS (base + margin + GST); expected_price
+        # with an est_market_value fallback (see auctions.utils.reserve_gross).
         auction = Auction.objects.create(
-            vehicle=lead.vehicle, reserve_price=_reserve,
+            vehicle=lead.vehicle, reserve_price=reserve_gross(lead.vehicle),
             created_by=request.user, start_at=start,
             end_at=start + datetime.timedelta(minutes=30), status=Auction.Status.LIVE)
     transition_lead(lead, "auction_created", actor=request.user)
