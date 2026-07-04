@@ -72,9 +72,13 @@ def seller_decision(request, auction_id):
     action = request.POST.get("action")
 
     if action == "accept":
-        if not auction.highest_bid:
+        hb = auction.highest_bid
+        if not hb:
             return JsonResponse({"error": "There are no bids to accept."}, status=400)
         SellerDecision.objects.create(auction=auction, decision=SellerDecision.Choice.ACCEPT)
+        # Seller accepted the winning GROSS bid -> auto-create the Deal (idempotent).
+        from deals.services import create_deal_from_win
+        create_deal_from_win(auction.vehicle, hb.amount, hb.dealer, auction.vehicle.seller)
         log(request.user, "auction.seller_accept", auction, request)
         return JsonResponse({"status": "accepted"})
 

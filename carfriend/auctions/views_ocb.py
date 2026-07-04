@@ -78,10 +78,10 @@ def ocb_select(request, offer_id):
     listing.save(update_fields=["status"])
 
     v = listing.vehicle
-    deal = Deal.objects.create(
-        vehicle=v, seller=v.seller, dealer=offer.dealer,
-        final_price=offer.price, seller_shown_price=listing.ocb_price,
-        assigned_sales=offer.submitted_by, status=Deal.Status.OPEN)
+    # Seller-accepted OCB offer -> shared Deal creation (grossed money split).
+    from deals.services import create_deal_from_win
+    deal = create_deal_from_win(v, offer.price, offer.dealer, v.seller,
+                                assigned_sales=offer.submitted_by)
     log(request.user, "ocb.close", listing, request, deal_id=deal.id, offer_id=offer.id)
     if offer.submitted_by:
         notify(offer.submitted_by, "task_assigned", title="Your OCB offer was selected",
