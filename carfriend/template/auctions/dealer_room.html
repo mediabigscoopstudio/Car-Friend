@@ -444,30 +444,30 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') clos
   var txt   = document.getElementById('reserve-warn-txt');
   var quick = document.getElementById('quick');
   var form  = document.getElementById('bid-form');
-  var btn   = form ? form.querySelector('button[type="submit"]') : null;
-  if (!amt || !warn || !txt) return;
+  var btn   = form ? (form.querySelector('.btn-bid') || form.querySelector('button[type="submit"]') || form.querySelector('button')) : null;
+  if (!amt || !warn || !txt || !form) return;
   function fmt(n){ return '₹' + Number(n).toLocaleString('en-IN'); }
+  function val(){ return parseInt(String(amt.value || '').replace(/[^0-9]/g, ''), 10); }
   function minNext(){                           // live min-next, read from the socket's floor-hint
     var fh = document.getElementById('floor-hint');
     var m = fh ? String(fh.textContent || '').replace(/[^0-9]/g, '') : '';
     return m ? parseInt(m, 10) : 0;
   }
+  function qualifies(){ var v = val(); return !isNaN(v) && v > 0 && v >= RES && v >= minNext(); }
   function sanitize(){ var c = amt.value.replace(/[^0-9]/g, ''); if (c !== amt.value) amt.value = c; }
   function check() {
-    var v = parseInt(String(amt.value || '').replace(/[^0-9]/g, ''), 10);
-    var has = !isNaN(v) && v > 0;
+    var v = val(), has = !isNaN(v) && v > 0;
     if (has && v < RES) {                       // red alert names the GROSS reserve
       txt.textContent = 'Below reserve — bid ' + fmt(RES) + ' or higher to qualify.';
       warn.style.display = 'flex';
     } else {
       warn.style.display = 'none';
     }
-    // Enabled only when the amount clears BOTH the gross reserve AND the min-next.
-    var qualifies = has && v >= RES && v >= minNext();
-    if (btn && !amt.disabled) {                 // don't fight lockBidding on a closed auction
-      btn.disabled = !qualifies;
-      btn.style.opacity = qualifies ? '' : '.5';
-      btn.style.cursor  = qualifies ? '' : 'not-allowed';
+    if (btn && !amt.disabled) {                 // visual disable; don't fight lockBidding on a closed auction
+      var ok = qualifies();
+      btn.disabled = !ok;
+      btn.style.opacity = ok ? '' : '.5';
+      btn.style.cursor  = ok ? '' : 'not-allowed';
     }
   }
   amt.addEventListener('input', function(){ sanitize(); check(); });
@@ -475,6 +475,21 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') clos
   if (quick) quick.addEventListener('click', function () { setTimeout(check, 0); });  // quick-add chips
   setInterval(check, 400);   // catch programmatic quick-add value changes
   check();
+
+  // HARD block regardless of the button's visual state: intercept the form submit in
+  // the CAPTURE phase (fires BEFORE the bidding socket's own submit handler) and
+  // cancel it whenever the amount is below the gross reserve / min-next. The socket
+  // block is untouched; a qualifying bid passes straight through to it.
+  document.addEventListener('submit', function (e) {
+    if (!e.target || e.target.id !== 'bid-form') return;
+    if (!qualifies()) {
+      e.preventDefault();
+      e.stopPropagation();
+      check();
+      var m = document.getElementById('bid-msg');
+      if (m) { m.textContent = 'Below reserve — bid ' + fmt(RES) + ' or higher to qualify.'; m.className = 'bid-msg err'; }
+    }
+  }, true);
 })();
 </script>
 {% endblock %}
