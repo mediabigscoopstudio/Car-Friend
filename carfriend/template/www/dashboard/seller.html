@@ -143,20 +143,30 @@ function inspStrip(v) {
 }
 
 function tileHtml(v) {
+  // Photo-free tile: lead with the grade badge, then identity + facts + price.
   var meta = [v.year, v.fuel_type, v.odometer_km ? v.odometer_km.toLocaleString('en-IN') + ' km' : '', v.city].filter(Boolean);
   var facts = meta.map(function (m) { return '<span>' + esc(m) + '</span>'; }).join('');
+  var grade = v.grade
+    ? '<div class="cf-grade"><b>' + esc(v.grade) + '</b><small>GRADE</small></div>'
+    : '<div class="cf-grade" style="background:var(--cf-line-strong);box-shadow:none"><svg class="i" style="stroke:#fff;width:22px;height:22px"><use href="#ic-clock"/></svg></div>';
+  var scrap = (v.disposition === 'scrap')
+    ? '<span class="cf-status" style="background:#fdf0e3;color:#b7791f;border-color:#f0d9a8"><svg class="i"><use href="#ic-warn"/></svg>Scrap</span>' : '';
+  var report = (v.inspection_report_ready && v.report_url)
+    ? '<a class="cf-btn cf-btn-ghost" style="padding:.3rem .7rem;font-size:.78rem" href="' + v.report_url + '" target="_blank" rel="noopener"><svg class="i"><use href="#ic-file"/></svg>Report</a>' : '';
   return '<div class="cf-tile cf-reveal">' +
-    '<div class="cf-tile-head"><div class="cf-media"><svg class="i car-glyph"><use href="#ic-car"/></svg>' +
-      '<span class="cf-media-tag"><svg class="i"><use href="#ic-shield"/></svg>Inspected</span>' +
-      '<span class="cf-plate"><i>P</i>Plate hidden</span></div>' +
-      '<div class="cf-tile-meta"><span class="cf-status">' + esc(v.status_label) + '</span>' +
-      (v.disposition === 'scrap' ? '<span class="cf-status" style="background:#fdf0e3;color:#b7791f;border-color:#f0d9a8;margin-left:.4rem"><svg class="i"><use href="#ic-warn"/></svg>Scrap</span>' : '') +
-      '<div class="cf-cartitle">' + esc(v.display_name) + '</div>' +
-      (v.plate_number ? '<div class="cf-facts" style="margin-top:.15rem"><span style="font-variant-numeric:tabular-nums;letter-spacing:.03em;font-weight:600">' + esc(v.plate_number) + '</span></div>' : '') +
-      '<div class="cf-facts">' + facts + '</div>' +
-      (v.expected_price ? '<div class="cf-facts" style="margin-top:.4rem"><span style="color:var(--cf-green);font-weight:700">' + fmtPrice(v.expected_price) + ' expected</span></div>' : '') +
-      '</div></div>' +
-    '<div class="cf-div"></div>' + inspStrip(v) +
+    '<div class="cf-tile-head" style="align-items:flex-start">' + grade +
+      '<div class="cf-tile-meta" style="align-self:flex-start">' +
+        '<div style="display:flex;align-items:center;gap:.45rem;flex-wrap:wrap"><span class="cf-status">' + esc(v.status_label) + '</span>' + scrap + '</div>' +
+        '<div class="cf-cartitle" style="margin:.35rem 0 .1rem">' + esc(v.display_name) + '</div>' +
+        (v.plate_number ? '<div style="font-variant-numeric:tabular-nums;letter-spacing:.05em;font-weight:700;color:var(--cf-ink-soft);font-size:.9rem;margin-bottom:.45rem">' + esc(v.plate_number) + '</div>' : '') +
+        '<div class="cf-facts">' + facts + '</div>' +
+        '<div style="display:flex;align-items:center;gap:.9rem;margin-top:.55rem;flex-wrap:wrap">' +
+          (v.expected_price ? '<span><span style="color:var(--cf-green);font-weight:800;font-size:1.05rem">' + fmtPrice(v.expected_price) + '</span> <span style="color:var(--cf-muted);font-size:.82rem">expected</span></span>' : '') +
+          report +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="cf-div"></div>' +
     journeyHtml(v) +
     '<div class="cf-tile-foot">' + saleButtons(v) + '</div></div>';
 }
