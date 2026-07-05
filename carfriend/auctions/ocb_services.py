@@ -41,6 +41,34 @@ def offer_to_winner(ocb, *, actor=None):
     return ocb
 
 
+def create_ocb_from_counter(auction, base_price, *, actor=None):
+    """Seller COUNTERED the highest bid -> create an OCB seeded with that counter.
+
+    ocb_price is stored GROSS (base + margin + GST via core.margin — same grossing
+    as auctions); the seller's BASE ask lives on the SellerDecision. Offered to the
+    auction WINNER first (tier 1) via offer_to_winner. Idempotent — one active OCB
+    per vehicle. assigned_to = the lead's assigned Retail Associate (only they may
+    later manage / declare / close it)."""
+    from core.margin import gross_breakdown
+    from crm.models import Lead
+
+    vehicle = auction.vehicle
+    existing = (OCBListing.objects.filter(vehicle=vehicle)
+                .exclude(status__in=[OCBListing.Status.AGREEMENT, OCBListing.Status.REJECTED])
+                .order_by("-id").first())
+    if existing:
+        return existing
+    lead = Lead.objects.filter(vehicle=vehicle).select_related("assigned_associate").first()
+    ocb = OCBListing.objects.create(
+        vehicle=vehicle, auction=auction,
+        ocb_price=gross_breakdown(int(base_price or 0))["gross"],   # dealer-facing GROSS
+        assigned_to=(lead.assigned_associate if lead else None),    # the lead's RA owns it
+        status=OCBListing.Status.OPEN,
+    )
+    offer_to_winner(ocb, actor=actor)
+    return ocb
+
+
 def winner_respond(ocb, accepted, *, actor=None):
     """The auction winner accepts or declines the OCB offered to them.
 

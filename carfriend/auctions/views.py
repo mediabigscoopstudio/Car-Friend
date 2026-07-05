@@ -92,13 +92,23 @@ def seller_decision(request, auction_id):
             return JsonResponse({"error": "Enter a valid counter price."}, status=400)
         SellerDecision.objects.create(auction=auction, decision=SellerDecision.Choice.COUNTER,
                                       counter_price=amount)
+        # The counter price is the seller's BASE ask -> seed an OCB, offered to the
+        # auction winner first (ocb_price stored GROSS via core.margin). Idempotent.
+        from auctions.ocb_services import create_ocb_from_counter
+        create_ocb_from_counter(auction, amount, actor=request.user)
         log(request.user, "auction.seller_counter", auction, request, counter=amount)
         return JsonResponse({"status": "countered", "counter_price": amount})
 
     if action == "reauction":
         SellerDecision.objects.create(auction=auction, decision=SellerDecision.Choice.REAUCTION)
-        auction.status = Auction.Status.REAUCTION   # valid choice — flags admin to reactivate
+        auction.status = Auction.Status.REAUCTION   # flags the Retail Head to restart it
         auction.save(update_fields=["status"])
+        # Re-auction is a REQUEST to the Retail Head, who restarts it from /pipeline/.
+        from accounts.models import Role, User
+        for head in User.objects.filter(role=Role.RETAIL_HEAD, is_suspended=False):
+            notify(head, "task_assigned", title="Re-auction requested",
+                   body=f"{auction.vehicle} — the seller asked to re-auction.",
+                   url="/crm/retail-head/")
         log(request.user, "auction.seller_reauction", auction, request)
         return JsonResponse({"status": "reauction_requested"})
 
