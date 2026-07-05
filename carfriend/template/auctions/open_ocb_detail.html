@@ -1,0 +1,58 @@
+{% extends "base/base_www.html" %}
+{% block title %}{{ vehicle.name }} — Open OCB — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_dealer.html" with active="open_ocb" %}{% endblock %}
+
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="cf-focus">
+
+  <div class="cf-reveal" style="padding-top:clamp(14px,2.5vw,22px)">
+    <a href="{% url 'open_ocb_list' %}" class="cf-btn cf-btn-ghost" style="padding:.5rem .9rem"><svg class="i" style="transform:rotate(180deg)"><use href="#ic-out"/></svg>Open OCB</a>
+  </div>
+
+  <div class="cf-page-head cf-reveal"><h1>One Click Buy — open round</h1></div>
+
+  <article class="cf-card cf-reveal d1" style="overflow:hidden">
+    {% if inspection.hero %}
+    <div style="aspect-ratio:16/9;max-height:280px;overflow:hidden;background:var(--cf-green-050)"><img src="{{ inspection.hero }}" alt="{{ vehicle.name }}" style="width:100%;height:100%;object-fit:cover;display:block"></div>
+    {% endif %}
+    <div style="padding:1.3rem 1.4rem">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap">
+        <div>
+          <div style="font-weight:800;font-size:1.15rem">{{ vehicle.name }} {{ vehicle.year }}</div>
+          <div class="cf-ac-specs" style="margin-top:.2rem">{% if vehicle.fuel %}{{ vehicle.fuel }}{% endif %}{% if vehicle.transmission %} · {{ vehicle.transmission }}{% endif %}{% if vehicle.km %} · {{ vehicle.km }} km{% endif %}{% if vehicle.city %} · {{ vehicle.city }}{% endif %}</div>
+        </div>
+        {% if inspection.grade %}<span class="insp-grade" style="background:var(--cf-green-100);color:var(--cf-green-deep);font-weight:800;padding:.2rem .7rem;border-radius:999px">Grade {{ inspection.grade }}</span>{% endif %}
+      </div>
+
+      <div class="cf-div" style="margin:1.1rem 0"></div>
+      <div class="cf-bid-l">Ask price (offer at or above)</div>
+      <div class="cf-bid-v" style="color:var(--cf-green);font-size:2rem">₹{{ floor }}</div>
+
+      {% if inspection %}
+      <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem">
+        {% if inspection.score %}<span class="cf-chip"><svg class="i" style="stroke:var(--cf-green-bright)"><use href="#ic-gauge"/></svg>Score {{ inspection.score }}/100</span>{% endif %}
+        {% if inspection.has_challans %}<span class="cf-chip pend"><svg class="i"><use href="#ic-warn"/></svg>Pending challans</span>{% else %}<span class="cf-chip ok"><svg class="i"><use href="#ic-check"/></svg>No challans</span>{% endif %}
+      </div>
+      {% endif %}
+      {% if my_offer %}<div class="cf-foot-note" style="margin-top:.9rem"><svg class="i"><use href="#ic-check"/></svg>Your current offer: ₹{{ my_offer.price }}. Submit again to update it.</div>{% endif %}
+    </div>
+  </article>
+
+  <div class="cf-card cf-reveal d1" style="padding:1.3rem 1.4rem;margin-top:1rem">
+    <div class="cf-flabel" style="margin-bottom:.9rem">Your offer</div>
+    <form method="post" action="{% url 'open_ocb_offer' ocb.id %}">
+      {% csrf_token %}
+      <div class="cf-field" style="margin-bottom:.85rem">
+        <label for="ocbprice">Your all-in price (₹ — the ask or more)</label>
+        <input type="number" inputmode="numeric" id="ocbprice" name="price" class="cf-input" min="{{ floor }}" value="{{ floor }}" placeholder="e.g. {{ floor }}">
+      </div>
+      <div style="display:flex;gap:.65rem;flex-wrap:wrap">
+        <button class="cf-btn cf-btn-primary" type="submit" name="decision" value="offer"><svg class="i"><use href="#ic-check"/></svg>Submit offer</button>
+        <button class="cf-btn cf-btn-ghost" type="submit" name="decision" value="pass">Pass</button>
+      </div>
+    </form>
+    <div class="cf-foot-note" style="margin-top:.9rem"><svg class="i"><use href="#ic-shield"/></svg>Send your best all-in price. If the seller accepts your offer, the paperwork is coordinated for you.</div>
+  </div>
+
+</div></div></main>
+{% endblock %}

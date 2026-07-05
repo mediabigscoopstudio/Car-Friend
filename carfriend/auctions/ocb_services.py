@@ -9,7 +9,7 @@ the sales side may see it.
 from django.utils import timezone
 
 from accounts.models import Role, User
-from auctions.models import Auction, OCBListing
+from auctions.models import Auction, OCBListing, OCBOffer
 from notifications.services import notify
 
 
@@ -47,6 +47,53 @@ def offer_to_winner(ocb, *, actor=None):
 # (crm.views_retail.retail_lead_create_ocb), which stamps assigned_to = that RA so
 # an OCB can never be orphaned (the old auto-path set assigned_to null when no RA
 # was allocated yet — that produced orphan OCB id=5).
+
+
+# ── Winner-first → open-to-all cascade ────────────────────────────────────────
+# The winner tier is exhausted (winner passed, or the seller rejected the winner's
+# offer → WINNER_DECLINED), or the OCB had no auction winner to begin with (OPEN).
+# In those states the OCB is visible/offerable to ALL dealers, including the winner.
+OPEN_ROUND_STATUSES = (
+    OCBListing.Status.OPEN,               # created with no auction winner
+    OCBListing.Status.WINNER_DECLINED,    # winner passed / seller rejected winner
+    OCBListing.Status.ASSIGNED_TO_SALES,  # RA declared it to the sales side
+    OCBListing.Status.DEALERS_CONTACTED,  # open, offers already arriving
+)
+
+
+def open_round_listings():
+    """OCBs open to ALL dealers (winner tier exhausted, or no winner existed)."""
+    return OCBListing.objects.filter(status__in=OPEN_ROUND_STATUSES)
+
+
+def dealer_can_offer(ocb, dealer):
+    """The winner-first GATE for the OPEN board, enforced server-side: a dealer may
+    see/offer here ONLY in the open round. While an OCB is still winner-first
+    (OFFERED_TO_WINNER / WINNER_ACCEPTED awaiting the seller), NO dealer can offer
+    on the open board — the winner acts through their own winner-first surface
+    (winner_ocb_*), which is gated by offered_to=that dealer. Once the winner passes
+    (or the seller rejects) the OCB enters the open round and every dealer, including
+    the former winner, may offer here."""
+    return ocb.status in OPEN_ROUND_STATUSES
+
+
+def add_ocb_offer(ocb, *, dealer, gross, submitted_by, notes=""):
+    """Create a dealer OCBOffer (GROSS) and advance the OCB to dealers_contacted on
+    the first offer. Shared by the dealer self-serve slider and the Sales Associate
+    entry path so the rule lives in ONE place. Notifies the assigned Retail
+    Associate as BASE (the RA is a retail surface — never a gross figure)."""
+    offer = OCBOffer.objects.create(ocb_listing=ocb, dealer=dealer, price=gross,
+                                    notes=notes, submitted_by=submitted_by)
+    if ocb.status in (OCBListing.Status.OPEN, OCBListing.Status.WINNER_DECLINED,
+                      OCBListing.Status.ASSIGNED_TO_SALES):
+        ocb.status = OCBListing.Status.DEALERS_CONTACTED
+        ocb.save(update_fields=["status", "updated_at"])
+    if ocb.assigned_to and ocb.assigned_to_id != getattr(submitted_by, "id", None):
+        from core.margin import base_from_gross
+        notify(ocb.assigned_to, "task_assigned", title="New dealer offer",
+               body=f"₹{base_from_gross(gross)['base']:,} (base) for {ocb.vehicle}",
+               url=f"/crm/retail/ocb/{ocb.id}/")
+    return offer
 
 
 def winner_respond(ocb, accepted, *, actor=None):

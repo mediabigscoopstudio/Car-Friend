@@ -82,16 +82,13 @@ def sales_ocb_detail(request, ocb_id):
             if not dealer or price <= 0:
                 messages.error(request, "Pick a dealer and enter a valid offer price.")
             else:
-                OCBOffer.objects.create(
-                    ocb_listing=ocb, dealer=dealer, price=price,
-                    notes=(request.POST.get("notes") or "").strip(), submitted_by=request.user)
-                # First dealer offer moves the OCB into "dealers contacted".
-                if ocb.status == OCBListing.Status.ASSIGNED_TO_SALES:
-                    ocb.status = OCBListing.Status.DEALERS_CONTACTED
-                    ocb.save(update_fields=["status", "updated_at"])
-                if ocb.assigned_to and ocb.assigned_to != request.user:
-                    notify(ocb.assigned_to, "task_assigned", title="New dealer offer",
-                           body=f"₹{price:,} for {_car(ocb.vehicle)}", url=f"/crm/retail/ocb/{ocb.id}/")
+                # Shared path: creates the OCBOffer (GROSS), advances the OCB to
+                # dealers_contacted on the first offer, and notifies the assigned RA
+                # as BASE (retail surface — never gross). Same rule as the dealer
+                # self-serve slider.
+                from auctions.ocb_services import add_ocb_offer
+                add_ocb_offer(ocb, dealer=dealer, gross=price, submitted_by=request.user,
+                              notes=(request.POST.get("notes") or "").strip())
                 messages.success(request, "Offer submitted.")
         return redirect(f"/crm/sales/ocb/{ocb.id}/")
 

@@ -10,6 +10,10 @@ urlpatterns = [
     path("", d.dealer_auction_list, name="dealer_auction_list"),
     path("purchases/", d.dealer_purchases, name="dealer_purchases"),
     path("ocb/offers/", w.winner_ocb_list, name="winner_ocb_list"),
+    # Open round — OCB opened to all dealers (declared before the winner <id> routes).
+    path("ocb/open/", w.open_ocb_list, name="open_ocb_list"),
+    path("ocb/open/<int:listing_id>/", w.open_ocb_detail, name="open_ocb_detail"),
+    path("ocb/open/<int:listing_id>/offer/", w.open_ocb_offer, name="open_ocb_offer"),
     path("ocb/<int:listing_id>/respond/", w.winner_respond_view, name="winner_respond"),
     path("ocb/<int:listing_id>/", w.winner_ocb_detail, name="winner_ocb_detail"),
     # Seller watch page — declared before the dealer-room catch-all so it matches.

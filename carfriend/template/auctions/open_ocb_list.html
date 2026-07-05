@@ -1,0 +1,44 @@
+{% extends "base/base_www.html" %}
+{% block title %}Open OCB — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_dealer.html" with active="open_ocb" %}{% endblock %}
+
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="cf-focus">
+
+  <div class="cf-page-head cf-reveal">
+    <h1>Open OCB <span class="count">{{ rows|length }}</span></h1>
+  </div>
+  <p class="cf-reveal d1" style="color:var(--cf-muted);margin:0 0 1.3rem;max-width:56ch">One Click Buy cars now open to all dealers. Offer at or above the ask — the highest all-in price wins.</p>
+
+  {% if messages %}{% for m in messages %}
+  <div class="cf-card cf-reveal d1" style="padding:.85rem 1.1rem;margin-bottom:.8rem;display:flex;align-items:center;gap:.5rem"><svg class="i" style="stroke:var(--cf-green-bright)"><use href="#ic-check"/></svg><span>{{ m }}</span></div>
+  {% endfor %}{% endif %}
+
+  {% if rows %}
+  <div class="d-flex flex-column cf-reveal d1" style="gap:.9rem">
+    {% for r in rows %}
+    <article class="cf-card" style="padding:1.3rem 1.4rem">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap">
+        <div>
+          <div style="font-weight:800;font-size:1.05rem">{{ r.name }}</div>
+          <div class="cf-bid-l" style="margin-top:.7rem">Ask price</div>
+          <div class="cf-bid-v" style="color:var(--cf-green);font-size:1.7rem">₹{{ r.ocb.ocb_price }}</div>
+        </div>
+        {% if r.mine %}<span class="cf-chip ok"><svg class="i"><use href="#ic-check"/></svg>You offered</span>{% else %}<span class="cf-live"><span class="d"></span>Open</span>{% endif %}
+      </div>
+      <div class="cf-div" style="margin:1rem 0"></div>
+      <a href="{% url 'open_ocb_detail' r.ocb.id %}" class="cf-btn cf-btn-primary"><svg class="i"><use href="#ic-bolt"/></svg>{% if r.mine %}Update your offer{% else %}Make an offer{% endif %}</a>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="cf-empty cf-reveal d1">
+    <div class="ic"><svg class="i"><use href="#ic-bolt"/></svg></div>
+    <h3>No open One Click Buys right now</h3>
+    <p>When a car's auction winner passes, its One Click Buy opens to all dealers and appears here.</p>
+    <a class="cf-btn cf-btn-primary" href="{% url 'dealer_auction_list' %}"><svg class="i"><use href="#ic-broadcast"/></svg>Browse auctions</a>
+  </div>
+  {% endif %}
+
+</div></div></main>
+{% endblock %}

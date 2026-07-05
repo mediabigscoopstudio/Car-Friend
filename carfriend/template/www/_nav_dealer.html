@@ -9,6 +9,7 @@ pending backend (flagged). My Bids points at the dealer dashboard for now.
     <nav class="cf-seg" aria-label="Primary">
       <a href="{% url 'dealer_auction_list' %}" class="{% if active == 'auctions' %}active{% endif %}"><svg class="i"><use href="#ic-broadcast"/></svg>Live Auctions</a>
       <a href="{% url 'winner_ocb_list' %}" class="{% if active == 'ocb' %}active{% endif %}"><svg class="i"><use href="#ic-bolt"/></svg>Live OCB</a>
+      <a href="{% url 'open_ocb_list' %}" class="{% if active == 'open_ocb' %}active{% endif %}"><svg class="i"><use href="#ic-broadcast"/></svg>Open OCB</a>
       <a href="{% url 'dealer_dashboard' %}" class="{% if active == 'bids' %}active{% endif %}"><svg class="i"><use href="#ic-list"/></svg>My Bids</a>
     </nav>
     <div class="cf-navright">
