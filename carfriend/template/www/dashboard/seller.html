@@ -107,11 +107,18 @@ function journeyHtml(v) {
     chips += '<span class="cf-chip-step ' + cls + '">' + node + '<span><span class="cf-step-label">' + label + '</span></span></span>';
   });
   chips += '<span class="cf-cap"><i></i><i></i><i></i></span>';
-  var banner = v.journey_decision
-    ? '<div style="margin-top:.7rem;display:flex;align-items:center;justify-content:center;gap:.45rem;text-align:center;background:var(--cf-amber-bg,#fdf3e3);border:1px solid var(--cf-amber-line,#f0d9a8);color:var(--cf-amber,#b7791f);border-radius:12px;padding:.7rem .9rem;font-weight:800;font-size:.88rem"><svg class="i" style="stroke:var(--cf-amber,#b7791f);width:18px;height:18px;flex:0 0 auto"><use href="#ic-warn"/></svg>Auction ended — your decision needed</div>' : '';
   return '<div class="cf-journey"><div class="cf-journey-h">Your car\'s journey' +
     (cur != null ? '<span class="step-of">Step ' + (cur + 1) + ' of ' + CF_STAGES.length + '</span>' : '') +
-    '</div><div class="cf-carousel"><div class="cf-carousel-track">' + chips + '</div></div>' + banner + '</div>';
+    '</div><div class="cf-carousel"><div class="cf-carousel-track">' + chips + '</div></div></div>';
+}
+
+function decisionBanner() {
+  // Prominent, centered amber CTA — its own block on the tile (not crammed into the
+  // journey carousel).
+  return '<div style="margin:.2rem clamp(16px,2.3vw,22px) 0;padding:.9rem 1rem;background:var(--cf-amber-bg,#FBF3E3);border:1px solid var(--cf-amber-line,#EAD6AE);border-radius:14px;text-align:center">' +
+    '<div style="display:inline-flex;align-items:center;gap:.45rem;font-weight:800;color:var(--cf-amber);font-size:.92rem"><svg class="i" style="stroke:var(--cf-amber-bright);width:18px;height:18px;flex:0 0 auto"><use href="#ic-warn"/></svg>Auction ended — your decision needed</div>' +
+    '<div style="color:var(--cf-amber);opacity:.85;font-size:.76rem;margin-top:.25rem">Accept, counter, or re-auction it from the decision panel above.</div>' +
+    '</div>';
 }
 
 function saleButtons(v) {
@@ -169,6 +176,7 @@ function tileHtml(v) {
       '</div>' +
     '</div>' +
     '<div class="cf-div"></div>' +
+    (v.journey_decision ? decisionBanner() : '') +
     journeyHtml(v) +
     (v.prev_auctions && v.prev_auctions.length ? prevAuctionsTable(v.prev_auctions) : '') +
     '<div class="cf-tile-foot">' + saleButtons(v) + '</div></div>';
