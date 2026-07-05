@@ -246,6 +246,7 @@
             <div id="quick"></div>
             <button type="submit" class="btn-bid">Place bid</button>
             <div class="floor-hint" id="floor-hint"></div>
+            <div id="reserve-warn" style="display:none;align-items:center;gap:.4rem;margin-top:.55rem;font-size:.82rem;font-weight:700;color:#c0392b"><svg class="i" style="stroke:#c0392b;width:16px;height:16px;flex:0 0 auto"><use href="#ic-warn"/></svg><span id="reserve-warn-txt"></span></div>
             <div class="bid-msg" id="bid-msg"></div>
           </form>
           <div style="font-size:.72rem;color:var(--cf-muted);margin-top:.7rem">Raise your bid any time by entering a higher amount. Bids can't be lowered.</div>
@@ -428,6 +429,35 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') clos
     w.onerror = function () {};
   } catch (e) {}
   setInterval(function () { if (Math.floor(Date.now() / 1000) >= endTs + 2) leave(); }, 1000);
+})();
+</script>
+<script>
+// Below-reserve SOFT warning for the bid panel — SEPARATE from the bidding socket
+// above (that block is untouched). NOT a hard block: bids under the reserve are
+// still allowed (reserve-not-met flows to the existing seller-decision path). This
+// only makes the gross reserve the visible target with a live red alert.
+(function () {
+  var RES   = {{ a.reserve }};
+  var amt   = document.getElementById('amt');
+  var warn  = document.getElementById('reserve-warn');
+  var txt   = document.getElementById('reserve-warn-txt');
+  var quick = document.getElementById('quick');
+  if (!amt || !warn || !txt) return;
+  function fmt(n){ return '₹' + Number(n).toLocaleString('en-IN'); }
+  function check() {
+    var v = parseInt(String(amt.value || '').replace(/[^0-9]/g, ''), 10);
+    if (!isNaN(v) && v > 0 && v < RES) {
+      txt.textContent = 'Below reserve — bid ' + fmt(RES) + ' or higher to qualify.';
+      warn.style.display = 'flex';
+    } else {
+      warn.style.display = 'none';
+    }
+  }
+  amt.addEventListener('input', check);
+  amt.addEventListener('keyup', check);
+  if (quick) quick.addEventListener('click', function () { setTimeout(check, 0); });  // quick-add chips
+  setInterval(check, 400);   // catch programmatic quick-add value changes
+  check();
 })();
 </script>
 {% endblock %}
