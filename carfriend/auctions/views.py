@@ -92,10 +92,18 @@ def seller_decision(request, auction_id):
             return JsonResponse({"error": "Enter a valid counter price."}, status=400)
         SellerDecision.objects.create(auction=auction, decision=SellerDecision.Choice.COUNTER,
                                       counter_price=amount)
-        # The counter price is the seller's BASE ask -> seed an OCB, offered to the
-        # auction winner first (ocb_price stored GROSS via core.margin). Idempotent.
-        from auctions.ocb_services import create_ocb_from_counter
-        create_ocb_from_counter(auction, amount, actor=request.user)
+        # A Counter is a REQUEST, not an OCB. Record the seller's SUGGESTED base price
+        # (on the SellerDecision) and move the lead to Negotiation. The lead's assigned
+        # Retail Associate is the SOLE OCB creator (from the lead page) — so an OCB can
+        # never be orphaned. No OCBListing is created here.
+        from crm.services import transition_lead_for_vehicle
+        from crm.models import Lead
+        transition_lead_for_vehicle(auction.vehicle, "seller_countered", actor=request.user)
+        lead = Lead.objects.filter(vehicle=auction.vehicle).select_related("assigned_associate").first()
+        if lead and lead.assigned_associate:
+            notify(lead.assigned_associate, "task_assigned", title="Seller suggested a price",
+                   body=f"{auction.vehicle} — seller suggests ₹{amount:,}. Review it and create the OCB.",
+                   url=f"/pipeline/{lead.id}/")
         log(request.user, "auction.seller_counter", auction, request, counter=amount)
         return JsonResponse({"status": "countered", "counter_price": amount})
 

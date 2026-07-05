@@ -24,6 +24,7 @@ EVENT_STAGE = {
     "auction_created":       Lead.STAGE_AUCTION,
     "auction_live":          Lead.STAGE_AUCTION_LIVE,
     "auction_closed":        Lead.STAGE_AUCTION_CLOSED,
+    "seller_countered":      Lead.STAGE_NEGOTIATION,
     "seller_approved":       Lead.STAGE_SELLER_APPROVED,
     "ocb_requested":         Lead.STAGE_OCB,
     "agreement_signed":      Lead.STAGE_AGREEMENT,

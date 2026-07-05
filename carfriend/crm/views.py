@@ -11,6 +11,7 @@ from vehicles.models import Vehicle
 from crm.models import Lead, Bid, LeadNote
 from crm.services import transition_lead
 from auctions.models import OCBListing
+from core.margin import base_from_gross
 from inspections.models import InspectionVisit
 from inspections.assignment import assign_inspector_to_lead, inspectors_for_vehicle
 
@@ -105,16 +106,37 @@ def lead_detail(request, lead_id):
         for o in ocbs:
             offers = list(o.offers.all())
             winner = next((of for of in offers if of.is_selected), None)
+            # This section renders only on the RETAIL branch of the template, so it
+            # is a retail surface: show BASE (de-grossed), never the dealer-facing
+            # gross, and NEVER the winning dealer's identity (masked).
             ocb_rows.append({
                 'ocb': o,
                 'offers': len(offers),
                 'sales': (o.sales_associate.get_full_name() or o.sales_associate.username)
                          if o.sales_associate else '—',
                 'winner': winner,
+                'base_price':  base_from_gross(o.ocb_price)['base'] if o.ocb_price else None,
+                'winner_base': base_from_gross(winner.price)['base'] if winner else None,
             })
     # Allow creating another OCB only when none exist or all existing are closed/cancelled.
     can_create_more = (not ocb_rows) or all(
         r['ocb'].status in ('accepted', 'rejected') for r in ocb_rows)
+
+    # Seller's SUGGESTED price (base) from their post-auction Counter, if any — the
+    # default the assigned RA seeds the OCB with.
+    seller_suggested = None
+    if lead.vehicle:
+        from auctions.models import SellerDecision
+        _sd = (SellerDecision.objects.filter(auction__vehicle=lead.vehicle,
+                                             decision=SellerDecision.Choice.COUNTER)
+               .order_by('-id').first())
+        seller_suggested = _sd.counter_price if _sd else None
+    # ONLY the lead's assigned Retail Associate may create its OCB (server-side guard
+    # in retail_lead_create_ocb; this flag just governs the button's visibility).
+    can_create_ocb = bool(
+        request.user.id == lead.assigned_associate_id
+        and can_create_more
+        and lead.stage in (Lead.STAGE_NEGOTIATION, Lead.STAGE_AUCTION))
 
     # Retail Head control panel on this shared page (start/re-auction/terminate,
     # assign associate, car media + inspection report). Computed only when a Retail
@@ -191,6 +213,8 @@ def lead_detail(request, lead_id):
         'stage_choices':    Lead.STAGE_CHOICES,
         'ocb_rows':         ocb_rows,
         'can_create_more':  can_create_more,
+        'seller_suggested': seller_suggested,
+        'can_create_ocb':   can_create_ocb,
         'lead_notes':       lead.call_notes.select_related('author').all(),
         'rh_associates':    rh_associates,
         'rh_durations':     rh_durations,

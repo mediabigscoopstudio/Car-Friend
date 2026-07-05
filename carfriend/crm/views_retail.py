@@ -11,7 +11,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from accounts.models import Role, User
-from auctions.models import OCBListing, OCBMessage, OCBOffer
+from auctions.models import Auction, OCBListing, OCBMessage, OCBOffer
 from auctions.ocb_services import offer_rows, offer_to_winner
 from crm.models import Lead, Task
 from deals.models import Deal
@@ -86,6 +86,52 @@ def retail_lead_detail(request, lead_id):
 
 
 @require_POST
+def retail_lead_create_ocb(request, lead_id):
+    """The lead's ASSIGNED Retail Associate creates this lead's OCB — the SOLE
+    OCB-creation path. HARD ownership: only lead.assigned_associate may create;
+    everyone else gets 403. assigned_to is stamped to request.user, so an OCB can
+    NEVER be orphaned. Idempotent — one active OCB per vehicle. The RA supplies the
+    seller-facing BASE (defaulting to the seller's suggested price); it is stored
+    GROSS via core.margin. Offered to the auction winner first (winner-first tier)."""
+    from django.http import HttpResponseForbidden
+    from core.margin import gross_breakdown
+    guard = _require_retail(request)
+    if guard:
+        return guard
+    lead = get_object_or_404(Lead.objects.select_related("vehicle"), id=lead_id)
+    if lead.assigned_associate_id != request.user.id:
+        return HttpResponseForbidden("Only the assigned Retail Associate can create this lead's OCB.")
+    if not lead.vehicle:
+        messages.error(request, "This lead has no vehicle.")
+        return redirect(f"/pipeline/{lead.id}/")
+    # Idempotent — never two active OCBs per vehicle.
+    existing = (OCBListing.objects.filter(vehicle=lead.vehicle)
+                .exclude(status__in=[OCBListing.Status.AGREEMENT, OCBListing.Status.REJECTED,
+                                     OCBListing.Status.ACCEPTED])
+                .order_by("-id").first())
+    if existing:
+        messages.info(request, "An OCB already exists for this lead.")
+        return redirect(f"/pipeline/{lead.id}/")
+    raw = (request.POST.get("base_price") or "").replace(",", "").replace("₹", "").strip()
+    try:
+        base = int(float(raw))
+    except (TypeError, ValueError):
+        base = 0
+    if base <= 0:
+        messages.error(request, "Enter a valid client price (base).")
+        return redirect(f"/pipeline/{lead.id}/")
+    auction = Auction.objects.filter(vehicle=lead.vehicle).order_by("-created_at").first()
+    ocb = OCBListing.objects.create(
+        vehicle=lead.vehicle, auction=auction,
+        ocb_price=gross_breakdown(base)["gross"],   # store dealer-facing GROSS
+        assigned_to=request.user,                   # the assigned RA owns it — never null
+        status=OCBListing.Status.OPEN)
+    offer_to_winner(ocb, actor=request.user)        # winner-first tier
+    messages.success(request, "OCB created and offered to the auction winner.")
+    return redirect(f"/pipeline/{lead.id}/")
+
+
+@require_POST
 def retail_create_auction(request, lead_id):
     """DEPRECATED start path. Auctions are now started ONLY by the Retail Head
     (auctions.services.start_auction, via rh_start_auction) — a single creation
@@ -114,56 +160,15 @@ def retail_ocb_list(request):
 
 
 def retail_ocb_create(request):
+    """DEPRECATED standalone creator. An OCB is now created ONLY from the lead's
+    detail page (retail_lead_create_ocb), guarded to lead.assigned_associate, so an
+    OCB can never be orphaned or created by a non-assigned associate. This route
+    just redirects an old bookmark to the pipeline so it can't create anything."""
     guard = _require_retail(request)
     if guard:
         return guard
-    # Leads are not assigned to the Retail Associate in the current workflow
-    # (assigned_to is null or the Lead Manager) — same reason the pipeline view
-    # shows all leads — so do NOT filter by assigned_to or the dropdown is empty.
-    leads = (Lead.objects.filter(stage__in=[Lead.STAGE_NEGOTIATION, Lead.STAGE_AUCTION])
-             .select_related("vehicle").order_by("-updated_at"))
-    sales = User.objects.filter(role=Role.SALES, is_suspended=False).order_by("username")
-
-    if request.method == "POST":
-        lead = get_object_or_404(Lead, id=request.POST.get("lead_id"))
-        try:
-            price = int(request.POST.get("ocb_price", "0"))
-        except (TypeError, ValueError):
-            price = 0
-        if price <= 0:
-            messages.error(request, "Enter a valid client-suitable price.")
-            return redirect("/crm/retail/ocb/create/")
-        # Resolve the chosen Sales Associate first so we can store the link on
-        # the OCB (sales_associate) — this is what scopes the Sales OCB board.
-        sales_user = User.objects.filter(id=request.POST.get("sales_id"), role=Role.SALES).first()
-        # The RA enters the seller-facing BASE ("client-suitable price"); store the
-        # dealer-facing GROSS so ocb_price is consistently gross everywhere (matches
-        # create_ocb_from_counter and the winner/sales surfaces).
-        from core.margin import gross_breakdown
-        ocb = OCBListing.objects.create(
-            vehicle=lead.vehicle, ocb_price=gross_breakdown(price)["gross"],
-            assigned_to=request.user,
-            sales_associate=sales_user, status=OCBListing.Status.OPEN)
-        notes = (request.POST.get("notes") or "").strip()
-        if notes:
-            OCBMessage.objects.create(ocb_listing=ocb, sender=request.user,
-                                      message=f"Instructions for Sales: {notes}")
-        # Winner-first lifecycle: offer to the auction winner; only on decline
-        # does the Sales Head route it to a sales associate (assumption B).
-        offer_to_winner(ocb, actor=request.user)
-        messages.success(request, "OCB created and offered to the auction winner.")
-        return redirect(f"/crm/retail/ocb/{ocb.id}/")
-
-    try:
-        preselect = int(request.GET.get("lead", "") or 0)
-    except (TypeError, ValueError):
-        preselect = 0
-    return render(request, "teams/retail/ocb_create.html", {
-        "leads": [{"id": l.id, "label": f"{_car(l.vehicle)} · {l.vehicle.plate_number}" if l.vehicle else l.id,
-                   "price": l.vehicle.expected_price if l.vehicle else ""} for l in leads],
-        "sales": sales,
-        "preselect": preselect,
-    })
+    messages.info(request, "Create an OCB from its lead's detail page (Negotiation stage).")
+    return redirect("/pipeline/")
 
 
 def retail_ocb_detail(request, ocb_id):
