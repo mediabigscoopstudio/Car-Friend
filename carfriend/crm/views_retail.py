@@ -172,32 +172,44 @@ def retail_ocb_detail(request, ocb_id):
             OCBMessage.objects.create(ocb_listing=ocb, sender=request.user, message=text)
         return redirect(f"/crm/retail/ocb/{ocb.id}/")
 
-    # Assign / change the Sales Associate this OCB belongs to (scopes their board).
-    if request.method == "POST" and request.POST.get("action") == "assign_sales":
-        sales_user = User.objects.filter(id=request.POST.get("sales_id"), role=Role.SALES).first()
-        ocb.sales_associate = sales_user
-        ocb.save(update_fields=["sales_associate"])
-        if sales_user:
-            OCBMessage.objects.create(
-                ocb_listing=ocb, sender=request.user,
-                message=f"Assigned to {sales_user.get_full_name() or sales_user.username} to collect offers.")
-            notify(sales_user, "task_assigned", title="OCB assigned to you",
-                   body=f"{_car(ocb.vehicle)} — collect dealer offers.", url="/crm/sales/ocb/")
-            messages.success(request, "Sales Associate assigned.")
-        else:
-            messages.success(request, "Sales Associate cleared.")
-        return redirect(f"/crm/retail/ocb/{ocb.id}/")
+    # NOTE: the Retail Associate does NOT assign the Sales Associate — that is the
+    # Sales Head's job (Phase 3 wall). The RA DECLARES (retail_ocb_declare); the OCB
+    # then lands in the Sales Head inbox, and the Sales Head assigns the SA.
 
     # Retail is a masked surface: dealer identity must never be exposed here.
     offers = offer_rows(ocb, reveal_dealer=False)
     thread = ocb.messages.select_related("sender").all()
-    sales_users = User.objects.filter(role=Role.SALES, is_suspended=False).order_by("username")
-    current = ocb.sales_associate
+    # Show whichever SA is set — the Sales Head sets assigned_sales_associate.
+    current = ocb.assigned_sales_associate or ocb.sales_associate
     return render(request, "teams/retail/ocb_detail.html", {
         "ocb": ocb, "car": _car(ocb.vehicle), "offers": offers, "thread": thread,
-        "sales_users": sales_users, "current_sales": current,
+        "current_sales": current,
         "sales_names": (current.get_full_name() or current.username) if current else "—",
     })
+
+
+@require_POST
+def retail_ocb_declare(request, ocb_id):
+    """The lead's ASSIGNED Retail Associate declares a winner-declined OCB to the
+    all-dealers tier. HARD ownership: only assigned_to (the lead's RA) may declare —
+    others get 403. Moves it to the Sales Head inbox (ASSIGNED_TO_SALES, no SA)."""
+    from django.http import HttpResponseForbidden
+    guard = _require_retail(request)
+    if guard:
+        return guard
+    ocb = get_object_or_404(OCBListing.objects.select_related("vehicle"), id=ocb_id)
+    if ocb.assigned_to_id != request.user.id:
+        return HttpResponseForbidden("Only the assigned Retail Associate can declare this OCB.")
+    if ocb.status != OCBListing.Status.WINNER_DECLINED:
+        messages.error(request, "This OCB isn't ready to declare yet.")
+        return redirect(f"/crm/retail/ocb/{ocb.id}/")
+    ocb.status = OCBListing.Status.ASSIGNED_TO_SALES   # declared; awaiting Sales Head assignment
+    ocb.save(update_fields=["status", "updated_at"])
+    for head in User.objects.filter(role=Role.SALES_HEAD, is_suspended=False):
+        notify(head, "task_assigned", title="OCB declared — assign a sales associate",
+               body=f"{_car(ocb.vehicle)} — assign it from the OCB inbox.", url="/crm/sales-head/")
+    messages.success(request, "OCB declared to the all-dealers tier.")
+    return redirect(f"/crm/retail/ocb/{ocb.id}/")
 
 
 @require_POST

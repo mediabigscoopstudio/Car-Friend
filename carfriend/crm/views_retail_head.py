@@ -349,3 +349,31 @@ def rh_auction_live(request, auction_id):
     lead = Lead.objects.filter(vehicle=a.vehicle).first()
     back = f"/pipeline/{lead.id}/" if lead else "/crm/retail-head/"
     return render(request, "master/auction_live.html", live_room_context(a, back))
+
+
+# ── OCB oversight (READ-ONLY, retail-side wall: BASE prices, NO dealer identity) ─
+
+def rh_ocb_tracking(request):
+    """Retail Head oversight of every OCB. This is the RETAIL side of the wall:
+    prices are shown as the seller-facing BASE (de-grossed) and dealer identities
+    are anonymised (Dealer A/B/C). The Retail Head can never fetch a dealer name
+    or a gross figure here. Read-only — no offer entry, no close."""
+    from auctions.models import OCBListing
+    from auctions.ocb_services import offer_rows
+    ocbs = (OCBListing.objects
+            .exclude(status__in=[OCBListing.Status.REJECTED])
+            .select_related("vehicle", "assigned_to")
+            .order_by("-updated_at"))
+    from core.margin import base_from_gross
+    rows = []
+    for o in ocbs:
+        assoc = o.assigned_to
+        rows.append({
+            "car": _car(o.vehicle),
+            "base_price": base_from_gross(o.ocb_price)["base"],   # seller-facing base
+            "status": o.get_status_display(),
+            "associate": (assoc.get_full_name() or assoc.username) if assoc else "—",
+            # Masked + de-grossed to base — dealer identity/gross never reach retail.
+            "offers": offer_rows(o, reveal_dealer=False, as_base=True),
+        })
+    return render(request, "teams/retail_head/ocb_tracking.html", {"rows": rows, "count": len(rows)})

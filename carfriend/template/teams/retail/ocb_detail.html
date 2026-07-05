@@ -35,20 +35,19 @@
       <div class="cf-card-title"><i class="bi bi-info-circle"></i> OCB Info</div>
       <div class="kv"><div class="k">Car</div><div class="v">{{ car }} · {{ ocb.vehicle.plate_number }}</div></div>
       <div class="kv"><div class="k">Client Price</div><div class="v">₹{{ ocb.ocb_price }}</div></div>
-      <div class="kv"><div class="k">Status</div><div class="v">
-        {% if ocb.status == 'open' %}Open{% elif ocb.status == 'accepted' %}Closed{% elif ocb.status == 'rejected' %}Cancelled{% else %}In Progress{% endif %}</div></div>
+      <div class="kv"><div class="k">Status</div><div class="v">{{ ocb.get_status_display }}</div></div>
       <div class="kv"><div class="k">Created</div><div class="v">{{ ocb.created_at|date:"d M Y" }}</div></div>
       <div class="kv" style="border-bottom:none"><div class="k">Sales Associate</div><div class="v">{{ sales_names }}</div></div>
-      <form method="post" action="/crm/retail/ocb/{{ ocb.id }}/" style="margin-top:12px">
+      {% if ocb.status == 'winner_declined' %}
+      <form method="post" action="{% url 'retail_ocb_declare' ocb.id %}" style="margin-top:12px">
         {% csrf_token %}
-        <input type="hidden" name="action" value="assign_sales">
-        <label class="cf-label">Assign / change Sales Associate</label>
-        <select class="cf-field" name="sales_id" style="margin-bottom:8px">
-          <option value="">— unassigned —</option>
-          {% for s in sales_users %}<option value="{{ s.id }}" {% if current_sales and s.id == current_sales.id %}selected{% endif %}>{{ s.get_full_name|default:s.username }}</option>{% endfor %}
-        </select>
-        <button class="btn-cf" type="submit" style="padding:6px 14px;font-size:12px"><i class="bi bi-person-check"></i> Update</button>
+        <label class="cf-label">The winner passed and the seller declined their offer. Declare this OCB to the wider dealer network.</label>
+        <button class="btn-cf" type="submit" style="padding:6px 14px;font-size:12px;margin-top:6px"><i class="bi bi-megaphone"></i> Declare to sales</button>
+        <div class="note">Declaring sends it to the Sales Head, who assigns a Sales Associate to collect dealer offers.</div>
       </form>
+      {% elif ocb.status == 'assigned_to_sales' and not current_sales %}
+      <div class="note" style="margin-top:12px"><i class="bi bi-hourglass-split"></i> Declared — waiting for the Sales Head to assign a Sales Associate.</div>
+      {% endif %}
     </div>
 
     <div class="cf-card">

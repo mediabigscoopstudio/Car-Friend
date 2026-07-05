@@ -44,7 +44,9 @@ def sh_ocb_inbox(request):
     guard = _require_sales_head(request)
     if guard:
         return guard
-    ocbs = (OCBListing.objects.filter(status=OCBListing.Status.WINNER_DECLINED,
+    # Inbox = OCBs the assigned Retail Associate has DECLARED to the all-dealers
+    # tier (status ASSIGNED_TO_SALES) but no Sales Associate is assigned yet.
+    ocbs = (OCBListing.objects.filter(status=OCBListing.Status.ASSIGNED_TO_SALES,
                                       assigned_sales_associate__isnull=True)
             .select_related("vehicle").order_by("-updated_at"))
     rows = [{"id": o.id, "car": _car(o.vehicle), "price": o.ocb_price} for o in ocbs]

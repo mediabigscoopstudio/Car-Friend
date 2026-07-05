@@ -120,19 +120,23 @@ def mask_label(index):
     return f"Dealer {chr(65 + index)}" if index < 26 else f"Dealer #{index + 1}"
 
 
-def offer_rows(ocb, *, reveal_dealer):
+def offer_rows(ocb, *, reveal_dealer, as_base=False):
     """Display rows for an OCB's offers. When `reveal_dealer` is False the dealer
     identity is replaced by an anonymised label — enforced here, in the view
-    layer, so it can't leak through a template."""
+    layer, so it can't leak through a template. When `as_base` is True the gross
+    offer price is de-grossed to the seller-facing BASE — retail/seller surfaces
+    must NEVER see gross (the confidentiality wall), so they pass as_base=True."""
+    from core.margin import base_from_gross
     rows = []
     for i, of in enumerate(ocb.offers.select_related("dealer", "submitted_by").all()):
         if reveal_dealer:
             dealer_label = (of.dealer.get_full_name() or of.dealer.username) if of.dealer else "—"
         else:
             dealer_label = mask_label(i)
+        price = base_from_gross(of.price)["base"] if as_base else of.price
         rows.append({
             "id": of.id,
-            "price": of.price,
+            "price": price,
             "notes": of.notes,
             "is_selected": of.is_selected,
             "dealer_label": dealer_label,

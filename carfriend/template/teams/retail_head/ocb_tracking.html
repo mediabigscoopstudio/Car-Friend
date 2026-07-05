@@ -1,0 +1,33 @@
+{% extends "teams/dash_base.html" %}
+{% block title %}OCB Tracking{% endblock %}
+{% block page_title %}Retail Head · OCB Tracking{% endblock %}
+{% block nav %}{% include "teams/retail_head/_nav.html" with active="ocb" %}{% endblock %}
+{% block head_extra %}
+<style>
+  .ocb{border:1px solid var(--cf-mist);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+  .ocb .h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .ocb .h .car{font-weight:600;color:var(--cf-azure)}
+  .ocb .assoc{font-size:12px;color:var(--cf-slate);margin-bottom:6px}
+  .off{font-size:12px;color:var(--cf-ink);display:flex;justify-content:space-between;padding:5px 0;border-top:1px dashed var(--cf-mist)}
+  .off .amt{font-weight:700}
+  .sel{color:var(--cf-teal-dark);font-weight:700}
+  .note{font-size:11px;color:var(--cf-slate);margin-top:10px;line-height:1.5}
+</style>
+{% endblock %}
+{% block content %}
+<div class="panel">
+  <h2><i class="bi bi-lightning-charge" style="color:var(--cf-blue)"></i> One Click Buy — oversight <span style="font-weight:400;color:var(--cf-slate);font-size:12px">· {{ count }} OCB(s)</span></h2>
+  <div class="note"><i class="bi bi-shield-check"></i> Retail view: prices are the seller-facing amount and dealers are shown anonymously (Dealer A/B/C). Read-only.</div>
+  {% for o in rows %}
+  <div class="ocb">
+    <div class="h"><span class="car">{{ o.car }} · ₹{{ o.base_price }}</span><span class="pill">{{ o.status }}</span></div>
+    <div class="assoc"><i class="bi bi-person"></i> Retail Associate: {{ o.associate }}</div>
+    {% for of in o.offers %}
+    <div class="off"><span>{{ of.dealer_label }}{% if of.is_selected %} <span class="sel">· selected</span>{% endif %}</span><span class="amt">₹{{ of.price }} <span style="color:var(--cf-slate);font-weight:400">· {{ of.created_at|date:"d M H:i" }}</span></span></div>
+    {% empty %}<div class="off" style="color:var(--cf-slate)">No offers yet.</div>{% endfor %}
+  </div>
+  {% empty %}
+  <div class="empty">No OCBs yet.</div>
+  {% endfor %}
+</div>
+{% endblock %}
