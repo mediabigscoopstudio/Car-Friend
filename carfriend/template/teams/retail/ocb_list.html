@@ -20,7 +20,7 @@
         {% for r in rows %}
         <tr>
           <td style="font-weight:600">{{ r.car }}</td>
-          <td>₹{{ r.ocb.ocb_price }}</td>
+          <td>₹{{ r.base_price }}</td>
           <td>{{ r.offers }}</td>
           <td>
             {% if r.ocb.status == 'open' %}<span class="pill pill-open">Open</span>

@@ -21,7 +21,7 @@
     <div class="kv"><span class="k">Priority</span>{{ task.get_priority_display }}</div>
     <div class="kv"><span class="k">Due date</span>{% if task.due_date %}{{ task.due_date|date:"d M Y" }}{% if task.is_overdue %} <span style="color:#B42318;font-weight:700">(overdue)</span>{% endif %}{% else %}—{% endif %}</div>
     {% if task.related_lead %}<div class="kv"><span class="k">Related lead</span>{{ task.related_lead.vehicle.display_name|default:task.related_lead }}</div>{% endif %}
-    {% if task.related_ocb %}<div class="kv"><span class="k">Related OCB</span>{{ task.related_ocb.vehicle.display_name|default:task.related_ocb }} (₹{{ task.related_ocb.ocb_price }})</div>{% endif %}
+    {% if task.related_ocb %}<div class="kv"><span class="k">Related OCB</span>{{ task.related_ocb.vehicle.display_name|default:task.related_ocb }}{% if ocb_base %} (₹{{ ocb_base }}){% endif %}</div>{% endif %}
     <div class="kv"><span class="k">Status</span><span class="pill">{{ task.get_status_display }}</span></div>
     <div class="kv" style="border-bottom:none"><span class="k">Last updated</span>{{ task.updated_at|date:"d M Y, H:i" }}</div>
 

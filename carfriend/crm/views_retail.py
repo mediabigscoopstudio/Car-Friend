@@ -106,7 +106,10 @@ def retail_ocb_list(request):
         return guard
     ocbs = (OCBListing.objects.filter(assigned_to=request.user)
             .select_related("vehicle").prefetch_related("offers").order_by("-created_at"))
-    rows = [{"ocb": o, "car": _car(o.vehicle), "offers": o.offers.count()} for o in ocbs]
+    from core.margin import base_from_gross
+    # Retail surface: show the seller-facing BASE, never the dealer-facing gross.
+    rows = [{"ocb": o, "car": _car(o.vehicle), "offers": o.offers.count(),
+             "base_price": base_from_gross(o.ocb_price)["base"]} for o in ocbs]
     return render(request, "teams/retail/ocb_list.html", {"rows": rows})
 
 
@@ -133,8 +136,13 @@ def retail_ocb_create(request):
         # Resolve the chosen Sales Associate first so we can store the link on
         # the OCB (sales_associate) — this is what scopes the Sales OCB board.
         sales_user = User.objects.filter(id=request.POST.get("sales_id"), role=Role.SALES).first()
+        # The RA enters the seller-facing BASE ("client-suitable price"); store the
+        # dealer-facing GROSS so ocb_price is consistently gross everywhere (matches
+        # create_ocb_from_counter and the winner/sales surfaces).
+        from core.margin import gross_breakdown
         ocb = OCBListing.objects.create(
-            vehicle=lead.vehicle, ocb_price=price, assigned_to=request.user,
+            vehicle=lead.vehicle, ocb_price=gross_breakdown(price)["gross"],
+            assigned_to=request.user,
             sales_associate=sales_user, status=OCBListing.Status.OPEN)
         notes = (request.POST.get("notes") or "").strip()
         if notes:
@@ -176,13 +184,17 @@ def retail_ocb_detail(request, ocb_id):
     # Sales Head's job (Phase 3 wall). The RA DECLARES (retail_ocb_declare); the OCB
     # then lands in the Sales Head inbox, and the Sales Head assigns the SA.
 
-    # Retail is a masked surface: dealer identity must never be exposed here.
-    offers = offer_rows(ocb, reveal_dealer=False)
+    # Retail is a masked surface: dealer identity AND gross must never appear here.
+    # offer_rows(as_base=True) anonymises dealers (Dealer A/B/C) and de-grosses the
+    # price to the seller-facing BASE.
+    offers = offer_rows(ocb, reveal_dealer=False, as_base=True)
     thread = ocb.messages.select_related("sender").all()
     # Show whichever SA is set — the Sales Head sets assigned_sales_associate.
     current = ocb.assigned_sales_associate or ocb.sales_associate
+    from core.margin import base_from_gross
     return render(request, "teams/retail/ocb_detail.html", {
         "ocb": ocb, "car": _car(ocb.vehicle), "offers": offers, "thread": thread,
+        "ocb_base": base_from_gross(ocb.ocb_price)["base"],   # client price as BASE
         "current_sales": current,
         "sales_names": (current.get_full_name() or current.username) if current else "—",
     })
@@ -339,8 +351,14 @@ def retail_task_detail(request, task_id):
         Task.objects.filter(Q(created_by=request.user) | Q(assigned_to=request.user))
         .select_related("assigned_to", "created_by", "related_lead__vehicle", "related_ocb__vehicle"),
         id=task_id)
+    # Retail wall: if this task links an OCB, show its price as the seller-facing
+    # BASE, never the dealer-facing gross.
+    ocb_base = None
+    if task.related_ocb and task.related_ocb.ocb_price:
+        from core.margin import base_from_gross
+        ocb_base = base_from_gross(task.related_ocb.ocb_price)["base"]
     return render(request, "teams/retail/task_detail.html", {
-        "task": task, "statuses": Task.Status.choices,
+        "task": task, "statuses": Task.Status.choices, "ocb_base": ocb_base,
     })
 
 

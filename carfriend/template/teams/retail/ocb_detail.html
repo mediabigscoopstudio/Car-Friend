@@ -34,7 +34,7 @@
     <div class="cf-card">
       <div class="cf-card-title"><i class="bi bi-info-circle"></i> OCB Info</div>
       <div class="kv"><div class="k">Car</div><div class="v">{{ car }} · {{ ocb.vehicle.plate_number }}</div></div>
-      <div class="kv"><div class="k">Client Price</div><div class="v">₹{{ ocb.ocb_price }}</div></div>
+      <div class="kv"><div class="k">Client Price</div><div class="v">₹{{ ocb_base }}</div></div>
       <div class="kv"><div class="k">Status</div><div class="v">{{ ocb.get_status_display }}</div></div>
       <div class="kv"><div class="k">Created</div><div class="v">{{ ocb.created_at|date:"d M Y" }}</div></div>
       <div class="kv" style="border-bottom:none"><div class="k">Sales Associate</div><div class="v">{{ sales_names }}</div></div>

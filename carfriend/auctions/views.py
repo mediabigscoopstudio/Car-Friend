@@ -177,7 +177,10 @@ def seller_ocb(request, auction_id):
         "ocb_status":    ocb.get_status_display() if ocb else None,
         "ocb_price_fmt": f"{ocb_base:,}" if ocb_base is not None else None,
         "winner_offer_pending": bool(ocb and ocb.status == OCBListing.Status.WINNER_ACCEPTED),
-        "ocb_signable":  bool(ocb and ocb.status in ("seller_accepted", "agreement")),
+        # "accepted" = the all-dealers path where the RA selected a winning offer;
+        # the template also requires `deal`, so a legacy accepted OCB with no Deal
+        # never shows a stray sign link.
+        "ocb_signable":  bool(ocb and ocb.status in ("seller_accepted", "agreement", "accepted")),
         "deal":          deal,
     })
 
