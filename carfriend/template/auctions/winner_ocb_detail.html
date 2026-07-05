@@ -40,22 +40,46 @@
   {% if can_act %}
   <div class="cf-card cf-reveal d1" style="padding:1.3rem 1.4rem;margin-top:1rem">
     <div class="cf-flabel" style="margin-bottom:.9rem">Your response</div>
-    <form method="post" action="/auctions/ocb/{{ ocb.id }}/respond/">
+    <form method="post" action="/auctions/ocb/{{ ocb.id }}/respond/" id="ocb-offer-form">
       {% csrf_token %}
-      <div class="cf-field" style="margin-bottom:.85rem">
-        <label for="ocbprice">Your offer (₹ — match, raise, or lower)</label>
-        <input type="text" inputmode="numeric" id="ocbprice" name="price" class="cf-input" value="{{ ocb.ocb_price }}" placeholder="e.g. {{ ocb.ocb_price }}">
+      <div class="cf-field" style="margin-bottom:.55rem">
+        <label for="ocbprice">Your offer (₹ — match the One Click Buy price or raise it)</label>
+        <input type="text" inputmode="numeric" id="ocbprice" name="price" class="cf-input" value="{{ ocb.ocb_price }}" data-floor="{{ ocb.ocb_price }}" placeholder="e.g. {{ ocb.ocb_price }}">
+      </div>
+      <div id="ocb-floor-warn" style="display:none;align-items:center;gap:.4rem;color:#C0392B;font-size:.85rem;margin-bottom:.7rem">
+        <svg class="i" style="stroke:#C0392B"><use href="#ic-warn"/></svg><span>Offer must be at least ₹{{ ocb.ocb_price }}</span>
       </div>
       <div style="display:flex;gap:.65rem;flex-wrap:wrap">
-        <button class="cf-btn cf-btn-primary" type="submit" name="decision" value="offer"><svg class="i"><use href="#ic-check"/></svg>Send offer</button>
+        <button class="cf-btn cf-btn-primary" type="submit" name="decision" value="offer" id="ocb-offer-btn"><svg class="i"><use href="#ic-check"/></svg>Send offer</button>
         <button class="cf-btn cf-btn-ghost" type="submit" name="decision" value="pass">Pass</button>
       </div>
     </form>
-    <div class="cf-foot-note" style="margin-top:.9rem"><svg class="i"><use href="#ic-shield"/></svg>Send your best all-in price. The seller reviews it — if they accept, your Sales Associate coordinates the paperwork.</div>
+    <div class="cf-foot-note" style="margin-top:.9rem"><svg class="i"><use href="#ic-shield"/></svg>Send your best all-in price — at or above the One Click Buy price. The seller reviews it — if they accept, your Sales Associate coordinates the paperwork.</div>
   </div>
   {% else %}
   <div class="cf-foot-note cf-reveal d1" style="margin-top:.9rem"><svg class="i"><use href="#ic-clock"/></svg>This offer is no longer awaiting your response.</div>
   {% endif %}
 
 </div></div></main>
+
+<script>
+// Floor guard: the dealer's GROSS offer must be >= the gross OCB price. Matching is
+// allowed; strictly-below disables Send offer + shows a red warning. Server re-checks.
+(function () {
+  var input = document.getElementById('ocbprice');
+  if (!input) return;
+  var btn  = document.getElementById('ocb-offer-btn');
+  var warn = document.getElementById('ocb-floor-warn');
+  var floor = parseInt(input.getAttribute('data-floor'), 10) || 0;
+  function sync() {
+    var v = parseInt((input.value || '').replace(/[^0-9]/g, ''), 10);
+    var bad = isNaN(v) || v < floor;
+    if (btn) btn.disabled = bad;
+    if (warn) warn.style.display = bad ? 'flex' : 'none';
+  }
+  input.addEventListener('input', sync);
+  input.addEventListener('change', sync);
+  sync();
+})();
+</script>
 {% endblock %}

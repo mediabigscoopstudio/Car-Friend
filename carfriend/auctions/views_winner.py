@@ -61,6 +61,13 @@ def winner_respond_view(request, listing_id):
     if price <= 0:
         messages.error(request, "Enter a valid amount.")
         return redirect(f"/auctions/ocb/{ocb.id}/")
+    # FLOOR: the dealer's GROSS offer must be at least the gross OCB price shown to
+    # them. Matching exactly is valid; only strictly-below is rejected. Read
+    # ocb.ocb_price BEFORE winner_offer (which overwrites it with the new offer).
+    floor = int(ocb.ocb_price or 0)
+    if price < floor:
+        messages.error(request, f"Your offer must be at least ₹{floor:,} (the One Click Buy price).")
+        return redirect(f"/auctions/ocb/{ocb.id}/")
     from auctions.ocb_services import winner_offer
     winner_offer(ocb, price, actor=request.user)
     messages.success(request, "Your offer has been sent to the seller.")

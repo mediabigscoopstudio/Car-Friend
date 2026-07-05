@@ -42,12 +42,15 @@
     <div class="cf-flabel" style="margin-bottom:.9rem">Your offer</div>
     <form method="post" action="{% url 'open_ocb_offer' ocb.id %}">
       {% csrf_token %}
-      <div class="cf-field" style="margin-bottom:.85rem">
+      <div class="cf-field" style="margin-bottom:.55rem">
         <label for="ocbprice">Your all-in price (₹ — the ask or more)</label>
-        <input type="number" inputmode="numeric" id="ocbprice" name="price" class="cf-input" min="{{ floor }}" value="{{ floor }}" placeholder="e.g. {{ floor }}">
+        <input type="number" inputmode="numeric" id="ocbprice" name="price" class="cf-input" min="{{ floor }}" data-floor="{{ floor }}" value="{{ floor }}" placeholder="e.g. {{ floor }}">
+      </div>
+      <div id="ocb-floor-warn" style="display:none;align-items:center;gap:.4rem;color:#C0392B;font-size:.85rem;margin-bottom:.7rem">
+        <svg class="i" style="stroke:#C0392B"><use href="#ic-warn"/></svg><span>Offer must be at least ₹{{ floor }}</span>
       </div>
       <div style="display:flex;gap:.65rem;flex-wrap:wrap">
-        <button class="cf-btn cf-btn-primary" type="submit" name="decision" value="offer"><svg class="i"><use href="#ic-check"/></svg>Submit offer</button>
+        <button class="cf-btn cf-btn-primary" type="submit" name="decision" value="offer" id="ocb-offer-btn"><svg class="i"><use href="#ic-check"/></svg>Submit offer</button>
         <button class="cf-btn cf-btn-ghost" type="submit" name="decision" value="pass">Pass</button>
       </div>
     </form>
@@ -55,4 +58,25 @@
   </div>
 
 </div></div></main>
+
+<script>
+// Floor guard: the dealer's GROSS offer must be >= the gross OCB ask. Matching is
+// allowed; strictly-below disables Submit + shows a red warning. Server re-checks.
+(function () {
+  var input = document.getElementById('ocbprice');
+  if (!input) return;
+  var btn  = document.getElementById('ocb-offer-btn');
+  var warn = document.getElementById('ocb-floor-warn');
+  var floor = parseInt(input.getAttribute('data-floor'), 10) || 0;
+  function sync() {
+    var v = parseInt((input.value || '').replace(/[^0-9]/g, ''), 10);
+    var bad = isNaN(v) || v < floor;
+    if (btn) btn.disabled = bad;
+    if (warn) warn.style.display = bad ? 'flex' : 'none';
+  }
+  input.addEventListener('input', sync);
+  input.addEventListener('change', sync);
+  sync();
+})();
+</script>
 {% endblock %}
