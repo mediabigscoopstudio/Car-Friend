@@ -256,8 +256,15 @@ def dealer_auction_room(request, id):
     report = (InspectionReport.objects
               .filter(visit__vehicle=a.vehicle)
               .order_by("-submitted_at").first())
+    # Live feed = CURRENT-round bids only (created after this round's start).
     bids = [{"amount": b.amount, "ts": b.created_at, "is_me": b.dealer_id == request.user.id}
-            for b in a.bids.filter(is_voided=False).order_by("-created_at")[:50]]
+            for b in a.bids.filter(is_voided=False, created_at__gte=a.start_at)
+                            .order_by("-created_at")[:50]]
+    # This dealer's own bid from a PRIOR round — context only ("Your last bid").
+    my_prev = None
+    if a.reactivation_count:
+        my_prev = (a.bids.filter(dealer=request.user, created_at__lt=a.start_at)
+                   .order_by("-amount").first())
     return render(request, "auctions/dealer_room.html", {
         "a":           dealer_auction(a),
         "auction_id":  a.id,
@@ -265,6 +272,7 @@ def dealer_auction_room(request, id):
         "my_id":       request.user.id,
         "inspection":  dealer_inspection(report),
         "bids":        bids,
+        "my_prev_bid": my_prev.amount if my_prev else None,
     })
 
 

@@ -233,6 +233,7 @@
         <div class="l">Current highest bid</div>
         <div id="hb">{% if a.highest %}&#8377;{{ a.highest }}{% else %}No bids yet{% endif %}</div>
         <div class="dr2-reserve">Reserve: <span class="au-inr" data-v="{{ a.reserve }}"></span></div>
+        {% if my_prev_bid %}<div class="dr2-reserve" style="opacity:.85">Your last bid (prior round): <span class="au-inr" data-v="{{ my_prev_bid }}"></span> · bid fresh against the new reserve</div>{% endif %}
       </div>
 
       <div class="dr2-card">

@@ -34,7 +34,13 @@ class Auction(models.Model):
     def __str__(self): return f"Auction · {self.vehicle} · {self.status}"
 
     @property
-    def highest_bid(self): return self.bids.filter(is_voided=False).order_by("-amount").first()
+    def highest_bid(self):
+        # Current round only. A re-activated auction resets start_at, so bids from a
+        # prior round (created before this round began) are context — NOT live state.
+        # This makes the reserve/floor/min-next reset to the new grossed reserve
+        # after a re-auction, without touching the WS consumer (it reads this).
+        return (self.bids.filter(is_voided=False, created_at__gte=self.start_at)
+                .order_by("-amount").first())
 
     @property
     def is_live(self):
