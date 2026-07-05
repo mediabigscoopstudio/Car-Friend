@@ -176,9 +176,37 @@ def seller_ocb(request, auction_id):
         "ocb":           ocb,
         "ocb_status":    ocb.get_status_display() if ocb else None,
         "ocb_price_fmt": f"{ocb_base:,}" if ocb_base is not None else None,
-        "ocb_signable":  bool(ocb and ocb.status in ("winner_accepted", "seller_accepted", "agreement")),
+        "winner_offer_pending": bool(ocb and ocb.status == OCBListing.Status.WINNER_ACCEPTED),
+        "ocb_signable":  bool(ocb and ocb.status in ("seller_accepted", "agreement")),
         "deal":          deal,
     })
+
+
+@login_required(login_url="/auth/login/")
+@require_POST
+def seller_ocb_respond(request, auction_id):
+    """Seller accepts or rejects the auction WINNER's OCB offer (tier 1). Accept ->
+    Deal from the winner's GROSS price (idempotent) + agreement. Reject -> the OCB
+    goes to the lead's Retail Associate to DECLARE to the all-dealers tier."""
+    from .models import OCBListing
+    auction = get_object_or_404(Auction.objects.select_related("vehicle"), id=auction_id)
+    if auction.vehicle.seller_id != request.user.id:
+        return redirect("/auth/seller/dashboard/")
+    ocb = OCBListing.objects.filter(auction=auction).order_by("-id").first()
+    if not ocb or ocb.status != OCBListing.Status.WINNER_ACCEPTED:
+        return redirect(f"/auctions/{auction_id}/ocb/")
+    if request.POST.get("action") == "accept":
+        from deals.services import create_deal_from_win
+        create_deal_from_win(ocb.vehicle, ocb.ocb_price, ocb.offered_to, ocb.vehicle.seller)
+        ocb.status = OCBListing.Status.SELLER_ACCEPTED
+        ocb.save(update_fields=["status", "updated_at"])
+    else:  # reject -> back to the RA to declare (tier 2)
+        ocb.status = OCBListing.Status.WINNER_DECLINED
+        ocb.save(update_fields=["status", "updated_at"])
+        if ocb.assigned_to:
+            notify(ocb.assigned_to, "task_assigned", title="Seller declined the winner's offer",
+                   body=f"{ocb.vehicle} — declare it to open the all-dealers tier.", url="/crm/retail/ocb/")
+    return redirect(f"/auctions/{auction_id}/ocb/")
 
 
 @admin_required

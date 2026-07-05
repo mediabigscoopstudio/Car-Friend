@@ -17,5 +17,6 @@ urlpatterns = [
     path("<int:auction_id>/decision/", views.seller_decision, name="seller_decision"),
     path("<int:auction_id>/result/", views.seller_auction_result, name="seller_auction_result"),
     path("<int:auction_id>/ocb/", views.seller_ocb, name="seller_ocb"),
+    path("<int:auction_id>/ocb/respond/", views.seller_ocb_respond, name="seller_ocb_respond"),
     path("<int:id>/", d.dealer_auction_room, name="dealer_auction_room"),
 ]

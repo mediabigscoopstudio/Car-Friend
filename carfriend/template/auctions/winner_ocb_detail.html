@@ -40,12 +40,18 @@
   {% if can_act %}
   <div class="cf-card cf-reveal d1" style="padding:1.3rem 1.4rem;margin-top:1rem">
     <div class="cf-flabel" style="margin-bottom:.9rem">Your response</div>
-    <form method="post" action="/auctions/ocb/{{ ocb.id }}/respond/" style="display:flex;gap:.65rem;flex-wrap:wrap">
+    <form method="post" action="/auctions/ocb/{{ ocb.id }}/respond/">
       {% csrf_token %}
-      <button class="cf-btn cf-btn-primary" type="submit" name="decision" value="accept"><svg class="i"><use href="#ic-check"/></svg>Accept offer</button>
-      <button class="cf-btn cf-btn-ghost" type="submit" name="decision" value="decline">Pass</button>
+      <div class="cf-field" style="margin-bottom:.85rem">
+        <label for="ocbprice">Your offer (₹ — match, raise, or lower)</label>
+        <input type="text" inputmode="numeric" id="ocbprice" name="price" class="cf-input" value="{{ ocb.ocb_price }}" placeholder="e.g. {{ ocb.ocb_price }}">
+      </div>
+      <div style="display:flex;gap:.65rem;flex-wrap:wrap">
+        <button class="cf-btn cf-btn-primary" type="submit" name="decision" value="offer"><svg class="i"><use href="#ic-check"/></svg>Send offer</button>
+        <button class="cf-btn cf-btn-ghost" type="submit" name="decision" value="pass">Pass</button>
+      </div>
     </form>
-    <div class="cf-foot-note" style="margin-top:.9rem"><svg class="i"><use href="#ic-shield"/></svg>Accepting confirms your purchase at this price. Your Sales Associate then coordinates the paperwork.</div>
+    <div class="cf-foot-note" style="margin-top:.9rem"><svg class="i"><use href="#ic-shield"/></svg>Send your best all-in price. The seller reviews it — if they accept, your Sales Associate coordinates the paperwork.</div>
   </div>
   {% else %}
   <div class="cf-foot-note cf-reveal d1" style="margin-top:.9rem"><svg class="i"><use href="#ic-clock"/></svg>This offer is no longer awaiting your response.</div>

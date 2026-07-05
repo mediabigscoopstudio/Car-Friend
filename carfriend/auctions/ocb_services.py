@@ -84,10 +84,34 @@ def winner_respond(ocb, accepted, *, actor=None):
     else:
         ocb.status = OCBListing.Status.WINNER_DECLINED
         ocb.save(update_fields=["status", "winner_responded_at", "updated_at"])
-        for head in User.objects.filter(role=Role.SALES_HEAD, is_suspended=False):
-            notify(head, "task_assigned", title="OCB needs a sales associate",
-                   body=f"Winner declined {ocb.vehicle} — assign it from the OCB inbox.",
-                   url="/crm/sales-head/")
+        # Tier 1 exhausted -> the lead's Retail Associate manages it and DECLARES to
+        # the all-dealers tier (Phase 3). Notify the RA, not the Sales Head directly.
+        if ocb.assigned_to:
+            notify(ocb.assigned_to, "task_assigned", title="Winner passed on an OCB",
+                   body=f"{ocb.vehicle} — declare it to open the all-dealers tier.",
+                   url="/crm/retail/ocb/")
+    return ocb
+
+
+def winner_offer(ocb, gross_price, *, actor=None):
+    """Auction winner responds with their own GROSS price (match / raise / lower).
+    Sets ocb_price, marks winner_accepted (awaiting the SELLER), and notifies the
+    seller (as BASE) and the lead's Retail Associate (base only — NEVER a dealer
+    identity)."""
+    from core.margin import base_from_gross
+    ocb.ocb_price = int(gross_price or 0)
+    ocb.winner_responded_at = timezone.now()
+    ocb.status = OCBListing.Status.WINNER_ACCEPTED
+    ocb.save(update_fields=["ocb_price", "winner_responded_at", "status", "updated_at"])
+    base = base_from_gross(ocb.ocb_price)["base"]
+    seller = ocb.vehicle.seller
+    if seller:
+        notify(seller, "task_assigned", title="Buyer responded to your counter",
+               body=f"An offer of ₹{base:,} is ready — accept or decline it.",
+               url=(f"/auctions/{ocb.auction_id}/ocb/" if ocb.auction_id else "/auth/seller/dashboard/"))
+    if ocb.assigned_to:
+        notify(ocb.assigned_to, "task_assigned", title="Winner responded on an OCB",
+               body=f"{ocb.vehicle} — an offer of ₹{base:,} awaits the seller.", url="/crm/retail/ocb/")
     return ocb
 
 

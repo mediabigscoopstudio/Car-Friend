@@ -20,7 +20,18 @@
       </div>
       {% if ocb_status %}<span class="cf-chip"><svg class="i" style="stroke:var(--cf-green-bright)"><use href="#ic-bolt"/></svg>{{ ocb_status }}</span>{% endif %}
     </div>
+    {% if winner_offer_pending %}
+    <div class="cf-div" style="margin:1rem 0"></div>
+    <div class="cf-flabel" style="margin-bottom:.7rem">A buyer has responded to your counter</div>
+    <form method="post" action="{% url 'seller_ocb_respond' auction.id %}" style="display:flex;gap:.65rem;flex-wrap:wrap">
+      {% csrf_token %}
+      <button class="cf-btn cf-btn-primary" type="submit" name="action" value="accept"><svg class="i"><use href="#ic-check"/></svg>Accept ₹{{ ocb_price_fmt }}</button>
+      <button class="cf-btn cf-btn-ghost" type="submit" name="action" value="reject">Decline</button>
+    </form>
+    <div class="cf-foot-note" style="margin-top:.9rem"><svg class="i"><use href="#ic-shield"/></svg>Accepting starts your sale agreement. Declining sends it to a wider set of buyers.</div>
+    {% else %}
     <div class="cf-foot-note" style="margin-top:.9rem"><svg class="i"><use href="#ic-shield"/></svg>Your Sales Associate is negotiating the best price with verified dealers. We'll notify you when it's ready to sign.</div>
+    {% endif %}
 
     {% if ocb_signable and deal %}
     <div style="margin-top:1rem">

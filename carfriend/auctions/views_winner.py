@@ -47,7 +47,21 @@ def winner_respond_view(request, listing_id):
     if ocb.status != OCBListing.Status.OFFERED_TO_WINNER:
         messages.error(request, "This offer is no longer awaiting your response.")
         return redirect("/auctions/ocb/offers/")
-    accepted = request.POST.get("decision") == "accept"
-    winner_respond(ocb, accepted, actor=request.user)
-    messages.success(request, "Offer accepted." if accepted else "Offer passed — thank you.")
+    # PASS = decline. Otherwise the dealer submits a GROSS price (match / raise /
+    # lower) which goes to the seller to accept or reject.
+    if request.POST.get("decision") == "pass":
+        winner_respond(ocb, False, actor=request.user)
+        messages.success(request, "Offer passed — thank you.")
+        return redirect("/auctions/ocb/offers/")
+    raw = (request.POST.get("price") or "").replace(",", "").replace("₹", "").strip()
+    try:
+        price = int(float(raw))
+    except (TypeError, ValueError):
+        price = 0
+    if price <= 0:
+        messages.error(request, "Enter a valid amount.")
+        return redirect(f"/auctions/ocb/{ocb.id}/")
+    from auctions.ocb_services import winner_offer
+    winner_offer(ocb, price, actor=request.user)
+    messages.success(request, "Your offer has been sent to the seller.")
     return redirect("/auctions/ocb/offers/")
