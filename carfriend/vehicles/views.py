@@ -216,6 +216,7 @@ def my_cars(request):
             auction_status = 'ended'
         else:
             auction_status = None
+        journey_index, journey_decision = seller_journey_index(v)
         data.append({
             'id':                      v.id,
             'display_name':            v.display_name,
@@ -234,6 +235,8 @@ def my_cars(request):
             'auction_id':              auction_id,
             'auction_status':          auction_status,
             'disposition':             v.disposition or None,
+            'journey_index':           journey_index,
+            'journey_decision':        journey_decision,
             'created_at':              v.created_at.strftime('%d %b %Y'),
         })
     return JsonResponse({'vehicles': data})
@@ -368,17 +371,43 @@ def sell_estimate(request):
 
 # ── Seller car detail / inspection / documents ────────────────────────────────
 
-# The seller journey stages (mirrors the JS on the My Cars dashboard).
-SELLER_STAGES = ['Listed', 'Inspected', 'Approved', 'Auction', 'Sold']
-_STAGE_BY_STATUS = {
+# ── Canonical seller journey — ONE source of truth ───────────────────────────
+# Derived from the real Lead.stage (primary) with Vehicle.status as a fallback, so
+# a progressed car never renders square-one and a car whose auction has ENDED shows
+# the "Decision" step. Both the My-Cars JS tiles and car_detail use this mapping.
+SELLER_STAGES = ['Listed', 'Inspected', 'Approved', 'Auction', 'Decision', 'Sold']
+_STAGE_BY_LEAD = {
+    'new': 0, 'qualified': 0, 'unqualified': 0,
+    'inspection_scheduled': 1, 'inspection_in_progress': 1, 'inspection_done': 1,
+    'admin_approved': 2, 'assigned': 2,
+    'negotiation': 3, 'auction_created': 3, 'auction_live': 3,
+    'auction_closed': 4,
+    'seller_approved': 4, 'ocb_in_progress': 4, 'agreement_signed': 4,
+    'handed_to_procurement': 4,
+    'closed': 5,
+}
+_STAGE_BY_STATUS = {   # fallback; 'listed' is the legacy approved value
     'draft': 0, 'submitted': 0, 'inspection_scheduled': 1, 'inspection_done': 1,
-    'approved': 2, 'in_auction': 3, 'sold': 4,
+    'approved': 2, 'listed': 2, 'in_auction': 3, 'sold': 5,
 }
 
 
-def _journey_stages(status):
-    """Build (stages, step_of) for the server-rendered journey partial."""
-    cur = _STAGE_BY_STATUS.get(status)   # None for 'rejected'
+def seller_journey_index(vehicle):
+    """(index, decision_pending) for the canonical seller journey. Lead.stage is the
+    source of truth; Vehicle.status is the fallback. Never square-one for a
+    progressed car; 'auction_closed' -> the Decision step (decision_pending=True)."""
+    from crm.models import Lead
+    lead = Lead.objects.filter(vehicle=vehicle).only('stage').first()
+    idx = _STAGE_BY_LEAD.get(lead.stage) if lead else None
+    if idx is None:
+        idx = _STAGE_BY_STATUS.get(vehicle.status)
+    decision = bool(lead and lead.stage == 'auction_closed')
+    return idx, decision
+
+
+def _journey_stages(vehicle):
+    """Build (stages, step_of, decision) for the server-rendered journey partial."""
+    cur, decision = seller_journey_index(vehicle)
     stages = []
     for i, label in enumerate(SELLER_STAGES):
         if cur is not None and i < cur:
@@ -389,7 +418,7 @@ def _journey_stages(status):
             state = 'todo'
         stages.append({'label': label, 'state': state})
     step_of = None if cur is None else f'Step {cur + 1} of {len(SELLER_STAGES)}'
-    return stages, step_of
+    return stages, step_of, decision
 
 
 def _seller_vehicle_or_404(request, pk):
@@ -418,7 +447,7 @@ def car_detail(request, pk):
                               if a.status in ('closed', 'reauction', 'completed')), None)
     deal = Deal.objects.filter(vehicle=v, seller=request.user).order_by('-id').first()
 
-    stages, step_of = _journey_stages(v.status)
+    stages, step_of, journey_decision = _journey_stages(v)
     return render(request, 'www/vehicles/car_detail.html', {
         'v': v,
         'report': report,
@@ -430,6 +459,7 @@ def car_detail(request, pk):
         'deal': deal,
         'stages': stages,
         'step_of': step_of,
+        'journey_decision': journey_decision,
         'docs': {
             'rc': bool(v.rc_document), 'insurance': bool(v.insurance_document),
             'service': bool(v.service_history), 'noc': bool(v.noc_document),
@@ -446,7 +476,7 @@ def car_inspection(request, pk):
               .select_related('visit').order_by('-id').first())
     approved = report if (report and report.decision == 'approved') else None
     report_url = approved.pdf.url if approved and approved.pdf else None
-    stages, step_of = _journey_stages(v.status)
+    stages, step_of, journey_decision = _journey_stages(v)
     return render(request, 'www/vehicles/inspection.html', {
         'v': v, 'report': report, 'approved': approved, 'report_url': report_url,
         'stages': stages, 'step_of': step_of,

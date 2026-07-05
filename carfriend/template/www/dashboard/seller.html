@@ -83,11 +83,9 @@
 {% block extra_js %}
 <script>
 // Journey stages tracked per car (matches the real vehicle status flow).
-var CF_STAGES = ['Listed', 'Inspected', 'Approved', 'Auction', 'Sold'];
-function cfStageIndex(status) {
-  return { draft: 0, submitted: 0, inspection_scheduled: 1, inspection_done: 1,
-    approved: 2, in_auction: 3, sold: 4 }[status];  // undefined for 'rejected'
-}
+// ONE canonical step-set; the current index comes from the API (server derives it
+// from the real Lead.stage, so a progressed car is never square-one).
+var CF_STAGES = ['Listed', 'Inspected', 'Approved', 'Auction', 'Decision', 'Sold'];
 var CF_KYC_OK = {% if kyc_status == 'verified' %}true{% else %}false{% endif %};
 function cfKycOk() { return CF_KYC_OK; }
 function fmtPrice(p) {
@@ -98,20 +96,22 @@ function fmtPrice(p) {
 }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
-function journeyHtml(status) {
-  var cur = cfStageIndex(status);
+function journeyHtml(v) {
+  var cur = (v.journey_index == null) ? null : v.journey_index;
   var chips = '<span class="cf-cap"><i></i><i></i><i></i></span>';
   CF_STAGES.forEach(function (label, i) {
-    var cls = i < cur ? 'is-done' : (i === cur ? 'is-current' : 'is-todo');
-    var node = i < cur ? '<span class="cf-node done"><svg class="i"><use href="#ic-check"/></svg></span>'
+    var cls = (cur != null && i < cur) ? 'is-done' : (i === cur ? 'is-current' : 'is-todo');
+    var node = (cur != null && i < cur) ? '<span class="cf-node done"><svg class="i"><use href="#ic-check"/></svg></span>'
       : (i === cur ? '<span class="cf-node current"><span class="core"></span></span>'
         : '<span class="cf-node todo"></span>');
     chips += '<span class="cf-chip-step ' + cls + '">' + node + '<span><span class="cf-step-label">' + label + '</span></span></span>';
   });
   chips += '<span class="cf-cap"><i></i><i></i><i></i></span>';
+  var banner = v.journey_decision
+    ? '<div class="cf-foot-note" style="margin-top:.5rem"><svg class="i"><use href="#ic-warn"/></svg>Auction ended — your decision needed.</div>' : '';
   return '<div class="cf-journey"><div class="cf-journey-h">Your car\'s journey' +
     (cur != null ? '<span class="step-of">Step ' + (cur + 1) + ' of ' + CF_STAGES.length + '</span>' : '') +
-    '</div><div class="cf-carousel"><div class="cf-carousel-track">' + chips + '</div></div></div>';
+    '</div><div class="cf-carousel"><div class="cf-carousel-track">' + chips + '</div></div>' + banner + '</div>';
 }
 
 function saleButtons(v) {
@@ -157,7 +157,7 @@ function tileHtml(v) {
       (v.expected_price ? '<div class="cf-facts" style="margin-top:.4rem"><span style="color:var(--cf-green);font-weight:700">' + fmtPrice(v.expected_price) + ' expected</span></div>' : '') +
       '</div></div>' +
     '<div class="cf-div"></div>' + inspStrip(v) +
-    journeyHtml(v.status) +
+    journeyHtml(v) +
     '<div class="cf-tile-foot">' + saleButtons(v) + '</div></div>';
 }
 

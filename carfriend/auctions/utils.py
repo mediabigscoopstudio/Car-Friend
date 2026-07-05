@@ -4,17 +4,27 @@ from auctions.models import Auction
 
 
 def auto_close_expired_auctions():
-    """Flip live auctions whose end_at has passed to 'closed' so the seller's
-    post-auction decision flow can pick them up.
+    """Close live auctions whose end_at has passed AND transition each car's lead to
+    'auction_closed' — the seller-decision stage. Without the lead transition the
+    seller journey would stick at "In auction" (or square-one) after a car's auction
+    ends; this is what actually writes the post-auction decision state.
 
-    Status-only update (matches the manual admin close in views.auction_pause) —
-    the OCB / CRM pipeline acts on the closed auction afterwards. Bulk .update()
-    so it is cheap to call on every dashboard load and fires no model signals.
-    Returns the number of auctions closed.
+    Only the just-expired live auctions do per-lead work (usually zero), so it stays
+    cheap to call on every dashboard load. transition_lead is forward-only +
+    idempotent, so re-calls are no-ops. Returns the number of auctions closed.
     """
-    return (Auction.objects
-            .filter(status=Auction.Status.LIVE, end_at__lte=timezone.now())
-            .update(status=Auction.Status.CLOSED, updated_at=timezone.now()))
+    now = timezone.now()
+    expired = list(Auction.objects
+                   .filter(status=Auction.Status.LIVE, end_at__lte=now)
+                   .select_related("vehicle"))
+    if not expired:
+        return 0
+    Auction.objects.filter(id__in=[a.id for a in expired]).update(
+        status=Auction.Status.CLOSED, updated_at=now)
+    from crm.services import transition_lead_for_vehicle
+    for a in expired:
+        transition_lead_for_vehicle(a.vehicle, "auction_closed")
+    return len(expired)
 
 
 def reserve_gross(vehicle, report=None):
