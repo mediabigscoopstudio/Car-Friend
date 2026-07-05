@@ -153,10 +153,12 @@ function tileHtml(v) {
     ? '<span class="cf-status" style="background:#fdf0e3;color:#b7791f;border-color:#f0d9a8"><svg class="i"><use href="#ic-warn"/></svg>Scrap</span>' : '';
   var report = (v.inspection_report_ready && v.report_url)
     ? '<a class="cf-btn cf-btn-ghost" style="padding:.3rem .7rem;font-size:.78rem" href="' + v.report_url + '" target="_blank" rel="noopener"><svg class="i"><use href="#ic-file"/></svg>Report</a>' : '';
+  var reauctionChip = v.reauction_round
+    ? '<span class="cf-status" style="background:#fdf0e3;color:#b7791f;border-color:#f0d9a8"><svg class="i"><use href="#ic-broadcast"/></svg>Re-auction &times;' + v.reauction_round + '</span>' : '';
   return '<div class="cf-tile cf-reveal">' +
     '<div class="cf-tile-head" style="align-items:flex-start">' + grade +
       '<div class="cf-tile-meta" style="align-self:flex-start">' +
-        '<div style="display:flex;align-items:center;gap:.45rem;flex-wrap:wrap"><span class="cf-status">' + esc(v.status_label) + '</span>' + scrap + '</div>' +
+        '<div style="display:flex;align-items:center;gap:.45rem;flex-wrap:wrap"><span class="cf-status">' + esc(v.status_label) + '</span>' + scrap + reauctionChip + '</div>' +
         '<div class="cf-cartitle" style="margin:.35rem 0 .1rem">' + esc(v.display_name) + '</div>' +
         (v.plate_number ? '<div style="font-variant-numeric:tabular-nums;letter-spacing:.05em;font-weight:700;color:var(--cf-ink-soft);font-size:.9rem;margin-bottom:.45rem">' + esc(v.plate_number) + '</div>' : '') +
         '<div class="cf-facts">' + facts + '</div>' +
@@ -168,7 +170,22 @@ function tileHtml(v) {
     '</div>' +
     '<div class="cf-div"></div>' +
     journeyHtml(v) +
+    (v.prev_auctions && v.prev_auctions.length ? prevAuctionsTable(v.prev_auctions) : '') +
     '<div class="cf-tile-foot">' + saleButtons(v) + '</div></div>';
+}
+
+function prevAuctionsTable(rows) {
+  // Seller view: auction number + the BASE price the seller gets. ZERO dealer info.
+  var body = rows.map(function (r) {
+    return '<tr><td style="padding:.35rem .5rem;color:var(--cf-ink-soft)">Auction #' + r.num + '</td>' +
+      '<td style="padding:.35rem .5rem;text-align:right;font-weight:700;color:var(--cf-green)">' + fmtPrice(r.seller_base) + '</td></tr>';
+  }).join('');
+  return '<div style="padding:.7rem clamp(16px,2.3vw,22px) 0">' +
+    '<div class="cf-flabel" style="font-size:.7rem;margin-bottom:.35rem">Previous auction results</div>' +
+    '<table style="width:100%;border-collapse:collapse;font-size:.82rem">' +
+    '<thead><tr style="color:var(--cf-muted);text-align:left"><th style="padding:.3rem .5rem;font-weight:600">Auction</th>' +
+    '<th style="padding:.3rem .5rem;text-align:right;font-weight:600">You get</th></tr></thead>' +
+    '<tbody>' + body + '</tbody></table></div>';
 }
 
 fetch('/vehicles/my-cars/').then(function (r) { return r.json(); }).then(function (data) {

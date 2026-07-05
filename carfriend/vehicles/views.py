@@ -177,6 +177,7 @@ def my_cars(request):
     from django.utils import timezone
     from inspections.models import InspectionReport
     from auctions.models import Auction
+    from core.margin import base_from_gross
 
     merge_guest_cars_into(request.user)
     vehicles = list(Vehicle.objects.filter(seller=request.user))
@@ -217,6 +218,15 @@ def my_cars(request):
         else:
             auction_status = None
         journey_index, journey_decision = seller_journey_index(v)
+        # Previous-auction results for the SELLER: auction number + the BASE price the
+        # seller gets (de-grossed). NO dealer information of any kind.
+        prev_auctions, reauction_round = [], 0
+        for a in Auction.objects.filter(vehicle_id=v.id).order_by('id'):
+            reauction_round = max(reauction_round, a.reactivation_count)
+            top = a.bids.order_by('-amount').first()
+            if top:
+                prev_auctions.append({'num': a.id,
+                                      'seller_base': base_from_gross(top.amount)['base']})
         data.append({
             'id':                      v.id,
             'display_name':            v.display_name,
@@ -237,6 +247,8 @@ def my_cars(request):
             'disposition':             v.disposition or None,
             'journey_index':           journey_index,
             'journey_decision':        journey_decision,
+            'prev_auctions':           prev_auctions,
+            'reauction_round':         reauction_round,
             'created_at':              v.created_at.strftime('%d %b %Y'),
         })
     return JsonResponse({'vehicles': data})
