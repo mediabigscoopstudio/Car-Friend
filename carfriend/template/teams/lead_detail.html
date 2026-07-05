@@ -115,14 +115,66 @@
     {% endif %}
 
     {% if request.user.is_retail_head %}
-    <!-- Retail Head — Start auction (the sole auction-start path) -->
+    <!-- Retail Head — Car media + inspection report (same source as the auction pages) -->
     <div class="cf-card">
-      <div class="cf-card-title"><i class="bi bi-hammer"></i> Start auction</div>
-      {% if rh_auction %}
-      <div style="background:var(--gs);border-radius:8px;padding:12px 16px;font-size:13px">
-        Auction #{{ rh_auction.id }} · <span class="badge-stage badge-{{ rh_auction.status }}">{{ rh_auction.get_status_display }}</span><br>
-        <span style="color:var(--txt2)">Reserve ₹{{ rh_auction.reserve_price }} · ends {{ rh_auction.end_at|date:"d M Y, H:i" }}</span>
+      <div class="cf-card-title"><i class="bi bi-car-front"></i> Car &amp; inspection report</div>
+      {% if rh_hero_url or rh_wrap_photos %}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        {% if rh_hero_url %}<a href="{{ rh_hero_url }}" target="_blank"><img src="{{ rh_hero_url }}" style="width:160px;height:112px;object-fit:cover;border-radius:10px;border:1px solid var(--cf-mist)"></a>{% endif %}
+        {% for p in rh_wrap_photos %}<a href="{{ p }}" target="_blank"><img src="{{ p }}" style="width:96px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--cf-mist)"></a>{% endfor %}
       </div>
+      {% endif %}
+      {% if rh_report %}
+      <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center;font-size:13px">
+        <span>Grade <strong style="color:var(--g1);font-size:16px">{{ rh_report.condition_grade|default:"—" }}</strong></span>
+        <span>Score <strong>{{ rh_report.score|default:"—" }}</strong></span>
+        {% if rh_report.est_market_value %}<span>Est. value <strong>₹{{ rh_report.est_market_value }}</strong></span>{% endif %}
+        <span>Decision <strong>{{ rh_report.get_decision_display }}</strong></span>
+        {% if rh_report_url %}<a href="{{ rh_report_url }}" target="_blank" rel="noopener" class="btn-cf" style="margin-left:auto;padding:7px 14px"><i class="bi bi-file-earmark-text me-1"></i>Full report</a>{% endif %}
+      </div>
+      {% else %}
+      <div style="font-size:13px;color:var(--txt3)">No inspection report for this car yet.</div>
+      {% endif %}
+    </div>
+
+    <!-- Retail Head — Auction control (start / re-auction / terminate) -->
+    <div class="cf-card">
+      <div class="cf-card-title"><i class="bi bi-hammer"></i> Auction control</div>
+      {% if rh_auction and rh_auction.status == 'live' %}
+      <div style="background:var(--gs);border-radius:8px;padding:12px 16px;font-size:13px;margin-bottom:12px">
+        Auction #{{ rh_auction.id }} · <span class="badge-stage badge-live">Live</span><br>
+        <span style="color:var(--txt2)">Reserve ₹{{ rh_auction.reserve_price }} · ends {{ rh_auction.end_at|date:"d M Y, H:i" }} · {{ rh_reauctions_used }} of {{ rh_cap }} re-auctions used</span>
+      </div>
+      <form method="POST" action="{% url 'rh_terminate' lead.id %}" onsubmit="return confirm('Terminate this live auction now? This force-closes it immediately.');">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="/pipeline/{{ lead.id }}/">
+        <button type="submit" class="btn-cf" style="background:#9E4A35;border-color:#9E4A35;color:#fff"><i class="bi bi-x-octagon me-1"></i>Terminate auction</button>
+      </form>
+      {% elif rh_auction %}
+      <div style="background:var(--gs);border-radius:8px;padding:12px 16px;font-size:13px;margin-bottom:12px">
+        Auction #{{ rh_auction.id }} · <span class="badge-stage badge-{{ rh_auction.status }}">{{ rh_auction.get_status_display }}</span> · {{ rh_reauctions_used }} of {{ rh_cap }} re-auctions used
+      </div>
+      {% if rh_reauctions_used < rh_cap %}
+      <form method="POST" action="{% url 'rh_reauction' lead.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="/pipeline/{{ lead.id }}/">
+        <div class="row g-2">
+          <div class="col-12 col-sm-6">
+            <label class="cf-label">Re-auction price (seller base ₹)</label>
+            <input type="text" inputmode="numeric" name="base_price" class="cf-field" value="{{ rh_suggested|default:'' }}" placeholder="e.g. 500000" required>
+          </div>
+          <div class="col-12 col-sm-6">
+            <label class="cf-label">Duration</label>
+            <select name="duration_minutes" class="cf-field">
+              {% for m, label in rh_durations %}<option value="{{ m }}"{% if m == 30 %} selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-12"><button type="submit" class="btn-cf"><i class="bi bi-arrow-repeat me-1"></i>Re-auction</button></div>
+        </div>
+      </form>
+      {% else %}
+      <div style="font-size:13px;color:#9E4A35;font-weight:600">Re-auction cap reached ({{ rh_cap }} of {{ rh_cap }} used) — this car can no longer be re-auctioned.</div>
+      {% endif %}
       {% else %}
       <form method="POST" action="{% url 'rh_start_auction' lead.id %}">
         {% csrf_token %}
@@ -146,6 +198,28 @@
       </form>
       {% endif %}
     </div>
+
+    {% if rh_prev_bids %}
+    <!-- Retail Head — Bid history (real dealer names) -->
+    <div class="cf-card">
+      <div class="cf-card-title"><i class="bi bi-table"></i> Bid history</div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="text-align:left;color:var(--txt2)">
+          <th style="padding:6px 8px">Dealer</th><th style="padding:6px 8px">Amount</th><th style="padding:6px 8px">Time</th><th style="padding:6px 8px">Auction</th>
+        </tr></thead>
+        <tbody>
+          {% for b in rh_prev_bids %}
+          <tr style="border-top:1px solid var(--cf-mist){% if b.voided %};opacity:.5;text-decoration:line-through{% endif %}">
+            <td style="padding:6px 8px">{{ b.dealer }}</td>
+            <td style="padding:6px 8px">₹{{ b.amount }}</td>
+            <td style="padding:6px 8px">{{ b.time|date:"d M, H:i:s" }}</td>
+            <td style="padding:6px 8px">{{ b.status }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
 
     <!-- Retail Head — Assign to retail associate -->
     <div class="cf-card">

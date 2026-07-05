@@ -81,3 +81,61 @@ def start_auction(vehicle, base_price, duration_minutes, started_by=None):
            title=f"Auction live: {vehicle.display_name}",
            body=f"Your car is in a live auction for {duration_minutes} minutes.")
     return auction
+
+
+def reauction(auction, base_price, duration_minutes, started_by=None):
+    """Re-run an EXISTING (closed / reauction-requested) auction with a fresh base
+    price + duration. Reuses the reactivation cap and gross_breakdown — does NOT
+    create a second auction. Refuses base<=0 and enforces REACTIVATION_CAP=5
+    server-side (raises ValueError). Grossed reserve as always.
+    """
+    from auctions.models import REACTIVATION_CAP
+    if auction.reactivation_count >= REACTIVATION_CAP:
+        raise ValueError(f"Re-auction cap ({REACTIVATION_CAP}) reached for this car.")
+    base_price = int(base_price or 0)
+    if base_price <= 0:
+        raise ValueError("Enter a starting price above ₹0 to re-auction.")
+    try:
+        duration_minutes = int(duration_minutes)
+    except (TypeError, ValueError):
+        duration_minutes = DEFAULT_DURATION
+    if duration_minutes not in DURATION_MINUTES:
+        duration_minutes = DEFAULT_DURATION
+
+    vehicle = auction.vehicle
+    vehicle.expected_price = base_price
+    vehicle.status = vehicle.STATUS_AUCTION
+    vehicle.auction_active = True
+    vehicle.save(update_fields=["expected_price", "status", "auction_active", "updated_at"])
+
+    now = timezone.now()
+    auction.reserve_price = gross_breakdown(base_price)["gross"]
+    auction.reactivation_count += 1
+    auction.start_at = now
+    auction.end_at = now + datetime.timedelta(minutes=duration_minutes)
+    auction.status = Auction.Status.LIVE
+    auction.save(update_fields=["reserve_price", "reactivation_count", "start_at",
+                                "end_at", "status", "updated_at"])
+
+    from crm.services import transition_lead_for_vehicle
+    transition_lead_for_vehicle(vehicle, "auction_live", actor=started_by)
+    notify(vehicle.seller, "auction_start",
+           title=f"Auction relisted: {vehicle.display_name}",
+           body=f"Your car is back in a live auction for {duration_minutes} minutes.")
+    return auction
+
+
+def terminate_auction(auction, by_user=None):
+    """Force-close a live auction (Retail Head only, enforced by the caller).
+    Idempotent — terminating an already-closed auction is a no-op. Advances the
+    lead to auction_closed (audited via transition_lead)."""
+    if auction.status == Auction.Status.CLOSED:
+        return auction
+    auction.status = Auction.Status.CLOSED
+    auction.save(update_fields=["status", "updated_at"])
+    if auction.vehicle.auction_active:
+        auction.vehicle.auction_active = False
+        auction.vehicle.save(update_fields=["auction_active", "updated_at"])
+    from crm.services import transition_lead_for_vehicle
+    transition_lead_for_vehicle(auction.vehicle, "auction_closed", actor=by_user)
+    return auction

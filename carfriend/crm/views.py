@@ -116,22 +116,45 @@ def lead_detail(request, lead_id):
     can_create_more = (not ocb_rows) or all(
         r['ocb'].status in ('accepted', 'rejected') for r in ocb_rows)
 
-    # Retail Head actions on this shared page (start auction / assign associate).
-    # Computed only when a Retail Head is viewing — other roles are unaffected.
+    # Retail Head control panel on this shared page (start/re-auction/terminate,
+    # assign associate, car media + inspection report). Computed only when a Retail
+    # Head is viewing — other roles are unaffected.
     rh_associates = rh_durations = rh_suggested = rh_auction = None
+    rh_report = rh_report_url = rh_hero_url = None
+    rh_wrap_photos, rh_prev_bids = [], []
+    rh_reauctions_used, rh_cap = 0, 5
     if request.user.is_retail_head and lead.vehicle:
         from crm.views_retail_head import _retail_associates
         from auctions.services import DURATION_PRESETS
-        from auctions.models import Auction
+        from auctions.models import Auction, Bid as AuctionBid, REACTIVATION_CAP
+        from inspections.models import InspectionReport
         rh_associates = _retail_associates()
         rh_durations = DURATION_PRESETS
-        rh_auction = (Auction.objects.filter(vehicle=lead.vehicle)
-                      .exclude(status=Auction.Status.CLOSED).order_by('-created_at').first())
-        base = int(lead.vehicle.expected_price or 0)
-        if not base:
-            from inspections.models import InspectionReport
-            rep = InspectionReport.objects.filter(visit__vehicle=lead.vehicle).order_by('-id').first()
-            base = rep.est_market_value if rep else 0
+        rh_cap = REACTIVATION_CAP
+        # Latest auction (any status) drives the control panel.
+        rh_auction = Auction.objects.filter(vehicle=lead.vehicle).order_by('-created_at').first()
+        rh_reauctions_used = rh_auction.reactivation_count if rh_auction else 0
+        # Car media + inspection report — the same source the master/dealer pages use.
+        rh_report = (InspectionReport.objects.filter(visit__vehicle=lead.vehicle)
+                     .select_related('visit').order_by('-id').first())
+        if rh_report:
+            if rh_report.pdf:
+                rh_report_url = rh_report.pdf.url
+            if rh_report.auction_hero_image:
+                rh_hero_url = rh_report.auction_hero_image.url
+            for f in ('front_photo', 'rear_photo', 'left_photo', 'right_photo'):
+                img = getattr(rh_report, f, None)
+                if img:
+                    rh_wrap_photos.append(img.url)
+        # Prior-auction bids with REAL dealer names (the Retail Head sees them).
+        for b in (AuctionBid.objects.filter(auction__vehicle=lead.vehicle)
+                  .select_related('dealer', 'auction').order_by('-created_at')[:50]):
+            rh_prev_bids.append({
+                'dealer': (b.dealer.get_full_name() or b.dealer.username) if b.dealer else '—',
+                'amount': b.amount, 'time': b.created_at,
+                'status': b.auction.get_status_display(), 'voided': b.is_voided,
+            })
+        base = int(lead.vehicle.expected_price or 0) or (rh_report.est_market_value if rh_report else 0)
         rh_suggested = base or None
 
     ctx = {
@@ -149,6 +172,13 @@ def lead_detail(request, lead_id):
         'rh_durations':     rh_durations,
         'rh_suggested':     rh_suggested,
         'rh_auction':       rh_auction,
+        'rh_report':        rh_report,
+        'rh_report_url':    rh_report_url,
+        'rh_hero_url':      rh_hero_url,
+        'rh_wrap_photos':   rh_wrap_photos,
+        'rh_prev_bids':     rh_prev_bids,
+        'rh_reauctions_used': rh_reauctions_used,
+        'rh_cap':           rh_cap,
     }
     return render(request, 'teams/lead_detail.html', ctx)
 

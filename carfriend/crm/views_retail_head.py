@@ -284,3 +284,53 @@ def rh_assign(request, lead_id):
     else:
         messages.error(request, "That lead is already assigned to this associate.")
     return redirect(dest)
+
+
+@require_POST
+def rh_reauction(request, lead_id):
+    """Re-auction the car's existing auction with a fresh price + duration. Reuses
+    auctions.services.reauction (reactivation cap enforced there)."""
+    guard = _require_retail_head(request)
+    if guard:
+        return guard
+    from auctions.models import Auction
+    from auctions.services import reauction
+    lead = get_object_or_404(Lead.objects.select_related("vehicle"), id=lead_id)
+    dest = _safe_next(request, f"/crm/retail-head/lead/{lead_id}/")
+    auction = (Auction.objects.filter(vehicle=lead.vehicle).order_by("-created_at").first()
+               if lead.vehicle else None)
+    if not auction:
+        messages.error(request, "No auction to re-auction — start one first.")
+        return redirect(dest)
+    raw = (request.POST.get("base_price") or "").replace(",", "").replace("₹", "").strip()
+    try:
+        base_price = int(float(raw))
+    except (TypeError, ValueError):
+        base_price = 0
+    try:
+        reauction(auction, base_price, request.POST.get("duration_minutes"), started_by=request.user)
+    except ValueError as e:
+        messages.error(request, str(e))
+        return redirect(dest)
+    messages.success(request, f"Re-auction live for {_car(lead.vehicle)}.")
+    return redirect(dest)
+
+
+@require_POST
+def rh_terminate(request, lead_id):
+    """Force-close the car's live auction (idempotent, audited)."""
+    guard = _require_retail_head(request)
+    if guard:
+        return guard
+    from auctions.models import Auction
+    from auctions.services import terminate_auction
+    lead = get_object_or_404(Lead.objects.select_related("vehicle"), id=lead_id)
+    dest = _safe_next(request, f"/crm/retail-head/lead/{lead_id}/")
+    auction = (Auction.objects.filter(vehicle=lead.vehicle, status=Auction.Status.LIVE)
+               .order_by("-created_at").first() if lead.vehicle else None)
+    if not auction:
+        messages.info(request, "No live auction to terminate.")
+        return redirect(dest)
+    terminate_auction(auction, by_user=request.user)
+    messages.success(request, "Auction terminated.")
+    return redirect(dest)
