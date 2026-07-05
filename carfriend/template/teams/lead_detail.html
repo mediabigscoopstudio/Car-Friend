@@ -203,19 +203,22 @@
     </div>
 
     {% if rh_prev_bids %}
-    <!-- Retail Head — Bid history (real dealer names) -->
+    <!-- Retail Head — Previous auction results (real dealer names, winner highlighted) -->
     <div class="cf-card">
-      <div class="cf-card-title"><i class="bi bi-table"></i> Bid history</div>
+      <div class="cf-card-title"><i class="bi bi-table"></i> Previous auction results</div>
       <table style="width:100%;border-collapse:collapse;font-size:13px">
         <thead><tr style="text-align:left;color:var(--txt2)">
-          <th style="padding:6px 8px">Dealer</th><th style="padding:6px 8px">Amount</th><th style="padding:6px 8px">Time</th><th style="padding:6px 8px">Auction</th>
+          <th style="padding:6px 8px">Dealer</th>
+          <th style="padding:6px 8px">Bid / winning price</th>
+          <th style="padding:6px 8px">Outcome</th>
+          <th style="padding:6px 8px">Status</th>
         </tr></thead>
         <tbody>
           {% for b in rh_prev_bids %}
-          <tr style="border-top:1px solid var(--cf-mist){% if b.voided %};opacity:.5;text-decoration:line-through{% endif %}">
+          <tr style="border-top:1px solid var(--cf-mist);{% if b.is_winner %}background:var(--cf-blue-050,#eef4ff);font-weight:700;{% elif b.voided %}opacity:.55;text-decoration:line-through;{% endif %}">
             <td style="padding:6px 8px">{{ b.dealer }}</td>
             <td style="padding:6px 8px">₹{{ b.amount }}</td>
-            <td style="padding:6px 8px">{{ b.time|date:"d M, H:i:s" }}</td>
+            <td style="padding:6px 8px">{% if b.is_winner %}<span style="color:var(--g1)">&#10003; {{ b.outcome }}</span>{% else %}{{ b.outcome }}{% endif %}</td>
             <td style="padding:6px 8px">{{ b.status }}</td>
           </tr>
           {% endfor %}

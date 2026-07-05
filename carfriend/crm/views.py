@@ -146,13 +146,37 @@ def lead_detail(request, lead_id):
                 img = getattr(rh_report, f, None)
                 if img:
                     rh_wrap_photos.append(img.url)
-        # Prior-auction bids with REAL dealer names (the Retail Head sees them).
+        # Prior-auction RESULTS with REAL dealer names + per-bid outcome (RH sees
+        # them). Outcome: Won (top bid whose dealer holds the Deal) / Leading (top,
+        # auction still live) / Reserve not met (top < reserve) / Top bid / Outbid /
+        # Voided.
+        from deals.models import Deal
+        _deal = Deal.objects.filter(vehicle=lead.vehicle).order_by('-id').first()
+        _win_dealer = _deal.dealer_id if _deal else None
+        _top = {}
+        for b in (AuctionBid.objects.filter(auction__vehicle=lead.vehicle, is_voided=False)
+                  .order_by('auction_id', '-amount')):
+            _top.setdefault(b.auction_id, b.id)
         for b in (AuctionBid.objects.filter(auction__vehicle=lead.vehicle)
                   .select_related('dealer', 'auction').order_by('-created_at')[:50]):
+            is_top = (not b.is_voided) and _top.get(b.auction_id) == b.id
+            if b.is_voided:
+                outcome = 'Voided'
+            elif is_top and _win_dealer and b.dealer_id == _win_dealer:
+                outcome = 'Won'
+            elif is_top and b.auction.status == 'live':
+                outcome = 'Leading'
+            elif is_top and b.amount < b.auction.reserve_price:
+                outcome = 'Reserve not met'
+            elif is_top:
+                outcome = 'Top bid'
+            else:
+                outcome = 'Outbid'
             rh_prev_bids.append({
                 'dealer': (b.dealer.get_full_name() or b.dealer.username) if b.dealer else '—',
-                'amount': b.amount, 'time': b.created_at,
-                'status': b.auction.get_status_display(), 'voided': b.is_voided,
+                'amount': b.amount, 'outcome': outcome,
+                'status': b.auction.get_status_display(),
+                'is_winner': outcome == 'Won', 'voided': b.is_voided,
             })
         base = int(lead.vehicle.expected_price or 0) or (rh_report.est_market_value if rh_report else 0)
         rh_suggested = base or None
