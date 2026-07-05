@@ -242,7 +242,7 @@
           {% if can_bid %}
           <div class="bid-state" id="bid-state"></div>
           <form id="bid-form">
-            <div class="bid-input-row"><span class="r">&#8377;</span><input type="number" id="amt" placeholder="Enter amount" inputmode="numeric"></div>
+            <div class="bid-input-row"><span class="r">&#8377;</span><input type="text" id="amt" placeholder="Enter amount" inputmode="numeric" autocomplete="off"></div>
             <div id="quick"></div>
             <button type="submit" class="btn-bid">Place bid</button>
             <div class="floor-hint" id="floor-hint"></div>
@@ -438,7 +438,7 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') clos
 // alert making the reserve the target. Respects the socket's lockBidding: once the
 // form is locked on auction end (amt disabled), the button is left alone.
 (function () {
-  var RES   = {{ a.reserve }};
+  var RES   = {{ a.reserve }};                 // GROSS reserve (a.reserve_price) — the number shown as "Reserve: ₹X"
   var amt   = document.getElementById('amt');
   var warn  = document.getElementById('reserve-warn');
   var txt   = document.getElementById('reserve-warn-txt');
@@ -447,22 +447,30 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') clos
   var btn   = form ? form.querySelector('button[type="submit"]') : null;
   if (!amt || !warn || !txt) return;
   function fmt(n){ return '₹' + Number(n).toLocaleString('en-IN'); }
+  function minNext(){                           // live min-next, read from the socket's floor-hint
+    var fh = document.getElementById('floor-hint');
+    var m = fh ? String(fh.textContent || '').replace(/[^0-9]/g, '') : '';
+    return m ? parseInt(m, 10) : 0;
+  }
+  function sanitize(){ var c = amt.value.replace(/[^0-9]/g, ''); if (c !== amt.value) amt.value = c; }
   function check() {
     var v = parseInt(String(amt.value || '').replace(/[^0-9]/g, ''), 10);
-    var below = (!isNaN(v) && v > 0 && v < RES);
-    if (below) {
+    var has = !isNaN(v) && v > 0;
+    if (has && v < RES) {                       // red alert names the GROSS reserve
       txt.textContent = 'Below reserve — bid ' + fmt(RES) + ' or higher to qualify.';
       warn.style.display = 'flex';
     } else {
       warn.style.display = 'none';
     }
-    if (btn && !amt.disabled) {            // don't fight lockBidding on a closed auction
-      btn.disabled = below;
-      btn.style.opacity = below ? '.5' : '';
-      btn.style.cursor  = below ? 'not-allowed' : '';
+    // Enabled only when the amount clears BOTH the gross reserve AND the min-next.
+    var qualifies = has && v >= RES && v >= minNext();
+    if (btn && !amt.disabled) {                 // don't fight lockBidding on a closed auction
+      btn.disabled = !qualifies;
+      btn.style.opacity = qualifies ? '' : '.5';
+      btn.style.cursor  = qualifies ? '' : 'not-allowed';
     }
   }
-  amt.addEventListener('input', check);
+  amt.addEventListener('input', function(){ sanitize(); check(); });
   amt.addEventListener('keyup', check);
   if (quick) quick.addEventListener('click', function () { setTimeout(check, 0); });  // quick-add chips
   setInterval(check, 400);   // catch programmatic quick-add value changes

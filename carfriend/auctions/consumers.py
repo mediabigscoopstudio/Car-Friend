@@ -84,6 +84,11 @@ class AuctionConsumer(AsyncWebsocketConsumer):
             floor = (hb.amount if hb else a.reserve_price) + a.min_increment
             if amount < floor:
                 return False, f"Minimum next bid is ₹{floor:,}."
+            # Dealer must clear the GROSS reserve shown to them (a.reserve_price is
+            # already the grossed reserve). Server-side guard so a bypassed disabled
+            # button can't place a sub-reserve bid.
+            if amount < a.reserve_price:
+                return False, f"Below reserve — bid ₹{a.reserve_price:,} or higher to qualify."
             bid = Bid.objects.create(auction=a, dealer_id=dealer_id, amount=amount)
             # Anti-snipe: a bid in the last minute extends the clock by 60s.
             if (a.end_at - timezone.now()).total_seconds() < 60:
