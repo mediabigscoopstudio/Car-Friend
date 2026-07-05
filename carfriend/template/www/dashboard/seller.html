@@ -108,7 +108,7 @@ function journeyHtml(v) {
   });
   chips += '<span class="cf-cap"><i></i><i></i><i></i></span>';
   var banner = v.journey_decision
-    ? '<div class="cf-foot-note" style="margin-top:.5rem"><svg class="i"><use href="#ic-warn"/></svg>Auction ended — your decision needed.</div>' : '';
+    ? '<div style="margin-top:.7rem;display:flex;align-items:center;justify-content:center;gap:.45rem;text-align:center;background:var(--cf-amber-bg,#fdf3e3);border:1px solid var(--cf-amber-line,#f0d9a8);color:var(--cf-amber,#b7791f);border-radius:12px;padding:.7rem .9rem;font-weight:800;font-size:.88rem"><svg class="i" style="stroke:var(--cf-amber,#b7791f);width:18px;height:18px;flex:0 0 auto"><use href="#ic-warn"/></svg>Auction ended — your decision needed</div>' : '';
   return '<div class="cf-journey"><div class="cf-journey-h">Your car\'s journey' +
     (cur != null ? '<span class="step-of">Step ' + (cur + 1) + ' of ' + CF_STAGES.length + '</span>' : '') +
     '</div><div class="cf-carousel"><div class="cf-carousel-track">' + chips + '</div></div>' + banner + '</div>';
