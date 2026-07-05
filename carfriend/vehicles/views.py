@@ -233,6 +233,7 @@ def my_cars(request):
             'auction_active':          bool(auction_id),
             'auction_id':              auction_id,
             'auction_status':          auction_status,
+            'disposition':             v.disposition or None,
             'created_at':              v.created_at.strftime('%d %b %Y'),
         })
     return JsonResponse({'vehicles': data})

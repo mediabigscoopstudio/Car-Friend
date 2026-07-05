@@ -150,7 +150,9 @@ function tileHtml(v) {
       '<span class="cf-media-tag"><svg class="i"><use href="#ic-shield"/></svg>Inspected</span>' +
       '<span class="cf-plate"><i>P</i>Plate hidden</span></div>' +
       '<div class="cf-tile-meta"><span class="cf-status">' + esc(v.status_label) + '</span>' +
+      (v.disposition === 'scrap' ? '<span class="cf-status" style="background:#fdf0e3;color:#b7791f;border-color:#f0d9a8;margin-left:.4rem"><svg class="i"><use href="#ic-warn"/></svg>Scrap</span>' : '') +
       '<div class="cf-cartitle">' + esc(v.display_name) + '</div>' +
+      (v.plate_number ? '<div class="cf-facts" style="margin-top:.15rem"><span style="font-variant-numeric:tabular-nums;letter-spacing:.03em;font-weight:600">' + esc(v.plate_number) + '</span></div>' : '') +
       '<div class="cf-facts">' + facts + '</div>' +
       (v.expected_price ? '<div class="cf-facts" style="margin-top:.4rem"><span style="color:var(--cf-green);font-weight:700">' + fmtPrice(v.expected_price) + ' expected</span></div>' : '') +
       '</div></div>' +
