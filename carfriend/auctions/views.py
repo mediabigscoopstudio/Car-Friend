@@ -196,32 +196,17 @@ def auctions_overview(request):
 
 @admin_required
 def master_auction_live(request, id):
-    """Master READ-ONLY live view of ONE auction: full car report + media and BOTH
-    money sides (seller BASE de-grossed + dealer GROSS), updating live off the SAME
-    WebSocket the dealer room uses. No bidding, no action buttons."""
+    """Master READ-ONLY full live view of ONE auction: car + the reused dealer
+    inspection viewer, a real-time named bid feed (real dealer names), and BOTH
+    money sides (dealer GROSS + seller BASE), live off the SAME WebSocket the
+    dealer room uses. No bidding, no action buttons."""
     from auctions.utils import auto_close_expired_auctions
-    from core.margin import base_from_gross, inverse_params
-    from inspections.models import InspectionReport
+    from auctions.views_dealer import live_room_context
     auto_close_expired_auctions()
     a = get_object_or_404(Auction.objects.select_related("vehicle"), id=id)
-    v = a.vehicle
-    hb = a.highest_bid
-    gross = hb.amount if hb else a.reserve_price
-    report = (InspectionReport.objects.filter(visit__vehicle=v)
-              .select_related("visit").order_by("-id").first())
-    p = inverse_params()
-    return render(request, "master/auction_live.html", {
-        "active": "auctions", "a": a, "v": v,
-        "gross_fmt": f"{gross:,}", "base_fmt": f"{base_from_gross(gross)['base']:,}",
-        "reserve_gross_fmt": f"{a.reserve_price:,}",
-        "reserve_base_fmt": f"{base_from_gross(a.reserve_price)['base']:,}",
-        "bidders": a.bids.filter(is_voided=False).values("dealer").distinct().count(),
-        "bid_count": a.bids.filter(is_voided=False).count(),
-        "report": report,
-        "report_url": report.pdf.url if report and report.pdf else None,
-        "hero_url": report.auction_hero_image.url if report and report.auction_hero_image else None,
-        "cf_k": p["k"], "cf_boundary": p["boundary"], "cf_floor_gst": p["floor_gst"],
-    })
+    ctx = live_room_context(a, "/auctions_overview")
+    ctx["active"] = "auctions"
+    return render(request, "master/auction_live.html", ctx)
 
 
 # Auction actions are Retail-Head-only now. Master is READ-ONLY on auctions: these

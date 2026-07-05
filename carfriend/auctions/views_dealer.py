@@ -266,3 +266,38 @@ def dealer_auction_room(request, id):
         "inspection":  dealer_inspection(report),
         "bids":        bids,
     })
+
+
+def live_room_context(a, back_url):
+    """Context for the FULL read-only live room shown to master + Retail Head:
+    car info, the (reused) dealer inspection viewer, a real-time named bid feed
+    with REAL dealer names, and BOTH money sides (dealer GROSS + seller BASE
+    de-grossed via core.margin). Read-only — no bidding. Callers guard access."""
+    import json
+    from core.margin import base_from_gross, inverse_params
+    v = a.vehicle
+    hb = a.highest_bid
+    gross = hb.amount if hb else a.reserve_price
+    report = _vehicle_report(v)
+    bids, names = [], {}
+    for b in (a.bids.filter(is_voided=False).select_related("dealer")
+              .order_by("-created_at")[:60]):
+        nm = (b.dealer.get_full_name() or b.dealer.username) if b.dealer else "Dealer"
+        bids.append({"name": nm, "amount": b.amount, "ts": b.created_at})
+        if b.dealer_id:
+            names[b.dealer_id] = nm
+    p = inverse_params()
+    return {
+        "a": a, "v": v, "back_url": back_url,
+        "gross_fmt": f"{gross:,}", "base_fmt": f"{base_from_gross(gross)['base']:,}",
+        "reserve_gross_fmt": f"{a.reserve_price:,}",
+        "reserve_base_fmt": f"{base_from_gross(a.reserve_price)['base']:,}",
+        "bidders": a.bids.filter(is_voided=False).values("dealer").distinct().count(),
+        "bid_count": a.bids.filter(is_voided=False).count(),
+        "inspection": dealer_inspection(report),
+        "report_url": report.pdf.url if report and report.pdf else None,
+        "hero_url": (report.auction_hero_image.url
+                     if report and report.auction_hero_image else None),
+        "bids": bids, "names_json": json.dumps(names),
+        "cf_k": p["k"], "cf_boundary": p["boundary"], "cf_floor_gst": p["floor_gst"],
+    }

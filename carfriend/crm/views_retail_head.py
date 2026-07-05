@@ -334,3 +334,18 @@ def rh_terminate(request, lead_id):
     terminate_auction(auction, by_user=request.user)
     messages.success(request, "Auction terminated.")
     return redirect(dest)
+
+
+def rh_auction_live(request, auction_id):
+    """Retail Head READ-ONLY full live view — the SAME layout as master (dealer
+    GROSS + seller BASE, real dealer names, reused inspection viewer). This is in
+    addition to the terminate action on /pipeline/<id>/. No bidding."""
+    guard = _require_retail_head(request)
+    if guard:
+        return guard
+    from auctions.models import Auction
+    from auctions.views_dealer import live_room_context
+    a = get_object_or_404(Auction.objects.select_related("vehicle"), id=auction_id)
+    lead = Lead.objects.filter(vehicle=a.vehicle).first()
+    back = f"/pipeline/{lead.id}/" if lead else "/crm/retail-head/"
+    return render(request, "master/auction_live.html", live_room_context(a, back))

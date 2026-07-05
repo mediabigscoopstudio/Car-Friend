@@ -145,11 +145,14 @@
         Auction #{{ rh_auction.id }} · <span class="badge-stage badge-live">Live</span><br>
         <span style="color:var(--txt2)">Reserve ₹{{ rh_auction.reserve_price }} · ends {{ rh_auction.end_at|date:"d M Y, H:i" }} · {{ rh_reauctions_used }} of {{ rh_cap }} re-auctions used</span>
       </div>
-      <form method="POST" action="{% url 'rh_terminate' lead.id %}" onsubmit="return confirm('Terminate this live auction now? This force-closes it immediately.');">
-        {% csrf_token %}
-        <input type="hidden" name="next" value="/pipeline/{{ lead.id }}/">
-        <button type="submit" class="btn-cf" style="background:#9E4A35;border-color:#9E4A35;color:#fff"><i class="bi bi-x-octagon me-1"></i>Terminate auction</button>
-      </form>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <a href="{% url 'rh_auction_live' rh_auction.id %}" class="btn-cf" style="display:inline-flex;align-items:center"><i class="bi bi-broadcast me-1"></i>View live</a>
+        <form method="POST" action="{% url 'rh_terminate' lead.id %}" onsubmit="return confirm('Terminate this live auction now? This force-closes it immediately.');" style="display:inline">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="/pipeline/{{ lead.id }}/">
+          <button type="submit" class="btn-cf" style="background:#9E4A35;border-color:#9E4A35;color:#fff"><i class="bi bi-x-octagon me-1"></i>Terminate auction</button>
+        </form>
+      </div>
       {% elif rh_auction %}
       <div style="background:var(--gs);border-radius:8px;padding:12px 16px;font-size:13px;margin-bottom:12px">
         Auction #{{ rh_auction.id }} · <span class="badge-stage badge-{{ rh_auction.status }}">{{ rh_auction.get_status_display }}</span> · {{ rh_reauctions_used }} of {{ rh_cap }} re-auctions used

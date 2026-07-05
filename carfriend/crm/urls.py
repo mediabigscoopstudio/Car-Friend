@@ -61,6 +61,7 @@ urlpatterns = [
     path('crm/retail-head/lead/<int:lead_id>/assign/',        rh.rh_assign,        name='rh_assign'),
     path('crm/retail-head/lead/<int:lead_id>/reauction/',     rh.rh_reauction,     name='rh_reauction'),
     path('crm/retail-head/lead/<int:lead_id>/terminate/',     rh.rh_terminate,     name='rh_terminate'),
+    path('crm/retail-head/auction/<int:auction_id>/live/',    rh.rh_auction_live,  name='rh_auction_live'),
 
     # Sales Associate (role-scoped: OCB assigned-only + restricted tasks)
     path('crm/sales/ocb/',                             sales.sales_ocb_list,           name='sales_ocb_list'),
