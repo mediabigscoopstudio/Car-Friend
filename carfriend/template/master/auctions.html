@@ -1,95 +1,43 @@
 {% extends "base/base_web.html" %}
-{% block title %}Auctions · Master{% endblock %}
-{% block page_title %}Auctions{% endblock %}
+{% block title %}Live auctions · Master{% endblock %}
+{% block page_title %}Live auctions{% endblock %}
 
 {% block content %}
-{% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
-<div class="section-header"><h2>All Auctions</h2></div>
+<div class="section-header"><h2>Live auctions <span style="font-size:12px;color:var(--text-2);font-weight:500">· read-only</span></h2></div>
 
 <style>
-  .au-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
-  .au-scroll table { min-width:880px; }
-  .au-veh-name { font-weight:600; color:var(--text); }
-  .au-veh-sub { font-size:12px; color:var(--text-2); margin-top:2px; }
+  .au-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; } .au-scroll table { min-width:640px; }
+  .au-veh-name { font-weight:600; color:var(--text); } .au-veh-sub { font-size:12px; color:var(--text-2); margin-top:2px; }
   .au-mono { font-family:var(--mono); white-space:nowrap; }
-  .au-cd { font-weight:600; color:var(--text); white-space:nowrap; }
-  .au-cd.ended { color:var(--text-2); font-weight:500; }
-  .au-end-sub { font-size:11px; color:var(--text-2); margin-top:2px; white-space:nowrap; }
-  .au-nobid { color:var(--text-2); }
-  .au-ico {
-    width:34px; height:34px; padding:0; flex-shrink:0;
-    display:inline-flex; align-items:center; justify-content:center;
-    border:1px solid var(--line); border-radius:8px;
-    background:var(--surface); color:var(--text-2); cursor:pointer;
-    transition:border-color .15s, color .15s, background .15s;
-  }
-  .au-ico svg { width:17px; height:17px; }
-  .au-ico:hover { border-color:var(--green); color:var(--green); }
-  .au-ico.au-danger:hover { border-color:var(--red,#dc2626); color:var(--red,#dc2626); }
-  .au-ico.au-primary { border-color:var(--green); color:var(--green); }
-  .au-ico.au-primary:hover { background:var(--green); color:#fff; }
+  .au-cd { font-weight:600; white-space:nowrap; }
+  .au-srch { display:flex; gap:8px; margin-bottom:16px; }
+  .au-srch input { padding:9px 12px; border:1px solid var(--line); border-radius:9px; min-width:260px; font-size:13px; background:var(--surface); color:var(--text); }
+  .au-srch button, .au-view { border:1px solid var(--green); color:var(--green); background:var(--surface); border-radius:8px; padding:9px 14px; font-size:13px; font-weight:600; cursor:pointer; text-decoration:none; display:inline-block; }
+  .au-view:hover, .au-srch button:hover { background:var(--green); color:#fff; }
 </style>
+
+<form method="get" class="au-srch">
+  <input type="text" name="q" value="{{ q }}" placeholder="Search by vehicle number…" autofocus>
+  <button type="submit">Search</button>
+</form>
 
 <div class="table-wrap au-scroll">
   <table>
-    <thead><tr>
-      <th>Vehicle</th><th>Bid Asked</th><th>Reserve</th><th>Highest Bid</th>
-      <th>Time Left</th><th>Re-activations</th><th>Actions</th>
-    </tr></thead>
+    <thead><tr><th>Vehicle</th><th>Bidders</th><th>Highest bid</th><th>Time left</th><th></th></tr></thead>
     <tbody>
-      {% for a in auctions %}
+      {% for r in rows %}
       <tr>
-        <!-- Vehicle: car name + plate · city -->
         <td>
-          <div class="au-veh-name">{{ a.vehicle.display_name|default:"—" }}</div>
-          <div class="au-veh-sub">{{ a.vehicle.plate_number|default:"—" }}{% if a.vehicle.city %} · {{ a.vehicle.city }}{% endif %}</div>
-          <span class="pill {% if a.status == 'live' %}pill-green{% elif a.status == 'closed' %}pill-red{% else %}pill-gray{% endif %}" style="margin-top:6px;display:inline-block">{{ a.get_status_display }}</span>
+          <div class="au-veh-name">{{ r.vehicle.display_name|default:"—" }}</div>
+          <div class="au-veh-sub">{{ r.vehicle.plate_number|default:"—" }}{% if r.vehicle.city %} · {{ r.vehicle.city }}{% endif %}</div>
         </td>
-
-        <!-- Bid Asked (seller expected price) -->
-        <td class="au-mono">{% if a.vehicle.expected_price %}<span class="au-inr" data-v="{{ a.vehicle.expected_price|floatformat:0 }}"></span>{% else %}—{% endif %}</td>
-
-        <!-- Reserve -->
-        <td class="au-mono"><span class="au-inr" data-v="{{ a.reserve_price }}"></span></td>
-
-        <!-- Highest Bid -->
-        <td class="au-mono">{% if a.highest_bid %}<span class="au-inr" data-v="{{ a.highest_bid.amount }}"></span>{% else %}<span class="au-nobid">No bids</span>{% endif %}</td>
-
-        <!-- Time Left (live countdown) -->
-        <td>
-          <span class="au-cd" data-end="{{ a.end_at|date:'U' }}" data-status="{{ a.status }}">—</span>
-          <div class="au-end-sub" title="Ends {{ a.end_at|date:'d M Y, H:i' }}">{{ a.end_at|date:'d M, H:i' }}</div>
-        </td>
-
-        <!-- Re-activations -->
-        <td>{{ a.reactivation_count }}/5</td>
-
-        <!-- Actions (icons) -->
-        <td>
-          <div style="display:flex;gap:6px">
-            <a href="/auction/{{ a.id }}" class="au-ico" title="View auction" aria-label="View auction">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            </a>
-            {% if a.reactivation_count < 5 %}
-              {% if a.status == 'live' %}
-              <form method="post" action="/auction_pause/{{ a.id }}" style="display:inline">{% csrf_token %}
-                <button class="au-ico au-danger" title="Pause auction" aria-label="Pause auction">
-                  <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
-                </button>
-              </form>
-              {% else %}
-              <form method="post" action="/auction_reactivate/{{ a.id }}" style="display:inline">{% csrf_token %}
-                <button class="au-ico au-primary" title="Re-run auction" aria-label="Re-run auction">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-                </button>
-              </form>
-              {% endif %}
-            {% endif %}
-          </div>
-        </td>
+        <td>{{ r.bidders }}</td>
+        <td class="au-mono"><span class="au-inr" data-v="{{ r.highest }}"></span></td>
+        <td><span class="au-cd" data-end="{{ r.end_at|date:'U' }}">—</span></td>
+        <td><a href="/auction_live/{{ r.id }}" class="au-view">View live</a></td>
       </tr>
       {% empty %}
-      <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-2)">No auctions yet</td></tr>
+      <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-2)">No live auctions right now.</td></tr>
       {% endfor %}
     </tbody>
   </table>
@@ -97,37 +45,14 @@
 
 <script>
 (function () {
-  // Money: format with Indian thousands grouping + ₹.
   document.querySelectorAll('.au-inr').forEach(function (el) {
     var n = parseInt(el.dataset.v, 10);
     el.textContent = isNaN(n) ? '—' : '₹' + n.toLocaleString('en-IN');
   });
-
-  // Live countdown for each auction.
   var cds = Array.prototype.slice.call(document.querySelectorAll('.au-cd'));
-  function fmt(secs) {
-    var d = Math.floor(secs / 86400); secs -= d * 86400;
-    var h = Math.floor(secs / 3600);  secs -= h * 3600;
-    var m = Math.floor(secs / 60);    var s = secs - m * 60;
-    if (d > 0) return d + 'd ' + h + 'h';
-    if (h > 0) return h + 'h ' + m + 'm';
-    if (m > 0) return m + 'm ' + s + 's';
-    return s + 's';
-  }
-  function tick() {
-    var now = Math.floor(Date.now() / 1000);
-    cds.forEach(function (el) {
-      var status = el.dataset.status;
-      if (status === 'closed' || status === 'completed') { el.textContent = 'Ended'; el.classList.add('ended'); return; }
-      var end = parseInt(el.dataset.end, 10);
-      var left = end - now;
-      if (isNaN(end)) { el.textContent = '—'; return; }
-      if (left <= 0) { el.textContent = 'Ended'; el.classList.add('ended'); }
-      else { el.textContent = fmt(left); el.classList.remove('ended'); }
-    });
-  }
-  tick();
-  setInterval(tick, 1000);
+  function fmt(s){ var h=Math.floor(s/3600); s-=h*3600; var m=Math.floor(s/60); var x=s-m*60; return h>0?h+'h '+m+'m':(m>0?m+'m '+x+'s':x+'s'); }
+  function tick(){ var now=Math.floor(Date.now()/1000); cds.forEach(function(el){ var end=parseInt(el.dataset.end,10); var left=end-now; el.textContent=isNaN(end)?'—':(left<=0?'Ended':fmt(left)); }); }
+  tick(); setInterval(tick,1000);
 })();
 </script>
 {% endblock %}

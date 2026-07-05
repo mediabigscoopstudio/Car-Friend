@@ -36,6 +36,7 @@ urlpatterns = [
     # auctions
     path("auction/<int:id>", au.auction_room, name="auction_room"),
     path("auctions_overview", au.auctions_overview, name="auctions_overview"),
+    path("auction_live/<int:id>", au.master_auction_live, name="master_auction_live"),
     path("auction_reactivate/<int:id>", au.auction_reactivate, name="auction_reactivate"),
     path("auction_pause/<int:id>", au.auction_pause, name="auction_pause"),
     path("bid_void/<int:id>", au.bid_void, name="bid_void"),

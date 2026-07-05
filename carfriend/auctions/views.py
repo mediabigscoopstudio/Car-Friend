@@ -173,46 +173,73 @@ def seller_ocb(request, auction_id):
 
 @admin_required
 def auctions_overview(request):
-    auctions = Auction.objects.select_related("vehicle").prefetch_related("bids")
-    return render(request, "master/auctions.html", {"active": "auctions", "auctions": auctions})
+    """Master READ-ONLY live console: only currently-live auctions, searchable by
+    vehicle number. No actions — auctions are controlled by the Retail Head."""
+    from auctions.utils import auto_close_expired_auctions
+    auto_close_expired_auctions()
+    q = (request.GET.get("q") or "").strip()
+    qs = (Auction.objects.filter(status=Auction.Status.LIVE)
+          .select_related("vehicle").prefetch_related("bids").order_by("-start_at"))
+    if q:
+        qs = qs.filter(vehicle__plate_number__icontains=q)
+    rows = []
+    for a in qs:
+        hb = a.highest_bid
+        rows.append({
+            "id": a.id, "vehicle": a.vehicle,
+            "bidders": a.bids.filter(is_voided=False).values("dealer").distinct().count(),
+            "highest": hb.amount if hb else a.reserve_price,
+            "end_at": a.end_at,
+        })
+    return render(request, "master/auctions.html", {"active": "auctions", "rows": rows, "q": q})
 
 
 @admin_required
+def master_auction_live(request, id):
+    """Master READ-ONLY live view of ONE auction: full car report + media and BOTH
+    money sides (seller BASE de-grossed + dealer GROSS), updating live off the SAME
+    WebSocket the dealer room uses. No bidding, no action buttons."""
+    from auctions.utils import auto_close_expired_auctions
+    from core.margin import base_from_gross, inverse_params
+    from inspections.models import InspectionReport
+    auto_close_expired_auctions()
+    a = get_object_or_404(Auction.objects.select_related("vehicle"), id=id)
+    v = a.vehicle
+    hb = a.highest_bid
+    gross = hb.amount if hb else a.reserve_price
+    report = (InspectionReport.objects.filter(visit__vehicle=v)
+              .select_related("visit").order_by("-id").first())
+    p = inverse_params()
+    return render(request, "master/auction_live.html", {
+        "active": "auctions", "a": a, "v": v,
+        "gross_fmt": f"{gross:,}", "base_fmt": f"{base_from_gross(gross)['base']:,}",
+        "reserve_gross_fmt": f"{a.reserve_price:,}",
+        "reserve_base_fmt": f"{base_from_gross(a.reserve_price)['base']:,}",
+        "bidders": a.bids.filter(is_voided=False).values("dealer").distinct().count(),
+        "bid_count": a.bids.filter(is_voided=False).count(),
+        "report": report,
+        "report_url": report.pdf.url if report and report.pdf else None,
+        "hero_url": report.auction_hero_image.url if report and report.auction_hero_image else None,
+        "cf_k": p["k"], "cf_boundary": p["boundary"], "cf_floor_gst": p["floor_gst"],
+    })
+
+
+# Auction actions are Retail-Head-only now. Master is READ-ONLY on auctions: these
+# legacy master endpoints are neutered to a no-op redirect — no start / re-auction
+# / terminate / bid-void anywhere in master.
+@admin_required
 def auction_reactivate(request, id):
-    a = get_object_or_404(Auction, id=id)
-    try:
-        a.reactivate(request.user)
-    except ValueError as e:
-        return render(request, "master/auctions.html",
-                      {"active": "auctions", "auctions": Auction.objects.all(), "error": str(e)})
-    log(request.user, "auction.reactivate", a, request, count=a.reactivation_count)
-    notify(
-        a.vehicle.seller, "auction_start",
-        title=f"Re-auction live: {a.vehicle.display_name}",
-        body="Your car is back in a live 30-minute auction.",
-    )
     return redirect("/auctions_overview")
 
 
 @admin_required
 def auction_pause(request, id):
-    a = get_object_or_404(Auction, id=id)
-    a.status = "closed"
-    a.save()
-    # Pipeline: closing the auction advances the lead to Auction Closed.
-    from crm.services import transition_lead_for_vehicle
-    transition_lead_for_vehicle(a.vehicle, "auction_closed", actor=request.user)
-    log(request.user, "auction.pause", a, request)
     return redirect("/auctions_overview")
 
 
 @admin_required
 def bid_void(request, id):
-    b = get_object_or_404(Bid, id=id)
-    b.is_voided = True
-    b.save()
-    log(request.user, "bid.void", b, request)
-    return redirect(f"/auctions_overview")
+    return redirect("/auctions_overview")
 
 
 @role_required("admin", "retail", "sales")
