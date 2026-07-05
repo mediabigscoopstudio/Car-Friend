@@ -341,7 +341,15 @@ def _seller_kyc_state(user):
         rec = KYCVerification.objects.filter(subject=user, kind=kind).order_by("-created_at").first()
         return rec.status if rec else None
     pan, aad = st("pan"), st("aadhaar")
-    if user.is_kyc_done:
+    # Verified when the cached flag is set OR both KYC records are approved. The
+    # records are the source of truth; the is_kyc_done cache can lag (e.g. set on a
+    # pre-merge guest account, or never refreshed), which used to lock a genuinely
+    # verified seller out of their live auction.
+    if user.is_kyc_done or (pan == "approved" and aad == "approved"):
+        # Self-heal a stale cache so every other consumer (car_detail, etc.) unlocks.
+        if not user.is_kyc_done:
+            user.is_kyc_done = True
+            user.save(update_fields=["is_kyc_done"])
         return "verified"
     if pan == "rejected" or aad == "rejected":
         return "failed"
