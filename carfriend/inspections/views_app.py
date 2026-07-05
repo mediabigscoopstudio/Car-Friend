@@ -3,6 +3,7 @@ import logging
 import os
 import uuid
 
+from django.conf import settings
 from django.contrib.auth import authenticate, login
 from django.core.files.base import ContentFile
 from django.db import models
@@ -284,6 +285,10 @@ def insp_zone(request, id, zone_key):
         if r.disposition == "scrap":          # scrap also needs the Panel Quality rating
             _wrap = _wrap and bool(r.rating_exterior)
         extra = {"wrap_ready": _wrap}
+    elif zone_key == "testdrive":
+        # Same config as the submit gate, so the on-screen target/warning never asks
+        # for more distance than the backend actually requires (0 by default).
+        extra = {"min_testdrive_km": settings.CF_MIN_TESTDRIVE_M / 1000.0}
 
     groups = []
     for g, cps in engine.visible_groups(r, zone):     # disposition-aware (scrap → body/RC only)
@@ -994,7 +999,10 @@ def insp_submit(request, id):
         if r.is_drivable is False:
             td_ok = bool(r.issue_description) and r.towing_needed is not None
         elif r.is_drivable is True:
-            td_ok = ((r.distance_km or 0) >= 0.9 and r.rating_suspension and r.suspension_condition
+            # Minimum test-drive distance is a config (metres → km); default 0 lets a
+            # 0 KM drive submit. Set CF_MIN_TESTDRIVE_M=1000 to restore the 1 KM gate.
+            td_ok = ((r.distance_km or 0) >= settings.CF_MIN_TESTDRIVE_M / 1000.0
+                     and r.rating_suspension and r.suspension_condition
                      and r.rating_brake and r.brake_condition)
         if not td_ok:
             return redirect(f"/inspect/{r.id}/zone/testdrive?err=testdrive")

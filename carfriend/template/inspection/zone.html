@@ -287,7 +287,7 @@
       <div id="td-map"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
         <div>
-          <div class="td-big"><span id="td-dist">{{ r.distance_km|default:0 }}</span> <span style="font-size:13px;color:var(--muted);font-weight:400">/ 1.0 km</span></div>
+          <div class="td-big"><span id="td-dist">{{ r.distance_km|default:0 }}</span>{% if min_testdrive_km %} <span style="font-size:13px;color:var(--muted);font-weight:400">/ {{ min_testdrive_km }} km</span>{% endif %}</div>
           <div style="font-size:12px;color:var(--muted)">Elapsed <span id="td-time">0:00</span></div>
         </div>
         <div style="display:flex;gap:8px">
@@ -718,7 +718,7 @@
 // Test Drive: drivability + live 1KM GPS drive (Leaflet/OSM) + suspension/brake.
 (function () {
   var REPORT_ID = {{ r.id }};
-  var MIN_KM = 1.0;
+  var MIN_KM = {{ min_testdrive_km|default:0 }};   // config-driven; 0 = no minimum
   var csrf = document.querySelector('input[name=csrfmiddlewaretoken]');
   var statusEl = document.getElementById('td-status');
   function setStatus(t) { if (statusEl) statusEl.textContent = t; }
@@ -846,7 +846,7 @@
       warn.textContent = 'GPS error: ' + e.message;
     }, { enableHighAccuracy: true, maximumAge: 1000, timeout: 15000 });
     startBtn.disabled = true; endBtn.disabled = false;
-    warn.textContent = 'Recording… drive at least 1.0 km.';
+    warn.textContent = MIN_KM > 0 ? ('Recording… drive at least ' + MIN_KM.toFixed(1) + ' km.') : 'Recording…';
     timerId = setInterval(function () { document.getElementById('td-time').textContent = fmtTime(Math.round((Date.now() - startTs) / 1000)); }, 1000);
   });
   if (endBtn) endBtn.addEventListener('click', function () {
@@ -854,7 +854,7 @@
     if (timerId) clearInterval(timerId);
     startBtn.disabled = false; endBtn.disabled = true;
     flush(true);
-    if (totalKm < MIN_KM) warn.textContent = '⚠ Only ' + totalKm.toFixed(2) + ' km — a full test drive should be at least 1.0 km.';
+    if (totalKm < MIN_KM) warn.textContent = '⚠ Only ' + totalKm.toFixed(2) + ' km — a full test drive should be at least ' + MIN_KM.toFixed(1) + ' km.';
     else warn.textContent = '✓ Drive captured: ' + totalKm.toFixed(2) + ' km.';
   });
 

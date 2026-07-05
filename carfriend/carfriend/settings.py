@@ -271,6 +271,11 @@ CF_MARGIN_PERCENT = config("CF_MARGIN_PERCENT", default=7,     cast=int)
 CF_MARGIN_FLOOR   = config("CF_MARGIN_FLOOR",   default=10000, cast=int)
 CF_RC_HOLD        = config("CF_RC_HOLD",        default=5000,  cast=int)
 
+# Minimum test-drive distance (METRES) required to submit an inspection report.
+# Default 0 = no minimum (a 0 KM / 0 m drive submits fine). Restore the old 1 KM
+# gate anytime with CF_MIN_TESTDRIVE_M=1000 in the VPS .env (no redeploy).
+CF_MIN_TESTDRIVE_M = config("CF_MIN_TESTDRIVE_M", default=0, cast=int)   # metres
+
 NOTIFY_SYNC_FALLBACK = True
 
 # Default primary key field type
