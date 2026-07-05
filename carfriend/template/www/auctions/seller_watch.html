@@ -130,9 +130,15 @@
   if (el.dataset.status !== 'live') { el.textContent = 'Ended'; el.style.color = 'var(--cf-muted)'; return; }
   var endTime = new Date(el.dataset.end).getTime();
   window.__setAuctionEnd = function (iso) { endTime = new Date(iso).getTime(); };
+  var left = false;
   function tick() {
     var diff = endTime - Date.now();
-    if (diff <= 0) { el.textContent = 'Ended'; el.style.color = 'var(--cf-muted)'; return; }
+    if (diff <= 0) {
+      el.textContent = 'Ended'; el.style.color = 'var(--cf-muted)';
+      // Auction ended -> leave the watch page for the dashboard (server-truth view).
+      if (!left) { left = true; setTimeout(function () { location.href = "{% url 'seller_dashboard' %}"; }, 1500); }
+      return;
+    }
     var h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000), s = Math.floor((diff % 60000) / 1000);
     el.textContent = (h > 0 ? h + ':' + String(m).padStart(2, '0') : String(m).padStart(2, '0')) + ':' + String(s).padStart(2, '0');
     el.style.color = diff < 120000 ? 'var(--cf-amber)' : (diff < 300000 ? 'var(--cf-amber-bright)' : 'var(--cf-ink)');

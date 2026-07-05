@@ -406,4 +406,27 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') clos
   }
 })();
 </script>
+<script>
+// Auto-redirect out of the room when the auction ends. SEPARATE from the bidding
+// socket above (that block is untouched): a second READ-ONLY WS tracks the server
+// 'closed' status + anti-snipe end time, with a timer fallback. Bids are is_live-
+// guarded server-side, so a fiddled local clock gains nothing — this is UX only.
+(function () {
+  var EXIT  = "{% url 'dealer_auction_list' %}";
+  var endTs = {{ a.end_ts }};
+  var gone  = false;
+  function leave(){ if(gone) return; gone = true; location.href = EXIT; }
+  try {
+    var proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    var w = new WebSocket(proto + '://' + location.host + '/ws/auction/{{ a.id }}/');
+    w.onmessage = function (e) {
+      var d; try { d = JSON.parse(e.data); } catch (_) { return; }
+      if (d.ends_at) endTs = Math.floor(new Date(d.ends_at).getTime() / 1000);  // anti-snipe resync
+      if (d.status && d.status !== 'live') leave();                             // server says closed
+    };
+    w.onerror = function () {};
+  } catch (e) {}
+  setInterval(function () { if (Math.floor(Date.now() / 1000) >= endTs + 2) leave(); }, 1000);
+})();
+</script>
 {% endblock %}
