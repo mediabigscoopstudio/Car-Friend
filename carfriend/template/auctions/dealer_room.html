@@ -432,25 +432,34 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') clos
 })();
 </script>
 <script>
-// Below-reserve SOFT warning for the bid panel — SEPARATE from the bidding socket
-// above (that block is untouched). NOT a hard block: bids under the reserve are
-// still allowed (reserve-not-met flows to the existing seller-decision path). This
-// only makes the gross reserve the visible target with a live red alert.
+// Below-reserve gate for the bid panel — SEPARATE from the bidding socket above
+// (that block is untouched). HARD block: disables the Place-bid button while the
+// entered / quick-add amount is below the auction's GROSS reserve, with a live red
+// alert making the reserve the target. Respects the socket's lockBidding: once the
+// form is locked on auction end (amt disabled), the button is left alone.
 (function () {
   var RES   = {{ a.reserve }};
   var amt   = document.getElementById('amt');
   var warn  = document.getElementById('reserve-warn');
   var txt   = document.getElementById('reserve-warn-txt');
   var quick = document.getElementById('quick');
+  var form  = document.getElementById('bid-form');
+  var btn   = form ? form.querySelector('button[type="submit"]') : null;
   if (!amt || !warn || !txt) return;
   function fmt(n){ return '₹' + Number(n).toLocaleString('en-IN'); }
   function check() {
     var v = parseInt(String(amt.value || '').replace(/[^0-9]/g, ''), 10);
-    if (!isNaN(v) && v > 0 && v < RES) {
+    var below = (!isNaN(v) && v > 0 && v < RES);
+    if (below) {
       txt.textContent = 'Below reserve — bid ' + fmt(RES) + ' or higher to qualify.';
       warn.style.display = 'flex';
     } else {
       warn.style.display = 'none';
+    }
+    if (btn && !amt.disabled) {            // don't fight lockBidding on a closed auction
+      btn.disabled = below;
+      btn.style.opacity = below ? '.5' : '';
+      btn.style.cursor  = below ? 'not-allowed' : '';
     }
   }
   amt.addEventListener('input', check);
