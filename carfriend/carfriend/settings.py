@@ -276,6 +276,12 @@ CF_RC_HOLD        = config("CF_RC_HOLD",        default=5000,  cast=int)
 # gate anytime with CF_MIN_TESTDRIVE_M=1000 in the VPS .env (no redeploy).
 CF_MIN_TESTDRIVE_M = config("CF_MIN_TESTDRIVE_M", default=0, cast=int)   # metres
 
+# Legal entity name printed on the sale agreement (swap when the CIN / Pvt-Ltd name
+# arrives). CF_LEGAL_ADDRESS is the Udyam-registered address shown in the PDF footer —
+# set it in the VPS .env; the placeholder makes it obvious when it hasn't been.
+CF_LEGAL_ENTITY  = config("CF_LEGAL_ENTITY",  default="Car Friend")
+CF_LEGAL_ADDRESS = config("CF_LEGAL_ADDRESS", default="[Udyam registration & registered address — set CF_LEGAL_ADDRESS]")
+
 NOTIFY_SYNC_FALLBACK = True
 
 # Default primary key field type
