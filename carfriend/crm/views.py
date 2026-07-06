@@ -203,10 +203,37 @@ def lead_detail(request, lead_id):
         base = int(lead.vehicle.expected_price or 0) or (rh_report.est_market_value if rh_report else 0)
         rh_suggested = base or None
 
+    # Sales Head — read-only OCB STATUS (sales wall: DEALER identities + GROSS amounts,
+    # NEVER seller info) + the "Allot Sales Associate" control (reuses sh_ocb_assign).
+    sh_ocb = sh_ocb_status = sh_current_sa = sh_sales_assoc = None
+    sh_ocb_offers = []
+    if request.user.is_sales_head and lead.vehicle:
+        from crm.views_sales_head import _sales_associates
+        sh_ocb = (OCBListing.objects.filter(vehicle=lead.vehicle)
+                  .select_related('assigned_sales_associate', 'sales_associate')
+                  .order_by('-created_at').first())
+        sh_sales_assoc = _sales_associates()
+        if sh_ocb:
+            sh_ocb_status = sh_ocb.get_status_display()
+            sh_current_sa = sh_ocb.assigned_sales_associate or sh_ocb.sales_associate
+            # Winner = the selected offer, else the leading (highest) one. Offers are
+            # ordered by -price, so index 0 is the highest. GROSS + real dealer names.
+            _offers = list(sh_ocb.offers.select_related('dealer').all())
+            _has_selected = any(o.is_selected for o in _offers)
+            for idx, o in enumerate(_offers):
+                sh_ocb_offers.append({
+                    'dealer': (o.dealer.get_full_name() or o.dealer.username) if o.dealer else '—',
+                    'amount': o.price,                       # GROSS — sales side
+                    'is_selected': o.is_selected,
+                    'leading': o.is_selected or (not _has_selected and idx == 0),
+                    'at': o.created_at,
+                })
+
     ctx = {
         'lead':             lead,
         'vehicle':          lead.vehicle,
-        'seller':           lead.seller,
+        # Sales side must NEVER see seller info — withhold it server-side.
+        'seller':           None if request.user.is_sales_head else lead.seller,
         'inspectors':       inspectors,
         'inspection_visit': inspection_visit,
         'bids':             bids,
@@ -227,6 +254,11 @@ def lead_detail(request, lead_id):
         'rh_prev_bids':     rh_prev_bids,
         'rh_reauctions_used': rh_reauctions_used,
         'rh_cap':           rh_cap,
+        'sh_ocb':           sh_ocb,
+        'sh_ocb_status':    sh_ocb_status,
+        'sh_ocb_offers':    sh_ocb_offers,
+        'sh_sales_assoc':   sh_sales_assoc,
+        'sh_current_sa':    sh_current_sa,
     }
     return render(request, 'teams/lead_detail.html', ctx)
 

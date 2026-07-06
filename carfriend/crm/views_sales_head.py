@@ -62,22 +62,31 @@ def sh_ocb_assign(request):
         return guard
     ocb = get_object_or_404(OCBListing.objects.select_related("vehicle"), id=request.POST.get("ocb_id"))
     associate = User.objects.filter(id=request.POST.get("associate_id"), role=Role.SALES).first()
+    # Optional safe local redirect target (e.g. back to /pipeline/<id>/); default inbox.
+    nxt = (request.POST.get("next") or "").strip()
+    dest = nxt if (nxt.startswith("/") and not nxt.startswith("//")) else "/crm/sales-head/"
     if not associate:
         messages.error(request, "Pick a valid sales associate.")
-        return redirect("/crm/sales-head/")
+        return redirect(dest)
+    fields = ["assigned_sales_associate", "sales_assigned_at", "sales_assigned_by", "updated_at"]
     ocb.assigned_sales_associate = associate
     ocb.sales_assigned_at = timezone.now()
     ocb.sales_assigned_by = request.user
-    ocb.status = OCBListing.Status.ASSIGNED_TO_SALES
-    ocb.save(update_fields=["assigned_sales_associate", "sales_assigned_at",
-                            "sales_assigned_by", "status", "updated_at"])
-    # Keep the parent lead in sync (OCB In Progress).
+    # Only stamp ASSIGNED_TO_SALES from an open-round/pre-sales state — never regress a
+    # winner-first (offered/accepted), seller-accepted, or closed OCB back to it.
+    if ocb.status in (OCBListing.Status.OPEN, OCBListing.Status.WINNER_DECLINED,
+                      OCBListing.Status.ASSIGNED_TO_SALES, OCBListing.Status.DEALERS_CONTACTED):
+        ocb.status = OCBListing.Status.ASSIGNED_TO_SALES
+        fields.append("status")
+    ocb.save(update_fields=fields)
+    # Keep the parent lead in sync (OCB In Progress). Forward-only — a no-op if the
+    # lead is already at or past OCB.
     transition_lead_for_vehicle(ocb.vehicle, "ocb_requested", actor=request.user)
     notify(associate, "task_assigned", title="New OCB assigned to you",
-           body=f"{_car(ocb.vehicle)} — winner declined, collect dealer offers.",
+           body=f"{_car(ocb.vehicle)} — collect dealer offers.",
            url="/crm/sales/ocb/")
     messages.success(request, f"OCB assigned to {associate.get_full_name() or associate.username}.")
-    return redirect("/crm/sales-head/")
+    return redirect(dest)
 
 
 # ── Sales associates ──────────────────────────────────────────────────────────

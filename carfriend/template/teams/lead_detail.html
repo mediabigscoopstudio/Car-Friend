@@ -257,6 +257,57 @@
         </div>
       </form>
     </div>
+    {% elif request.user.is_sales_head %}
+    <!-- Sales Head — OCB status (READ) + allot Sales Associate. Sales wall: real
+         dealer identities + GROSS amounts; NO seller info (withheld server-side). -->
+    <div class="cf-card">
+      <div class="cf-card-title"><i class="bi bi-people"></i> One Click Buy (OCB)</div>
+      {% if sh_ocb %}
+      <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:13px;margin-bottom:6px">
+        <span>Status <strong style="color:var(--g1)">{{ sh_ocb_status }}</strong></span>
+        <span>Ask (gross) <strong>₹{{ sh_ocb.ocb_price }}</strong></span>
+        <span>Sales Associate <strong>{% if sh_current_sa %}{{ sh_current_sa.get_full_name|default:sh_current_sa.username }}{% else %}—{% endif %}</strong></span>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px">Dealer offers</div>
+      {% for o in sh_ocb_offers %}
+      <div style="border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;{% if o.leading %}border-color:var(--g2);background:var(--gs){% endif %}">
+        <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <span style="font-weight:700;color:var(--g1)">₹{{ o.amount }}</span>
+          <span style="font-size:12px;color:var(--txt2)">{{ o.dealer }}</span>
+        </div>
+        {% if o.is_selected %}<div style="font-size:12px;color:var(--g1);font-weight:700;margin-top:4px"><i class="bi bi-trophy"></i> Winning offer</div>
+        {% elif o.leading %}<div style="font-size:12px;color:var(--g1);font-weight:600;margin-top:4px"><i class="bi bi-graph-up-arrow"></i> Leading</div>{% endif %}
+        <div style="font-size:11px;color:var(--txt3);margin-top:2px">{{ o.at|date:"d M, H:i" }}</div>
+      </div>
+      {% empty %}<div style="font-size:13px;color:var(--txt3)">No dealer offers yet.</div>{% endfor %}
+      {% else %}
+      <div style="font-size:13px;color:var(--txt3)">No OCB yet for this lead. The assigned Retail Associate creates it from the lead page once the seller counters.</div>
+      {% endif %}
+    </div>
+
+    {% if sh_ocb %}
+    <!-- Sales Head — Allot Sales Associate (reuses the sh_ocb_assign path) -->
+    <div class="cf-card">
+      <div class="cf-card-title"><i class="bi bi-person-plus"></i> Allot Sales Associate</div>
+      <form method="POST" action="{% url 'sh_ocb_assign' %}">
+        {% csrf_token %}
+        <input type="hidden" name="ocb_id" value="{{ sh_ocb.id }}">
+        <input type="hidden" name="next" value="/pipeline/{{ lead.id }}/">
+        <div class="row g-2">
+          <div class="col-12 col-sm-8">
+            <label class="cf-label">{% if sh_current_sa %}Reassign to{% else %}Sales associate{% endif %}</label>
+            <select name="associate_id" class="cf-field" required>
+              <option value="">— Choose associate —</option>
+              {% for a in sh_sales_assoc %}<option value="{{ a.id }}"{% if sh_current_sa and sh_current_sa.id == a.id %} selected{% endif %}>{{ a.get_full_name|default:a.username }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-12 col-sm-4" style="display:flex;align-items:flex-end">
+            <button type="submit" class="btn-cf" style="width:100%"><i class="bi bi-person-check me-1"></i>Allot</button>
+          </div>
+        </div>
+      </form>
+    </div>
+    {% endif %}
     {% else %}
     <!-- Assign / Reassign Inspector -->
     <div class="cf-card">
@@ -352,6 +403,7 @@
     </div>
     {% endif %}
 
+    {% if not request.user.is_sales_head %}
     <div class="cf-card">
       <div class="cf-card-title"><i class="bi bi-person"></i> Seller</div>
       <div style="display:flex;flex-direction:column;gap:10px">
@@ -384,6 +436,7 @@
       </div>
       {% endif %}
     </div>
+    {% endif %}
 
     <div class="cf-card">
       <div class="cf-card-title"><i class="bi bi-info-circle"></i> Lead Info</div>
