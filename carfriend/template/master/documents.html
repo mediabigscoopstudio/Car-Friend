@@ -1,0 +1,36 @@
+{% extends "base/base_web.html" %}
+{% block title %}Documents · Master{% endblock %}
+{% block page_title %}Signed Agreements{% endblock %}
+
+{% block content %}
+<div class="section-header"><h2>Sale Agreements <span style="color:var(--text-2);font-weight:400">· {{ count }}</span></h2></div>
+
+<form method="get" style="margin-bottom:16px;display:flex;gap:8px;max-width:420px">
+  <input type="text" name="q" value="{{ q }}" placeholder="Search by vehicle number"
+         style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px">
+  <button type="submit" class="btn btn-primary btn-sm">Search</button>
+</form>
+
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Vehicle</th><th>Seller</th><th>Dealer</th><th>Signatures</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td><strong>{{ r.vehicle.plate_number|default:"—" }}</strong><br><span style="color:var(--text-2);font-size:12px">{{ r.vehicle.make }} {{ r.vehicle.model }} {{ r.vehicle.year }}</span></td>
+        <td>{{ r.seller }}</td>
+        <td>{{ r.dealer }}</td>
+        <td style="font-size:12px">
+          Seller: {% if r.seller_signed %}<span style="color:var(--brand)">&#10003; signed</span>{% else %}<span style="color:var(--text-2)">pending</span>{% endif %}<br>
+          Dealer: {% if r.dealer_signed %}<span style="color:var(--brand)">&#10003; signed</span>{% else %}<span style="color:var(--text-2)">pending</span>{% endif %}
+        </td>
+        <td>{{ r.status }}</td>
+        <td><a href="{{ r.pdf_url }}" target="_blank" rel="noopener" class="btn btn-primary btn-sm">View PDF</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-2)">{% if q %}No agreements match "{{ q }}".{% else %}No signed agreements yet.{% endif %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

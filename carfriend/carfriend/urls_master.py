@@ -6,6 +6,7 @@ from accounts import views as a
 from auctions import views as au
 from core import views as c
 from crm import views_master as crm
+from deals import views_master as dm
 from inspections import views as ins
 from kyc import views as k
 from payments import views as p
@@ -51,6 +52,7 @@ urlpatterns = [
     path("dealers",                                     crm.master_dealers,           name="dealers"),
     path("dealers/<int:dealer_id>/",                    crm.master_dealer_detail,     name="master_dealer_detail"),
     path("deals",                                       crm.master_deals,             name="deals"),
+    path("documents",                                   dm.deal_documents,            name="documents_vault"),
     path("deals/<int:vehicle_id>/",                     crm.master_deal_detail,       name="master_deal_detail"),
     # Inspector overview
     path("inspector",                                   crm.master_inspector_dashboard, name="master_inspector_dashboard"),
