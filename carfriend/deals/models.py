@@ -51,9 +51,15 @@ class DealAgreement(models.Model):
     dealer_esign_ref = models.CharField(max_length=120, blank=True)
     seller_signed    = models.BooleanField(default=False)
     dealer_signed    = models.BooleanField(default=False)
+    seller_signed_at = models.DateTimeField(null=True, blank=True)
+    dealer_signed_at = models.DateTimeField(null=True, blank=True)
     created_at       = models.DateTimeField(auto_now_add=True)
 
     def __str__(self): return f"Agreement · {self.deal}"
+
+    @property
+    def fully_signed(self):
+        return self.seller_signed and self.dealer_signed
 
 
 class HandoverChecklist(models.Model):

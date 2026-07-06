@@ -1,0 +1,47 @@
+{% extends "base/base_www.html" %}
+{% block title %}Sale agreement — Car Friend{% endblock %}
+{% block nav %}{% include "www/_nav_dealer.html" with active="ocb" %}{% endblock %}
+
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="cf-focus">
+
+  <div class="cf-page-head cf-reveal"><h1>Sale agreement</h1></div>
+
+  <article class="cf-card cf-reveal d1" style="padding:1.4rem 1.4rem">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap">
+      <div>
+        <div style="font-weight:800;font-size:1.1rem">{{ deal.vehicle.display_name }}</div>
+        <div class="cf-bid-l" style="margin-top:.6rem">Purchase price (all-in)</div>
+        <div class="cf-bid-v" style="color:var(--cf-green);font-size:1.7rem">{% if price_fmt %}₹{{ price_fmt }}{% else %}—{% endif %}</div>
+      </div>
+      {% if agreement.dealer_signed %}<span class="cf-status"><svg class="i"><use href="#ic-check"/></svg>Signed</span>{% endif %}
+    </div>
+
+    {% if agreement.pdf %}
+    <div style="margin-top:1rem"><a href="{{ agreement.pdf.url }}" target="_blank" rel="noopener" class="cf-btn cf-btn-ghost"><svg class="i"><use href="#ic-file"/></svg>Read the full agreement (PDF)</a></div>
+    {% endif %}
+  </article>
+
+  {% if messages %}{% for m in messages %}
+  <div class="cf-card cf-reveal d1" style="padding:.85rem 1.1rem;margin-top:.8rem;display:flex;align-items:center;gap:.5rem"><svg class="i" style="stroke:var(--cf-green-bright)"><use href="#ic-shield"/></svg><span>{{ m }}</span></div>
+  {% endfor %}{% endif %}
+
+  <div class="cf-card cf-reveal d1" style="padding:1.3rem 1.4rem;margin-top:1rem">
+    <div class="cf-flabel" style="margin-bottom:.7rem">Aadhaar e-Sign</div>
+    <div style="display:flex;flex-direction:column;gap:.5rem;font-size:.9rem">
+      <div style="display:flex;justify-content:space-between;gap:1rem"><span>Your signature (Buyer)</span>
+        {% if agreement.dealer_signed %}<span class="cf-chip ok"><svg class="i"><use href="#ic-check"/></svg>Signed</span>{% else %}<span class="cf-chip pend"><svg class="i"><use href="#ic-clock"/></svg>Pending</span>{% endif %}</div>
+      <div style="display:flex;justify-content:space-between;gap:1rem"><span>Seller's signature</span>
+        {% if agreement.seller_signed %}<span class="cf-chip ok"><svg class="i"><use href="#ic-check"/></svg>Signed</span>{% else %}<span class="cf-chip pend"><svg class="i"><use href="#ic-clock"/></svg>Pending</span>{% endif %}</div>
+    </div>
+
+    {% if agreement.dealer_signed %}
+    <div class="cf-foot-note" style="margin:.9rem 0 0"><svg class="i"><use href="#ic-check"/></svg>You e-signed via Aadhaar. Ref: {{ agreement.dealer_esign_ref }}{% if agreement.dealer_signed_at %} · {{ agreement.dealer_signed_at|date:"d M Y, H:i" }}{% endif %}</div>
+    {% else %}
+    <div style="margin-top:1rem"><a href="{% url 'esign_start' deal.pk 'dealer' %}" class="cf-btn cf-btn-primary"><svg class="i"><use href="#ic-shield"/></svg>e-Sign with Aadhaar</a></div>
+    <div class="cf-foot-note" style="margin:.9rem 0 0"><svg class="i"><use href="#ic-shield"/></svg>You'll be taken to SurePass to sign with your Aadhaar. We record the SurePass reference and time.</div>
+    {% endif %}
+  </div>
+
+</div></div></main>
+{% endblock %}

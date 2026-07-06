@@ -507,3 +507,92 @@ def fetch_challans(rc_number, chassis="", engine=""):
     except Exception:
         logger.exception("Challan normalize crashed for rc=%s", rc)
         return {**empty, "status": "failed"}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SurePass Aadhaar e-Sign  (a SEPARATE SurePass product from the KYC/RC/PAN calls
+# above; reuses the same SUREPASS_TOKEN / SUREPASS_BASE_URL). Unlike _call_surepass,
+# these return a STRUCTURED result and never raise — the caller must SURFACE the
+# actual SurePass status/message (sandbox may answer "product not enabled"). There is
+# NO fake-sign fallback: a party is signed only when SurePass returns completed.
+# ─────────────────────────────────────────────────────────────────────────────
+
+SUREPASS_ESIGN_INIT_PATH   = config("SUREPASS_ESIGN_INIT_PATH",   default="/api/v1/esign/initialize")
+SUREPASS_ESIGN_STATUS_PATH = config("SUREPASS_ESIGN_STATUS_PATH", default="/api/v1/esign/get-status")
+
+
+def _esign_raw(path, payload, method="POST"):
+    """Low-level SurePass e-Sign call. Returns {ok, status, message, data} and NEVER
+    raises, so the actual SurePass response can be surfaced to the user/logs."""
+    token = config("SUREPASS_TOKEN", default="")
+    if not token:
+        return {"ok": False, "status": 0, "message": "SUREPASS_TOKEN is not set.", "data": {}}
+    url = SUREPASS_BASE + path
+    data = json.dumps(payload).encode("utf-8") if payload is not None else None
+    req = urllib.request.Request(
+        url, data=data, method=method,
+        headers={"Authorization": f"Bearer {token}",
+                 "Content-Type": "application/json", "Accept": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as resp:
+            status = getattr(resp, "status", None) or resp.getcode()
+            raw = resp.read().decode("utf-8", errors="replace")
+    except urllib.error.HTTPError as exc:
+        status = exc.code
+        try:
+            raw = exc.read().decode("utf-8", errors="replace")
+        except Exception:
+            raw = ""
+        logger.warning("Surepass e-Sign HTTP error: status=%s", status)
+    except (socket.timeout, TimeoutError):
+        return {"ok": False, "status": 0, "message": "SurePass e-Sign timed out.", "data": {}}
+    except urllib.error.URLError as exc:
+        return {"ok": False, "status": 0, "message": f"Could not reach SurePass e-Sign: {exc.reason}", "data": {}}
+    try:
+        body = json.loads(raw) if raw else {}
+    except ValueError:
+        body = {}
+    # SurePass envelopes vary: {success, message, message_code, data:{...}}.
+    msg = (body.get("message") or body.get("message_code")
+           or body.get("status_code") or f"HTTP {status}")
+    ok = (200 <= int(status or 0) < 300) and (body.get("success") is not False)
+    return {"ok": bool(ok), "status": int(status or 0), "message": str(msg), "data": body}
+
+
+def esign_initialize(*, pdf_url, signer_name, signer_email, signer_phone, reference, callback_url):
+    """Initiate an Aadhaar e-Sign for ONE party. Returns
+    {ok, status, message, signing_url, client_id, data}. On success `signing_url` is the
+    SurePass-hosted page to redirect the signer to; `client_id` is the transaction ref."""
+    payload = {
+        "pdf_url": pdf_url,
+        "callback_url": callback_url,
+        "config": {"auth_mode": "1", "reason": "Vehicle sale agreement",
+                   "positions": {}, "allow_download": True},
+        "prefill_options": {"full_name": signer_name or "",
+                            "mobile_number": signer_phone or "",
+                            "user_email": signer_email or ""},
+        "reference_id": reference,
+    }
+    r = _esign_raw(SUREPASS_ESIGN_INIT_PATH, payload)
+    d = r.get("data") or {}
+    inner = d.get("data") if isinstance(d.get("data"), dict) else d
+    r["signing_url"] = (inner.get("url") or inner.get("signed_url")
+                        or inner.get("esign_url") or inner.get("redirect_url") or "")
+    r["client_id"] = (inner.get("client_id") or inner.get("id")
+                      or inner.get("reference_id") or "")
+    return r
+
+
+def esign_fetch_status(client_id):
+    """Confirm a signing transaction with SurePass. Returns {ok, status, message,
+    completed, signed_pdf_url, data}. `completed` is True only when SurePass reports the
+    document as signed/completed — the sole gate for marking a party signed."""
+    r = _esign_raw(SUREPASS_ESIGN_STATUS_PATH, {"client_id": client_id})
+    d = r.get("data") or {}
+    inner = d.get("data") if isinstance(d.get("data"), dict) else d
+    state = str(inner.get("status") or inner.get("esign_status") or "").lower()
+    completed = bool(inner.get("signed") or inner.get("completed")
+                     or state in ("completed", "signed", "success", "esign_done"))
+    r["completed"] = completed
+    r["signed_pdf_url"] = inner.get("signed_pdf_url") or inner.get("pdf_url") or ""
+    return r
