@@ -130,6 +130,14 @@ def winner_offer(ocb, gross_price, *, actor=None):
     ocb.winner_responded_at = timezone.now()
     ocb.status = OCBListing.Status.WINNER_ACCEPTED
     ocb.save(update_fields=["ocb_price", "winner_responded_at", "status", "updated_at"])
+    # Materialise the winner's proposal as a REAL OCBOffer (GROSS) so the RA page and
+    # the close logic can see/select it. Idempotent — one row per winner; re-tapping a
+    # new price updates it, never duplicates. is_selected stays False until the seller
+    # confirms (the close sets it True).
+    if ocb.offered_to:
+        OCBOffer.objects.update_or_create(
+            ocb_listing=ocb, dealer=ocb.offered_to,
+            defaults={"price": ocb.ocb_price, "submitted_by": ocb.offered_to})
     base = base_from_gross(ocb.ocb_price)["base"]
     seller = ocb.vehicle.seller
     if seller:
@@ -160,6 +168,16 @@ def offer_rows(ocb, *, reveal_dealer, as_base=False):
             dealer_label = (of.dealer.get_full_name() or of.dealer.username) if of.dealer else "—"
         else:
             dealer_label = mask_label(i)
+        # submitted_by is safe to name ONLY when it is staff. When the dealer submitted
+        # their OWN offer (winner-first / open self-serve), submitted_by == dealer, so
+        # naming it would leak the dealer identity on a masked (retail/seller) surface —
+        # fall back to the anonymised dealer label there.
+        if of.submitted_by_id and (reveal_dealer or of.submitted_by_id != of.dealer_id):
+            submitted = of.submitted_by.get_full_name() or of.submitted_by.username
+        elif of.submitted_by_id and of.submitted_by_id == of.dealer_id:
+            submitted = dealer_label
+        else:
+            submitted = "—"
         price = base_from_gross(of.price)["base"] if as_base else of.price
         rows.append({
             "id": of.id,
@@ -167,8 +185,7 @@ def offer_rows(ocb, *, reveal_dealer, as_base=False):
             "notes": of.notes,
             "is_selected": of.is_selected,
             "dealer_label": dealer_label,
-            "submitted_by_name": (of.submitted_by.get_full_name() or of.submitted_by.username)
-                                 if of.submitted_by else "—",
+            "submitted_by_name": submitted,
             "created_at": of.created_at,
         })
     return rows

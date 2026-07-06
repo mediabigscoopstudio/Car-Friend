@@ -52,6 +52,7 @@
 
     <div class="cf-card">
       <div class="cf-card-title"><i class="bi bi-cash-stack"></i> Dealer Offers</div>
+      {% if awaiting_seller %}<div class="note" style="margin-bottom:10px"><i class="bi bi-hourglass-split"></i> The auction winner accepted — waiting for the seller to confirm the price. You'll be able to act once they respond.</div>{% endif %}
       {% for o in offers %}
       <div class="offer {% if o.is_selected %}win{% endif %}">
         <div><span class="p">₹{{ o.price }}</span> · {{ o.dealer_label }}</div>
@@ -59,7 +60,7 @@
         <div class="meta">by {{ o.submitted_by_name }} · {{ o.created_at|date:"d M, H:i" }}</div>
         {% if o.is_selected %}
           <div class="meta" style="color:var(--g1);font-weight:700;margin-top:6px"><i class="bi bi-trophy"></i> Winner — deal price ₹{{ o.price }}</div>
-        {% elif ocb.status != 'accepted' %}
+        {% elif can_close %}
           <form method="post" action="/crm/retail/ocb/{{ ocb.id }}/select-winner/" style="display:inline">
             {% csrf_token %}<input type="hidden" name="offer_id" value="{{ o.id }}">
             <button class="btn-cf" type="submit" style="margin-top:8px;padding:6px 12px;font-size:12px"><i class="bi bi-trophy"></i> Select as Winner</button>
@@ -67,7 +68,7 @@
         {% endif %}
       </div>
       {% empty %}<div class="meta" style="color:var(--txt2);font-size:13px">No dealer offers yet.</div>{% endfor %}
-      <div class="note">A dealer is connected when a Sales Associate submits an offer with the dealer's details. Select the winning offer to close the OCB — the final deal price is the winning offer price.</div>
+      <div class="note">Offers show as anonymised dealers at the seller-facing price. Select the winning offer to close the OCB — in the winner-first tier the seller confirms the price first.</div>
     </div>
 
     <div class="cf-card">

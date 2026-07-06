@@ -208,10 +208,22 @@ def seller_ocb_respond(request, auction_id):
         return redirect(f"/auctions/{auction_id}/ocb/")
     if request.POST.get("action") == "accept":
         from deals.services import create_deal_from_win
-        create_deal_from_win(ocb.vehicle, ocb.ocb_price, ocb.offered_to, ocb.vehicle.seller)
+        from crm.services import transition_lead_for_vehicle
+        # Close the winner-first tier: SELECT the winner's OCBOffer, create the Deal
+        # from its GROSS (idempotent), and advance the lead to AGREEMENT so it LEAVES
+        # "OCB processing" (ocb_in_progress and seller_approved share rank 100, so a
+        # plain seller_approved would be a no-op — agreement is rank 110).
+        ocb.offers.update(is_selected=False)
+        win = ocb.offers.filter(dealer=ocb.offered_to).order_by("-id").first()
+        gross = win.price if win else ocb.ocb_price
+        if win:
+            win.is_selected = True
+            win.save(update_fields=["is_selected"])
+        create_deal_from_win(ocb.vehicle, gross, ocb.offered_to, ocb.vehicle.seller)
         ocb.status = OCBListing.Status.SELLER_ACCEPTED
         ocb.save(update_fields=["status", "updated_at"])
-    else:  # reject -> back to the RA to declare (tier 2)
+        transition_lead_for_vehicle(ocb.vehicle, "agreement_ready", actor=request.user)
+    else:  # reject -> OCB opens to ALL dealers (winner may re-enter the open round)
         ocb.status = OCBListing.Status.WINNER_DECLINED
         ocb.save(update_fields=["status", "updated_at"])
         if ocb.assigned_to:

@@ -197,10 +197,16 @@ def retail_ocb_detail(request, ocb_id):
     # Show whichever SA is set — the Sales Head sets assigned_sales_associate.
     current = ocb.assigned_sales_associate or ocb.sales_associate
     from core.margin import base_from_gross
+    S = OCBListing.Status
+    # The RA closes only in the open/all-dealers tier. In the winner-first tier the
+    # SELLER confirms the winner's offer (auctions.seller_ocb_respond) — the RA can't
+    # close there, so no "Select as Winner" button.
+    can_close = ocb.status in (S.OPEN, S.WINNER_DECLINED, S.ASSIGNED_TO_SALES, S.DEALERS_CONTACTED)
+    awaiting_seller = ocb.status in (S.OFFERED_TO_WINNER, S.WINNER_ACCEPTED)
     return render(request, "teams/retail/ocb_detail.html", {
         "ocb": ocb, "car": _car(ocb.vehicle), "offers": offers, "thread": thread,
         "ocb_base": base_from_gross(ocb.ocb_price)["base"],   # client price as BASE
-        "current_sales": current,
+        "current_sales": current, "can_close": can_close, "awaiting_seller": awaiting_seller,
         "sales_names": (current.get_full_name() or current.username) if current else "—",
     })
 
@@ -238,6 +244,12 @@ def retail_ocb_select_winner(request, ocb_id):
                             id=ocb_id, assigned_to=request.user)
     if ocb.status == OCBListing.Status.ACCEPTED:
         messages.error(request, "This OCB is already closed.")
+        return redirect(f"/crm/retail/ocb/{ocb.id}/")
+    # Winner-first tier is the SELLER's call — the RA cannot close a winner offer here
+    # (that would bypass the seller confirming the winner's accepted price).
+    if ocb.status in (OCBListing.Status.OFFERED_TO_WINNER, OCBListing.Status.WINNER_ACCEPTED,
+                      OCBListing.Status.SELLER_ACCEPTED):
+        messages.info(request, "The winner's offer is with the seller to confirm — you can't close it here.")
         return redirect(f"/crm/retail/ocb/{ocb.id}/")
     offer = get_object_or_404(OCBOffer, id=request.POST.get("offer_id"), ocb_listing=ocb)
 

@@ -27,6 +27,9 @@ EVENT_STAGE = {
     "seller_countered":      Lead.STAGE_NEGOTIATION,
     "seller_approved":       Lead.STAGE_SELLER_APPROVED,
     "ocb_requested":         Lead.STAGE_OCB,
+    # Deal created, agreement ready to e-sign. Rank 110 > OCB's 100, so an OCB lead
+    # advances OUT of "OCB processing" into Agreement.
+    "agreement_ready":       Lead.STAGE_AGREEMENT,
     "agreement_signed":      Lead.STAGE_AGREEMENT,
     "handed_to_procurement": Lead.STAGE_PROCUREMENT,
     "closed":                Lead.STAGE_CLOSED,
