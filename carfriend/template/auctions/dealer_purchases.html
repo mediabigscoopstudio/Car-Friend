@@ -24,7 +24,9 @@
         <div class="cf-bid-l">Price</div>
         <div style="font-weight:800;font-variant-numeric:tabular-nums">₹{{ r.deal.final_price|floatformat:0 }}</div>
       </div>
-      {% if r.paid %}<span class="cf-status"><svg class="i"><use href="#ic-check"/></svg>Paid</span>{% else %}<span class="cf-chip pend"><svg class="i"><use href="#ic-clock"/></svg>Payment due</span>{% endif %}
+      {% if r.needs_sign %}<a href="{% url 'deal_agreement_dealer' r.deal.pk %}" class="cf-btn cf-btn-primary" style="padding:.5rem .9rem"><svg class="i"><use href="#ic-shield"/></svg>e-Sign agreement</a>
+      {% elif r.paid %}<span class="cf-status"><svg class="i"><use href="#ic-check"/></svg>Paid</span>
+      {% else %}<a href="{% url 'deal_agreement_dealer' r.deal.pk %}" class="cf-btn cf-btn-ghost" style="padding:.5rem .9rem"><svg class="i"><use href="#ic-file"/></svg>Agreement</a>{% endif %}
     </article>
     {% endfor %}
   </div>

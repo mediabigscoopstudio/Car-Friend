@@ -48,6 +48,12 @@
       {% elif ocb.status == 'assigned_to_sales' and not current_sales %}
       <div class="note" style="margin-top:12px"><i class="bi bi-hourglass-split"></i> Declared — waiting for the Sales Head to assign a Sales Associate.</div>
       {% endif %}
+      {% if deal_status %}
+      <div class="kv" style="margin-top:12px"><div class="k">Deal</div><div class="v">{{ deal_status }}</div></div>
+      <div class="kv" style="border-bottom:none"><div class="k">Agreement</div><div class="v">
+        Seller {% if seller_signed %}<i class="bi bi-check-circle" style="color:var(--g1)"></i>{% else %}<span style="color:var(--txt3)">pending</span>{% endif %}
+        · Buyer {% if dealer_signed %}<i class="bi bi-check-circle" style="color:var(--g1)"></i>{% else %}<span style="color:var(--txt3)">pending</span>{% endif %}</div></div>
+      {% endif %}
     </div>
 
     <div class="cf-card">

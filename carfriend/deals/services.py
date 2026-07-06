@@ -76,11 +76,13 @@ def create_deal_from_win(vehicle, winning_gross, dealer, seller, assigned_sales=
     if seller:
         notify(seller, "deal_confirmed",
                title=f"Sale confirmed: {vehicle.display_name}",
-               body=f"You'll receive ₹{split['base']:,}. Your agreement is being prepared.")
+               body=f"You'll receive ₹{split['base']:,}. Review and e-sign your agreement.",
+               url=f"/deals/{deal.id}/agreement/")
     if dealer:
         notify(dealer, "deal_confirmed",
                title=f"You won: {vehicle.display_name}",
-               body=f"Deal for ₹{winning_gross:,}. Your agreement is being prepared.")
+               body=f"Deal for ₹{winning_gross:,}. Review and e-sign your agreement.",
+               url=f"/deals/{deal.id}/agreement/dealer/")
 
     # Generate the sale-agreement PDF (Agreement stage) with the real deal data. Never
     # let a PDF hiccup block deal creation — log and continue.

@@ -204,11 +204,20 @@ def retail_ocb_detail(request, ocb_id):
     can_close = ocb.status in (S.OPEN, S.WINNER_ACCEPTED, S.WINNER_DECLINED,
                                S.ASSIGNED_TO_SALES, S.DEALERS_CONTACTED)
     awaiting_winner = ocb.status == S.OFFERED_TO_WINNER   # winner hasn't responded yet
+    # Deal + agreement status (retail wall: status/signatures only — NO dealer identity,
+    # no gross). Lets the RA follow the tail: Agreement -> e-Sign -> payment.
+    from deals.models import Deal
+    _deal = (Deal.objects.filter(vehicle=ocb.vehicle).select_related("agreement")
+             .order_by("-id").first())
+    _agr = getattr(_deal, "agreement", None) if _deal else None
     return render(request, "teams/retail/ocb_detail.html", {
         "ocb": ocb, "car": _car(ocb.vehicle), "offers": offers, "thread": thread,
         "ocb_base": base_from_gross(ocb.ocb_price)["base"],   # client price as BASE
         "current_sales": current, "can_close": can_close, "awaiting_winner": awaiting_winner,
         "sales_names": (current.get_full_name() or current.username) if current else "—",
+        "deal_status": _deal.get_status_display() if _deal else None,
+        "seller_signed": bool(_agr and _agr.seller_signed),
+        "dealer_signed": bool(_agr and _agr.dealer_signed),
     })
 
 

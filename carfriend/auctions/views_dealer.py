@@ -236,12 +236,18 @@ def dealer_purchases(request):
         return guard
     from deals.models import Deal
     from payments.models import Payment
-    deals = (Deal.objects.filter(dealer=request.user, status__in=["signed", "paid", "closed"])
-             .select_related("vehicle").order_by("-created_at"))
+    # Include "agreement" so the dealer can reach + e-sign the agreement BEFORE it is
+    # fully signed (the deal only becomes "signed" once both parties have signed).
+    deals = (Deal.objects.filter(dealer=request.user,
+                                 status__in=["agreement", "signed", "paid", "closed"])
+             .select_related("vehicle", "agreement").order_by("-created_at"))
     rows = []
     for d in deals:
         p = Payment.objects.filter(deal=d).order_by("-id").first()
-        rows.append({"deal": d, "paid": bool(p and p.status == "confirmed")})
+        ag = getattr(d, "agreement", None)
+        rows.append({"deal": d, "paid": bool(p and p.status == "confirmed"),
+                     "dealer_signed": bool(ag and ag.dealer_signed),
+                     "needs_sign": bool(ag and not ag.dealer_signed)})
     return render(request, "auctions/dealer_purchases.html", {"rows": rows})
 
 
