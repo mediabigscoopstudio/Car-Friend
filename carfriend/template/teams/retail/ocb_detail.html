@@ -52,7 +52,7 @@
 
     <div class="cf-card">
       <div class="cf-card-title"><i class="bi bi-cash-stack"></i> Dealer Offers</div>
-      {% if awaiting_seller %}<div class="note" style="margin-bottom:10px"><i class="bi bi-hourglass-split"></i> The auction winner accepted — waiting for the seller to confirm the price. You'll be able to act once they respond.</div>{% endif %}
+      {% if awaiting_winner %}<div class="note" style="margin-bottom:10px"><i class="bi bi-hourglass-split"></i> Waiting for the auction winner to respond. Their offer will appear here to select.</div>{% endif %}
       {% for o in offers %}
       <div class="offer {% if o.is_selected %}win{% endif %}">
         <div><span class="p">₹{{ o.price }}</span> · {{ o.dealer_label }}</div>
@@ -61,14 +61,14 @@
         {% if o.is_selected %}
           <div class="meta" style="color:var(--g1);font-weight:700;margin-top:6px"><i class="bi bi-trophy"></i> Winner — deal price ₹{{ o.price }}</div>
         {% elif can_close %}
-          <form method="post" action="/crm/retail/ocb/{{ ocb.id }}/select-winner/" style="display:inline">
+          <form method="post" action="/crm/retail/ocb/{{ ocb.id }}/select-winner/" style="display:inline" onsubmit="return confirm('Select this offer and close the OCB? This creates the sale agreement.');">
             {% csrf_token %}<input type="hidden" name="offer_id" value="{{ o.id }}">
-            <button class="btn-cf" type="submit" style="margin-top:8px;padding:6px 12px;font-size:12px"><i class="bi bi-trophy"></i> Select as Winner</button>
+            <button class="btn-cf" type="submit" style="margin-top:8px;padding:6px 12px;font-size:12px"><i class="bi bi-check2-circle"></i> Select this offer &amp; close OCB</button>
           </form>
         {% endif %}
       </div>
       {% empty %}<div class="meta" style="color:var(--txt2);font-size:13px">No dealer offers yet.</div>{% endfor %}
-      <div class="note">Offers show as anonymised dealers at the seller-facing price. Select the winning offer to close the OCB — in the winner-first tier the seller confirms the price first.</div>
+      <div class="note">Offers show as anonymised dealers at the seller-facing price. Selecting an offer closes the OCB, creates the sale agreement, and moves the lead to Agreement.</div>
     </div>
 
     <div class="cf-card">

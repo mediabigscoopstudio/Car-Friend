@@ -198,15 +198,16 @@ def retail_ocb_detail(request, ocb_id):
     current = ocb.assigned_sales_associate or ocb.sales_associate
     from core.margin import base_from_gross
     S = OCBListing.Status
-    # The RA closes only in the open/all-dealers tier. In the winner-first tier the
-    # SELLER confirms the winner's offer (auctions.seller_ocb_respond) — the RA can't
-    # close there, so no "Select as Winner" button.
-    can_close = ocb.status in (S.OPEN, S.WINNER_DECLINED, S.ASSIGNED_TO_SALES, S.DEALERS_CONTACTED)
-    awaiting_seller = ocb.status in (S.OFFERED_TO_WINNER, S.WINNER_ACCEPTED)
+    # The assigned RA can select a dealer offer & close once one exists — including the
+    # winner's accepted offer (winner_accepted). The seller may also confirm the winner
+    # (auctions.seller_ocb_respond); either close creates the Deal at Agreement.
+    can_close = ocb.status in (S.OPEN, S.WINNER_ACCEPTED, S.WINNER_DECLINED,
+                               S.ASSIGNED_TO_SALES, S.DEALERS_CONTACTED)
+    awaiting_winner = ocb.status == S.OFFERED_TO_WINNER   # winner hasn't responded yet
     return render(request, "teams/retail/ocb_detail.html", {
         "ocb": ocb, "car": _car(ocb.vehicle), "offers": offers, "thread": thread,
         "ocb_base": base_from_gross(ocb.ocb_price)["base"],   # client price as BASE
-        "current_sales": current, "can_close": can_close, "awaiting_seller": awaiting_seller,
+        "current_sales": current, "can_close": can_close, "awaiting_winner": awaiting_winner,
         "sales_names": (current.get_full_name() or current.username) if current else "—",
     })
 
@@ -242,32 +243,38 @@ def retail_ocb_select_winner(request, ocb_id):
         return guard
     ocb = get_object_or_404(OCBListing.objects.select_related("vehicle"),
                             id=ocb_id, assigned_to=request.user)
-    if ocb.status == OCBListing.Status.ACCEPTED:
-        messages.error(request, "This OCB is already closed.")
+    S = OCBListing.Status
+    # Idempotent — already closed / deal created.
+    if ocb.status in (S.ACCEPTED, S.SELLER_ACCEPTED, S.AGREEMENT, S.REJECTED):
+        messages.info(request, "This OCB is already closed.")
         return redirect(f"/crm/retail/ocb/{ocb.id}/")
-    # Winner-first tier is the SELLER's call — the RA cannot close a winner offer here
-    # (that would bypass the seller confirming the winner's accepted price).
-    if ocb.status in (OCBListing.Status.OFFERED_TO_WINNER, OCBListing.Status.WINNER_ACCEPTED,
-                      OCBListing.Status.SELLER_ACCEPTED):
-        messages.info(request, "The winner's offer is with the seller to confirm — you can't close it here.")
+    # Nothing to select yet — the winner hasn't responded.
+    if ocb.status == S.OFFERED_TO_WINNER:
+        messages.info(request, "Waiting for the auction winner to respond — no offer to select yet.")
         return redirect(f"/crm/retail/ocb/{ocb.id}/")
     offer = get_object_or_404(OCBOffer, id=request.POST.get("offer_id"), ocb_listing=ocb)
 
     ocb.offers.update(is_selected=False)
     offer.is_selected = True
     offer.save(update_fields=["is_selected"])
-    ocb.status = OCBListing.Status.ACCEPTED
-    ocb.save(update_fields=["status"])
+    ocb.status = S.SELLER_ACCEPTED   # closed with a chosen offer; a Deal now exists
+    ocb.save(update_fields=["status", "updated_at"])
 
     v = ocb.vehicle
-    # Seller-accepted OCB offer -> shared Deal creation (grossed money split).
+    # Close = Deal from the chosen offer's GROSS (idempotent — one Deal per vehicle),
+    # then advance the lead OUT of "OCB processing" to Agreement (rank 110 > OCB's 100;
+    # create_deal_from_win only reaches seller_approved at rank 100, a no-op here).
     from deals.services import create_deal_from_win
+    from crm.services import transition_lead_for_vehicle
     create_deal_from_win(v, offer.price, offer.dealer, v.seller,
                          assigned_sales=offer.submitted_by)
-    if offer.submitted_by:
+    transition_lead_for_vehicle(v, "agreement_ready", actor=request.user)
+    # create_deal_from_win already notified the dealer + seller. Only ping the Sales
+    # Associate when a staff member (not the dealer) logged the offer.
+    if offer.submitted_by_id and offer.submitted_by_id != offer.dealer_id:
         notify(offer.submitted_by, "task_assigned", title="Your OCB offer was selected",
-               body=f"₹{offer.price:,} for {_car(v)} — deal opened.", url="/ocb/sales/")
-    messages.success(request, "Winning offer selected — OCB closed and deal opened.")
+               body=f"₹{offer.price:,} for {_car(v)} — deal opened.", url="/crm/sales/ocb/")
+    messages.success(request, "Offer selected — OCB closed, deal created, agreement ready.")
     return redirect(f"/crm/retail/ocb/{ocb.id}/")
 
 
