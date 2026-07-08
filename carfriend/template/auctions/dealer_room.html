@@ -208,9 +208,28 @@
           </div>
           {% endif %}
 
-          {% if inspection.audio_url %}
+          {% if inspection.audio_url or inspection.video_url or inspection.wrap_photos %}
           <div style="padding:1rem 1.25rem">
             <div style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--cf-muted);margin-bottom:.75rem">Inspection media</div>
+
+            {% if inspection.wrap_photos %}
+            <div style="font-size:.74rem;font-weight:700;color:var(--cf-ink);margin-bottom:.5rem">Exterior — 4 sides</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:.5rem;margin-bottom:1rem">
+              {% for url in inspection.wrap_photos %}<div style="border-radius:8px;overflow:hidden;aspect-ratio:4/3;background:var(--cf-line)"><img src="{{ url }}" alt="" loading="lazy" onclick="openPhotoModal('{{ url }}')" style="width:100%;height:100%;object-fit:cover;display:block;cursor:pointer"></div>{% endfor %}
+            </div>
+            {% endif %}
+
+            {% if inspection.video_url %}
+            <div style="background:var(--cf-green-050);border:1px solid var(--cf-green-100);border-radius:10px;padding:.85rem 1rem;margin-bottom:.75rem">
+              <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.65rem">
+                <div style="width:38px;height:38px;border-radius:9px;flex-shrink:0;background:var(--cf-green-100);display:grid;place-items:center;color:var(--cf-green)"><svg class="i"><use href="#ic-car"/></svg></div>
+                <div><div style="font-weight:700;color:var(--cf-ink);font-size:.85rem">Walk-around video</div><div style="font-size:.72rem;color:var(--cf-muted)">Full exterior walk-around</div></div>
+              </div>
+              <video controls preload="metadata" playsinline style="width:100%;border-radius:8px;background:#000;max-height:320px"><source src="{{ inspection.video_url }}"></video>
+            </div>
+            {% endif %}
+
+            {% if inspection.audio_url %}
             <div style="background:var(--cf-green-050);border:1px solid var(--cf-green-100);border-radius:10px;padding:.85rem 1rem">
               <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.65rem">
                 <div style="width:38px;height:38px;border-radius:9px;flex-shrink:0;background:var(--cf-green-100);display:grid;place-items:center;color:var(--cf-green)"><svg class="i"><use href="#ic-broadcast"/></svg></div>
@@ -218,6 +237,7 @@
               </div>
               <audio controls style="width:100%;height:36px"><source src="{{ inspection.audio_url }}"></audio>
             </div>
+            {% endif %}
           </div>
           {% endif %}
         </div>

@@ -109,12 +109,22 @@ def _sev_rank(severity):
 
 
 def _media_by_section(report):
-    """Masked condition photos grouped by their section tag (dealer-safe)."""
+    """Masked condition photos grouped by the ZONE they belong to (dealer-safe).
+
+    Walk-inspection photos are stored as InspectionMedia(section='walk', slot=<checkpoint
+    key>), so grouping by `section` dumps them all in a 'walk' bucket that no dealer zone
+    ever looks up. Map each checkpoint key back to its zone key; legacy media (which carry
+    a real section) fall back to that section. All three file variants are plate-masked
+    (the raw file is masked in place on upload), so any is dealer-safe."""
+    from inspections import zones
+    key_to_zone = {cp["key"]: zkey for zkey, cp in zones.all_checkpoints()}
     out = {}
     for m in report.media.filter(kind="photo").order_by("id"):
         img = m.masked_file or m.webp_file or m.file
-        if img:
-            out.setdefault((m.section or "").strip().lower(), []).append(img.url)
+        if not img:
+            continue
+        zkey = key_to_zone.get(m.slot) or (m.section or "").strip().lower()
+        out.setdefault(zkey, []).append(img.url)
     return out
 
 
@@ -196,6 +206,10 @@ def dealer_inspection(report):
             "brake": report.get_brake_condition_display() if report.brake_condition else None,
         }
 
+    # Wrap-up 4-side photos live on the report itself (front/rear/left/right), and are
+    # plate-masked on upload (_MASK_PHOTO_FIELDS) — dealer-safe.
+    wrap_photos = [f.url for f in (report.front_photo, report.rear_photo,
+                                   report.left_photo, report.right_photo) if f]
     return {
         "grade": grade,
         "score": score,
@@ -203,7 +217,8 @@ def dealer_inspection(report):
         "hero": _hero_url(report),
         "has_challans": (report.challan_count or 0) > 0,
         "audio_url": report.engine_audio.url if report.engine_audio else None,
-        # walkaround_video intentionally omitted — it is NOT plate-masked.
+        "video_url": report.walkaround_video.url if report.walkaround_video else None,
+        "wrap_photos": wrap_photos,
         "drive": drive,          # distance/duration/drivability only — NO route map
         "report": report,
     }
