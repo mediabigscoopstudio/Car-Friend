@@ -1,0 +1,46 @@
+{% extends "base/base_www.html" %}
+{% load i18n %}
+{% block title %}Finish signing in — Car Friend{% endblock %}
+
+{% block extra_head %}
+<style>
+  .auth-wrap{max-width:440px;margin:clamp(22px,5vh,56px) auto 60px}
+  .auth-wrap .cf-field{margin-bottom:1rem}
+  .auth-wrap input:not([type=checkbox]):not([type=radio]),.auth-wrap select{
+    width:100%;padding:.7rem .85rem;border:1px solid var(--cf-line-strong);border-radius:10px;
+    font-size:.95rem;background:#fff;color:var(--cf-ink)}
+  .auth-wrap label{display:block;font-size:.82rem;font-weight:600;color:var(--cf-ink);margin-bottom:.35rem}
+  .auth-err{display:flex;align-items:flex-start;gap:.5rem;background:var(--cf-amber-bg);border:1px solid var(--cf-amber-line);color:var(--cf-amber);border-radius:10px;padding:.65rem .85rem;font-size:.85rem;margin-bottom:1rem}
+  .fld-err{color:#c0392b;font-size:.78rem;margin-top:.3rem}
+</style>
+{% endblock %}
+
+{% block body %}
+<main class="cf-main"><div class="cf-container"><div class="auth-wrap">
+
+  <a class="cf-logo" href="/" style="justify-content:center;margin-bottom:1.3rem"><span class="cf-logo-mark"><svg class="i"><use href="#ic-car"/></svg></span><span class="cf-logo-name">Car<span>Friend</span></span></a>
+
+  <div class="cf-card cf-reveal" style="padding:clamp(24px,4vw,34px)">
+    <h1 style="font-size:1.4rem;font-weight:800;margin:0 0 .3rem">Almost there</h1>
+    <p style="color:var(--cf-muted);font-size:.9rem;margin:0 0 1.4rem">Confirm your details to finish signing in with Google.</p>
+
+    {% if form.non_field_errors %}<div class="auth-err"><svg class="i"><use href="#ic-warn"/></svg><span>{{ form.non_field_errors }}</span></div>{% endif %}
+
+    <form method="post" action="{% url 'socialaccount_signup' %}">
+      {% csrf_token %}
+      {% for field in form %}
+      <div class="cf-field">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}<div class="fld-err">{{ field.errors }}</div>{% endif %}
+      </div>
+      {% endfor %}
+      {% if redirect_field_value %}<input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">{% endif %}
+      <button type="submit" class="cf-btn cf-btn-primary" style="width:100%">Continue</button>
+    </form>
+  </div>
+
+  <p style="text-align:center;font-size:.72rem;color:var(--cf-muted);margin-top:1rem">By continuing you agree to Car Friend's <a href="/terms/" style="color:var(--cf-green)">Terms</a> and <a href="/privacy/" style="color:var(--cf-green)">Privacy Policy</a>.</p>
+
+</div></div></main>
+{% endblock %}

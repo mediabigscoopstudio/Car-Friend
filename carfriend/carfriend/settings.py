@@ -138,6 +138,13 @@ ACCOUNT_LOGOUT_ON_GET         = True
 
 SOCIALACCOUNT_AUTO_SIGNUP     = True
 SOCIALACCOUNT_LOGIN_ON_GET    = True
+# Google returns a verified email, so no confirmation/verification step is needed. The
+# adapter forces auto-signup (and connects to an existing user by verified email), so
+# allauth's intermediate "complete signup" form is never shown. role_redirect applies
+# the seller/dealer role after login.
+SOCIALACCOUNT_ADAPTER            = "accounts.adapters.CarFriendSocialAdapter"
+SOCIALACCOUNT_EMAIL_VERIFICATION = "none"
+SOCIALACCOUNT_EMAIL_REQUIRED     = False
 
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
