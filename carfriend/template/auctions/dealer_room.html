@@ -78,6 +78,24 @@
 #photoModal img{max-width:92vw;max-height:88vh;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
 .pm-close{position:absolute;top:16px;right:20px;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:1.3rem;width:40px;height:40px;border-radius:50%;cursor:pointer;display:grid;place-items:center}
 @media(prefers-reduced-motion:reduce){.dr-hb,#hb{transition:none}}
+/* Mobile sticky mini bid bar — mobile only; desktop layout untouched. */
+.dr-mini{display:none}
+@media(max-width:991.98px){
+  .dr-mini{display:flex;align-items:center;gap:.7rem;position:fixed;left:0;right:0;bottom:0;z-index:1200;
+    padding:.55rem .8rem;padding-bottom:calc(.55rem + env(safe-area-inset-bottom));
+    background:#fff;border-top:1px solid var(--cf-green-100);box-shadow:0 -10px 26px -14px rgba(21,96,62,.55)}
+  .dr-mini-info{flex:1 1 auto;min-width:0;display:flex;gap:1.1rem;align-items:center}
+  .dr-mini-col{min-width:0}
+  .dr-mini-l{display:block;font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cf-muted);line-height:1}
+  .dr-mini-v{font-size:.98rem;font-weight:800;color:var(--cf-ink);font-variant-numeric:tabular-nums;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #m-cd{color:var(--cf-green)} #m-cd.ended{color:var(--cf-muted)}
+  .dr-mini-sub{font-size:.62rem;color:var(--cf-muted);white-space:nowrap}
+  .dr-mini-btn{flex:0 0 auto;display:inline-flex;align-items:center;gap:.35rem;padding:.7rem 1.1rem;background:var(--cf-green);color:#fff;border:none;border-radius:11px;font-weight:800;font-size:.9rem;cursor:pointer;box-shadow:0 8px 18px -9px rgba(21,96,62,.75)}
+  .dr-mini-btn:disabled{background:var(--cf-line-strong);cursor:not-allowed;box-shadow:none}
+  .dr-mini-btn .i{width:16px;height:16px;stroke:#fff}
+  /* keep page content clear of the fixed bar */
+  main.cf-main{padding-bottom:76px}
+}
 </style>
 {% endblock %}
 
@@ -295,6 +313,16 @@
   </div>
 </div></main>
 
+<!-- Mobile sticky mini bid bar (mobile widths only). Mirrors the live #cd/#hb the main
+     panel updates; "Place bid" jumps to the existing bid form. No second socket. -->
+<div class="dr-mini" role="region" aria-label="Bid summary">
+  <div class="dr-mini-info">
+    <div class="dr-mini-col"><span class="dr-mini-l">Time left</span><span class="dr-mini-v" id="m-cd">—</span></div>
+    <div class="dr-mini-col"><span class="dr-mini-l">Highest bid</span><span class="dr-mini-v" id="m-hb">{% if a.highest %}&#8377;{{ a.highest }}{% else %}No bids{% endif %}</span><span class="dr-mini-sub">Reserve <span class="au-inr" data-v="{{ a.reserve }}"></span></span></div>
+  </div>
+  <button type="button" class="dr-mini-btn" id="m-bid-btn"><svg class="i"><use href="#ic-bolt"/></svg>Place bid</button>
+</div>
+
 <!-- Fullscreen photo viewer -->
 <div id="photoModal" onclick="closePhotoModal()">
   <img id="photoModalImg" src="" alt="Inspection photo">
@@ -510,6 +538,31 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') clos
       if (m) { m.textContent = 'Below reserve — bid ' + fmt(RES) + ' or higher to qualify.'; m.className = 'bid-msg err'; }
     }
   }, true);
+})();
+</script>
+
+<script>
+// Mobile mini bid bar — ADDITIVE. It only mirrors the live #cd (timer) and #hb (highest
+// bid) that the main panel + bid socket already update, and jumps to the real bid form.
+// No second socket, no change to bidding logic or the consumer.
+(function () {
+  var cd = document.getElementById('cd'), hb = document.getElementById('hb');
+  var mcd = document.getElementById('m-cd'), mhb = document.getElementById('m-hb');
+  var btn = document.getElementById('m-bid-btn');
+  var form = document.getElementById('bid-form'), amt = document.getElementById('amt');
+  if (!mcd || !mhb) return;
+  function sync() {
+    if (cd) { mcd.textContent = cd.textContent; mcd.classList.toggle('ended', cd.classList.contains('ended')); }
+    if (hb) { var t = (hb.textContent || '').trim(); mhb.textContent = (t === 'No bids yet') ? 'No bids' : t; }
+    if (btn) btn.disabled = (!amt || amt.disabled);   // no bid form / auction ended → disabled
+  }
+  sync();
+  setInterval(sync, 500);   // cheap DOM mirror; the timer ticks every 1s
+  if (btn) btn.addEventListener('click', function () {
+    if (btn.disabled || !form) return;
+    form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (amt) { try { amt.focus({ preventScroll: true }); } catch (e) { amt.focus(); } }
+  });
 })();
 </script>
 {% endblock %}
