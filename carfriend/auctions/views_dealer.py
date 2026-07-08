@@ -286,14 +286,24 @@ def dealer_auction_room(request, id):
     if a.reactivation_count:
         my_prev = (a.bids.filter(dealer=request.user, created_at__lt=a.start_at)
                    .order_by("-amount").first())
+    # Hero stats — REAL, from data the page already has (this round's bids):
+    #   bidder_count = distinct dealers who bid; initial_delta = the last raise
+    #   (newest bid minus the one before it); am_leading = is the viewer the top bid.
+    round_bids = a.bids.filter(is_voided=False, created_at__gte=a.start_at)
+    bidder_count = round_bids.values("dealer_id").distinct().count()
+    initial_delta = int(bids[0]["amount"] - bids[1]["amount"]) if len(bids) >= 2 else None
+    am_leading = bool(bids and bids[0]["is_me"])
     return render(request, "auctions/dealer_room.html", {
-        "a":           dealer_auction(a),
-        "auction_id":  a.id,
-        "can_bid":     dealer_can_bid(request.user),
-        "my_id":       request.user.id,
-        "inspection":  dealer_inspection(report),
-        "bids":        bids,
-        "my_prev_bid": my_prev.amount if my_prev else None,
+        "a":            dealer_auction(a),
+        "auction_id":   a.id,
+        "can_bid":      dealer_can_bid(request.user),
+        "my_id":        request.user.id,
+        "inspection":   dealer_inspection(report),
+        "bids":         bids,
+        "my_prev_bid":  my_prev.amount if my_prev else None,
+        "bidder_count": bidder_count,
+        "initial_delta": initial_delta,
+        "am_leading":   am_leading,
     })
 
 

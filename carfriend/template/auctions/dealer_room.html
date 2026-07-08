@@ -96,6 +96,52 @@
   /* keep page content clear of the fixed bar */
   main.cf-main{padding-bottom:76px}
 }
+/* ── Loud mobile auction hero (MOBILE ONLY; desktop layout untouched) ── */
+.dr-heroM{display:none}
+@media(max-width:991.98px){
+  .dr-head-stat{display:none}     /* header time/LIVE — the hero shows these on mobile */
+  .dr2-bigcard{display:none}      /* thin current-highest card — replaced by the hero */
+  .dr-heroM{display:block;position:relative;overflow:hidden;margin:0 0 1rem;border-radius:18px;
+    padding:1.15rem 1.15rem 1.05rem;color:#fff;border:1px solid rgba(31,164,99,.35);
+    background:radial-gradient(120% 90% at 15% 0%,#15603E 0%,#0F4A2F 55%,#0A3623 100%);
+    box-shadow:0 18px 40px -18px rgba(10,54,35,.85),inset 0 1px 0 rgba(255,255,255,.06)}
+  .dr-heroM-tex{position:absolute;inset:0;pointer-events:none;opacity:.5;
+    background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);
+    background-size:22px 22px;-webkit-mask-image:radial-gradient(120% 90% at 20% 0%,#000,transparent 75%);mask-image:radial-gradient(120% 90% at 20% 0%,#000,transparent 75%)}
+  .dr-heroM-glow{position:absolute;top:-40%;right:-18%;width:70%;height:120%;pointer-events:none;
+    background:radial-gradient(circle,rgba(31,164,99,.35),transparent 60%)}
+  .dr-heroM-sweep{position:absolute;top:0;left:-60%;width:45%;height:100%;pointer-events:none;
+    background:linear-gradient(100deg,transparent,rgba(255,255,255,.13),transparent);transform:skewX(-18deg);animation:heroSweep 4.5s ease-in-out infinite}
+  @keyframes heroSweep{0%{left:-60%}55%,100%{left:130%}}
+  .dr-heroM-in{position:relative;z-index:1}
+  .dr-heroM-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.7rem}
+  .dr-heroM-live{display:inline-flex;align-items:center;gap:.4rem;font-size:.7rem;font-weight:800;letter-spacing:.12em;padding:.28rem .6rem;border-radius:99px;background:rgba(255,80,80,.16);color:#ffd7d7;border:1px solid rgba(255,90,90,.4)}
+  .dr-heroM-live .dot{width:7px;height:7px;border-radius:50%;background:#ff5a5a;animation:heroPulse 1.4s infinite}
+  @keyframes heroPulse{0%{box-shadow:0 0 0 0 rgba(255,90,90,.7)}70%{box-shadow:0 0 0 8px rgba(255,90,90,0)}100%{box-shadow:0 0 0 0 rgba(255,90,90,0)}}
+  .dr-heroM-bidders{display:inline-flex;align-items:center;gap:.35rem;font-size:.72rem;font-weight:700;color:rgba(255,255,255,.85)}
+  .dr-heroM-bidders .i{width:14px;height:14px;stroke:var(--cf-green-bright)}
+  .dr-heroM-lbl{font-size:.62rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.6)}
+  .dr-heroM-time{font-size:2rem;font-weight:800;letter-spacing:-.02em;line-height:1;margin:.1rem 0 .85rem;font-variant-numeric:tabular-nums}
+  .dr-heroM-time.ended{color:rgba(255,255,255,.55)}
+  .dr-heroM-hbRow{display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap;margin-top:.1rem}
+  .dr-heroM-hb{font-size:2.5rem;font-weight:800;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;text-shadow:0 2px 18px rgba(31,164,99,.5)}
+  .dr-heroM-delta{font-size:.8rem;font-weight:800;color:#7ff0b0;background:rgba(31,164,99,.2);border:1px solid rgba(31,164,99,.45);border-radius:99px;padding:.15rem .5rem}
+  .dr-heroM-beat{margin:.6rem 0 .5rem;font-size:.82rem;font-weight:700;color:#bfe8cf}
+  .dr-heroM-bar{height:8px;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden}
+  .dr-heroM-fill{height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--cf-green-bright),#7ff0b0);box-shadow:0 0 12px rgba(31,164,99,.8);transition:width .5s ease}
+  .dr-heroM-gap{margin-top:.4rem;font-size:.72rem;color:rgba(255,255,255,.7)}
+  .dr-heroM-state{display:flex;align-items:center;justify-content:space-between;gap:.7rem;margin-top:.95rem;padding:.65rem .8rem;border-radius:12px}
+  .dr-heroM-state.lead{background:rgba(31,164,99,.16);border:1px solid rgba(31,164,99,.4)}
+  .dr-heroM-state.outbid{background:rgba(201,138,23,.18);border:1px solid rgba(230,170,60,.5)}
+  .dr-heroM-state.neutral{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18)}
+  .mh-state-txt{display:flex;flex-direction:column;min-width:0}
+  #mh-state-title{font-weight:800;font-size:.9rem;color:#fff}
+  .mh-state-sub{font-size:.72rem;color:rgba(255,255,255,.72)}
+  .dr-heroM-state.outbid #mh-state-title{color:#ffe0ad}
+  .dr-heroM-bid{flex:0 0 auto;border:none;border-radius:10px;padding:.6rem 1rem;font-weight:800;font-size:.85rem;cursor:pointer;background:var(--cf-green-bright);color:#06341f;box-shadow:0 8px 18px -8px rgba(31,164,99,.7)}
+  .dr-heroM-state.outbid .dr-heroM-bid{background:#E6AA3C;color:#3a2600}
+  @media(prefers-reduced-motion:reduce){.dr-heroM-sweep{display:none}.dr-heroM-live .dot{animation:none}}
+}
 </style>
 {% endblock %}
 
@@ -110,11 +156,41 @@
         <div class="dr2-meta">{{ a.vehicle.fuel }}{% if a.vehicle.transmission %} · {{ a.vehicle.transmission }}{% endif %}{% if a.vehicle.km %} · {{ a.vehicle.km }} km{% endif %}</div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:1.1rem;flex-wrap:wrap">
+    <div class="dr-head-stat" style="display:flex;align-items:center;gap:1.1rem;flex-wrap:wrap">
       <div style="text-align:center"><div class="dr2-stat-l">Time left</div><div class="dr-timer" id="cd">—</div></div>
       <span class="cf-live"><span class="d"></span>LIVE</span>
     </div>
   </div>
+
+  {# Loud MOBILE-ONLY auction hero. Mirrors the live #cd / #hb / #bid-state the desktop panel already drives; no new socket, no bid logic. Hidden on desktop via .dr-heroM display:none. #}
+  <section class="dr-heroM" aria-label="Live auction">
+    <div class="dr-heroM-tex" aria-hidden="true"></div>
+    <div class="dr-heroM-glow" aria-hidden="true"></div>
+    <div class="dr-heroM-sweep" aria-hidden="true"></div>
+    <div class="dr-heroM-in">
+      <div class="dr-heroM-top">
+        <span class="dr-heroM-live"><span class="dot"></span>LIVE</span>
+        {% if bidder_count %}<span class="dr-heroM-bidders"><svg class="i"><use href="#ic-user"/></svg>{{ bidder_count }} bidding</span>{% endif %}
+      </div>
+      <div class="dr-heroM-lbl">Time left</div>
+      <div class="dr-heroM-time" id="mh-cd">—</div>
+      <div class="dr-heroM-lbl">Current highest bid</div>
+      <div class="dr-heroM-hbRow">
+        <div class="dr-heroM-hb" id="mh-hb">{% if a.highest %}&#8377;{{ a.highest|floatformat:0 }}{% else %}No bids yet{% endif %}</div>
+        <span class="dr-heroM-delta" id="mh-delta"{% if not initial_delta %} hidden{% endif %}>{% if initial_delta %}+&#8377;{{ initial_delta }}{% endif %}</span>
+      </div>
+      <div class="dr-heroM-beat" id="mh-beat"></div>
+      <div class="dr-heroM-bar"><div class="dr-heroM-fill" id="mh-fill"></div></div>
+      <div class="dr-heroM-gap" id="mh-gap"></div>
+      <div class="dr-heroM-state {% if am_leading %}lead{% elif bids %}outbid{% else %}neutral{% endif %}" id="mh-state">
+        <div class="mh-state-txt">
+          <span id="mh-state-title">{% if am_leading %}You're leading{% elif bids %}You've been outbid{% else %}Auction is live{% endif %}</span>
+          <span class="mh-state-sub" id="mh-state-sub">{% if am_leading %}{% elif bids %}Raise your bid to lead{% else %}Be the first to bid{% endif %}</span>
+        </div>
+        <button type="button" class="dr-heroM-bid" id="mh-bid-btn">Bid now</button>
+      </div>
+    </div>
+  </section>
 
   <div class="row g-4">
     <!-- LEFT — car + inspection -->
@@ -562,6 +638,51 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') clos
     if (btn.disabled || !form) return;
     form.scrollIntoView({ behavior: 'smooth', block: 'center' });
     if (amt) { try { amt.focus({ preventScroll: true }); } catch (e) { amt.focus(); } }
+  });
+})();
+</script>
+
+<script>
+// Loud mobile hero — ADDITIVE mirror. Reads the live values the bid IIFE already keeps
+// (#cd timer, #hb highest, #bid-state leading/outbid) plus the server-rendered RESERVE /
+// MIN_INC, and reflects them into the hero. No socket, no bid logic, no consumer change.
+(function () {
+  var RESERVE = {{ a.reserve|default:0 }}, MININC = {{ a.min_increment|default:0 }};
+  var cd = document.getElementById('cd'), hb = document.getElementById('hb'), bs = document.getElementById('bid-state');
+  var mcd = document.getElementById('mh-cd'), mhb = document.getElementById('mh-hb'), mbeat = document.getElementById('mh-beat');
+  var mfill = document.getElementById('mh-fill'), mgap = document.getElementById('mh-gap'), mdelta = document.getElementById('mh-delta');
+  var mstate = document.getElementById('mh-state'), mtitle = document.getElementById('mh-state-title'), msub = document.getElementById('mh-state-sub');
+  var btn = document.getElementById('mh-bid-btn'), form = document.getElementById('bid-form'), amt = document.getElementById('amt');
+  if (!mcd) return;
+  function inr(n){ return '₹' + Number(n).toLocaleString('en-IN'); }
+  function num(el){ if(!el) return 0; var t=(el.textContent||'').replace(/[^0-9]/g,''); return t?parseInt(t,10):0; }
+  var lastHigh = {{ a.highest|default:0 }};
+  function sync(){
+    if (cd){ mcd.textContent = cd.textContent; mcd.classList.toggle('ended', cd.classList.contains('ended')); }
+    var hasBid = hb ? /[0-9]/.test(hb.textContent) : false;
+    var h = hasBid ? num(hb) : 0;
+    mhb.textContent = hasBid ? inr(h) : 'No bids yet';
+    if (mdelta && h > lastHigh && lastHigh > 0){ mdelta.hidden = false; mdelta.textContent = '+' + inr(h - lastHigh); }
+    if (h > 0) lastHigh = h;
+    // Beat target = same floor the page enforces: (highest or reserve) + min increment.
+    var beat = (h > 0 ? h : RESERVE) + MININC;
+    if (mbeat) mbeat.textContent = 'Beat ' + inr(beat) + ' to lead';
+    var met = RESERVE > 0 && h >= RESERVE;
+    var pct = RESERVE > 0 ? Math.min(100, Math.round(h / RESERVE * 100)) : 0;
+    if (mfill) mfill.style.width = (met ? 100 : pct) + '%';
+    if (mgap) mgap.textContent = met ? 'Reserve met ✓' : (inr(Math.max(0, RESERVE - h)) + ' to reserve · Reserve ' + inr(RESERVE));
+    // Outbid/leading uses the page's existing highest-bidder logic (#bid-state class).
+    if (bs && mstate){
+      var cl = bs.className || '';
+      if (cl.indexOf('mine') >= 0){ mstate.className = 'dr-heroM-state lead'; mtitle.textContent = "You're leading"; if (msub) msub.textContent = ''; }
+      else if (cl.indexOf('outbid') >= 0){ mstate.className = 'dr-heroM-state outbid'; mtitle.textContent = "You've been outbid"; if (msub) msub.textContent = 'Raise your bid to lead'; }
+      // empty #bid-state (initial / unknown) → keep the server-rendered state
+    }
+  }
+  sync(); setInterval(sync, 500);
+  if (btn) btn.addEventListener('click', function (){
+    if (form) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (amt){ try { amt.focus({ preventScroll: true }); } catch (e) { amt.focus(); } }
   });
 })();
 </script>
