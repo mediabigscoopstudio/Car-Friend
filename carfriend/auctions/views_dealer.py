@@ -128,6 +128,25 @@ def _media_by_section(report):
     return out
 
 
+def _media_by_checkpoint(report):
+    """Dealer-safe (masked) photos keyed by the CHECKPOINT they document.
+
+    Walk photos are saved as InspectionMedia(section='walk', slot=<checkpoint key>), so
+    `slot` is the checkpoint key — the same key report_context uses per row. Returns
+    ({checkpoint_key: [url,...]}, [loose urls with no checkpoint]). All variants are
+    plate-masked (raw file masked in place on upload), so any is dealer-safe."""
+    out, loose = {}, []
+    for m in report.media.filter(kind="photo").order_by("id"):
+        img = m.masked_file or m.webp_file or m.file
+        if not img:
+            continue
+        if m.slot:
+            out.setdefault(m.slot, []).append(img.url)
+        else:
+            loose.append(img.url)
+    return out, loose
+
+
 def dealer_inspection(report):
     """Redacted, render-ready inspection for the dealer room: per-zone accordion
     sections (condition only), masked photos, grade/score, challan flag and engine
@@ -136,13 +155,18 @@ def dealer_inspection(report):
         return None
     from inspections import engine
 
-    photos_by_sec = _media_by_section(report)
     sections = []
+    other_photos = []
 
     if engine.is_walk_inspection(report):
-        ctx = engine.report_context(report)          # pure read; no save
+        # Feed the per-checkpoint photo map into report_context so each ROW carries its
+        # OWN photos (row["photos"] = media_by_key[cp_key]) — rendered with the checkpoint
+        # instead of pooled at the section bottom.
+        media_by_cp, loose = _media_by_checkpoint(report)
+        ctx = engine.report_context(report, media_by_cp)   # pure read; no save
         grade = ctx.get("grade") or report.condition_grade
         score = ctx.get("score") or report.score
+        shown, redacted = set(), set()
         for z in ctx.get("zones", []):
             zkey = z.get("key", "")
             identity_zone = zkey in ("details", "docs")
@@ -152,21 +176,31 @@ def dealer_inspection(report):
                     label = r.get("label", "")
                     note = r.get("note") or r.get("value") or ""
                     st = r.get("result") or ""
+                    rphotos = r.get("photos") or []
                     if identity_zone and any(h in (label + " " + note).lower() for h in _REDACT_HINTS):
+                        redacted.update(rphotos)     # identity row → drop its photo too
                         continue                     # hide registry identity rows
-                    if not st and not note:
-                        continue
+                    if not st and not note and not rphotos:
+                        continue                     # a photographed checkpoint still shows
                     if st == "ok": ok += 1
                     elif st == "issue": issue += 1
+                    shown.update(rphotos)
                     items.append({"label": label, "val": st, "sev": _sev_rank(r.get("severity")),
-                                  "note": note, "is_ok": st == "ok", "is_issue": st == "issue"})
+                                  "note": note, "is_ok": st == "ok", "is_issue": st == "issue",
+                                  "photos": rphotos})
             if items:
                 sections.append({"key": zkey, "label": z.get("title", ""),
                                  "icon": _ZONE_ICONS.get(zkey, "fa-circle-check"),
                                  "items": items, "item_count": len(items),
-                                 "ok_count": ok, "issue_count": issue,
-                                 "photos": photos_by_sec.get(zkey, [])})
+                                 "ok_count": ok, "issue_count": issue})
+        # Any masked photo not shown on a row and not identity-redacted is genuinely
+        # section-level (e.g. a checkpoint that never rendered, or a slot-less photo) —
+        # keep those in one "Other inspection photos" strip so nothing is lost. With full
+        # checkpoint linkage this is empty and the strip disappears.
+        all_urls = [u for urls in media_by_cp.values() for u in urls] + loose
+        other_photos = [u for u in all_urls if u not in shown and u not in redacted]
     else:
+        photos_by_sec = _media_by_section(report)    # legacy form: section-level photos
         grade, score = report.condition_grade, report.score
         for s in build_report_data(report).get("sections", []):
             if not s.get("filled"):
@@ -214,6 +248,7 @@ def dealer_inspection(report):
         "grade": grade,
         "score": score,
         "sections": sections,
+        "other_photos": other_photos,   # masked photos not tied to a shown checkpoint
         "hero": _hero_url(report),
         "has_challans": (report.challan_count or 0) > 0,
         "audio_url": report.engine_audio.url if report.engine_audio else None,

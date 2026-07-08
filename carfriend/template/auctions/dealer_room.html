@@ -251,16 +251,24 @@
             <div id="{{ section.key }}-body" class="insp-body">
               <div style="padding:.5rem 1rem">
                 {% for item in section.items %}
-                <div style="padding:.6rem .25rem;display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;border-bottom:1px solid rgba(0,0,0,.04)">
-                  <div style="flex:1;min-width:0">
-                    <div style="font-size:.82rem;font-weight:500;color:var(--cf-ink)">{{ item.label }}</div>
-                    {% if item.note %}<div style="font-size:.72rem;color:var(--cf-muted);margin-top:.2rem;line-height:1.5">{{ item.note }}</div>{% endif %}
+                <div style="padding:.6rem .25rem;border-bottom:1px solid rgba(0,0,0,.04)">
+                  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem">
+                    <div style="flex:1;min-width:0">
+                      <div style="font-size:.82rem;font-weight:500;color:var(--cf-ink)">{{ item.label }}</div>
+                      {% if item.note %}<div style="font-size:.72rem;color:var(--cf-muted);margin-top:.2rem;line-height:1.5">{{ item.note }}</div>{% endif %}
+                    </div>
+                    <div style="flex-shrink:0;display:flex;align-items:center;gap:.4rem">
+                      {% for url in item.photos %}<img src="{{ url }}" alt="Photo" loading="lazy" onclick="toggleCkptPhoto('ck-{{ section.key }}-{{ forloop.parentloop.counter }}-{{ forloop.counter }}')" title="Tap to view" style="width:34px;height:34px;border-radius:6px;object-fit:cover;cursor:pointer;border:1px solid var(--cf-green-200)">{% endfor %}
+                      {% if item.is_ok %}<span class="ip-pill ip-ok"><svg class="i"><use href="#ic-check"/></svg> OK</span>
+                      {% elif item.is_issue %}<span class="ip-pill ip-issue"><svg class="i"><use href="#ic-warn"/></svg> {% if item.sev == 1 %}Minor{% elif item.sev >= 2 %}Major{% else %}Issue{% endif %}</span>
+                      {% else %}<span class="ip-pill ip-na">N/A</span>{% endif %}
+                    </div>
                   </div>
-                  <div style="flex-shrink:0;margin-top:1px">
-                    {% if item.is_ok %}<span class="ip-pill ip-ok"><svg class="i"><use href="#ic-check"/></svg> OK</span>
-                    {% elif item.is_issue %}<span class="ip-pill ip-issue"><svg class="i"><use href="#ic-warn"/></svg> {% if item.sev == 1 %}Minor{% elif item.sev >= 2 %}Major{% else %}Issue{% endif %}</span>
-                    {% else %}<span class="ip-pill ip-na">N/A</span>{% endif %}
+                  {% for url in item.photos %}
+                  <div id="ck-{{ section.key }}-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" style="display:none;margin-top:.55rem">
+                    <img src="{{ url }}" alt="Inspection photo" onclick="openPhotoModal('{{ url }}')" style="width:100%;border-radius:10px;display:block;cursor:zoom-in">
                   </div>
+                  {% endfor %}
                 </div>
                 {% endfor %}
                 {% if section.photos %}
@@ -275,6 +283,15 @@
             </div>
           </div>
           {% endfor %}
+
+          {% if inspection.other_photos %}
+          <div style="padding:.9rem 1.25rem;border-bottom:1px solid var(--cf-line)">
+            <div style="font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cf-muted);margin-bottom:.5rem">Other inspection photos</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.4rem">
+              {% for url in inspection.other_photos %}<div style="border-radius:8px;overflow:hidden;aspect-ratio:4/3;background:var(--cf-line)"><img src="{{ url }}" alt="" loading="lazy" onclick="openPhotoModal('{{ url }}')" style="width:100%;height:100%;object-fit:cover;display:block;cursor:pointer"></div>{% endfor %}
+            </div>
+          </div>
+          {% endif %}
 
           <!-- Challan block -->
           <div style="padding:.9rem 1.25rem;display:flex;align-items:center;gap:.75rem;{% if inspection.has_challans %}background:var(--cf-amber-bg){% else %}background:var(--cf-green-050){% endif %};border-bottom:1px solid var(--cf-line)">
@@ -426,6 +443,14 @@ function openPhotoModal(url) {
   var m = document.getElementById('photoModal'), i = document.getElementById('photoModalImg');
   if (!m || !i) return;
   i.src = url; m.classList.add('open'); document.body.style.overflow = 'hidden';
+}
+// Inline expand/collapse of a checkpoint's own photo (tap thumbnail → show full image
+// below the row; tap again → collapse). No lightbox; the expanded image can still open
+// the existing fullscreen modal on tap.
+function toggleCkptPhoto(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = el.style.display === 'block' ? 'none' : 'block';
 }
 function closePhotoModal() {
   var m = document.getElementById('photoModal');
