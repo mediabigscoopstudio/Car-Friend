@@ -48,13 +48,29 @@
   .estimate-car .ec-name{font-weight:800;color:var(--cf-ink);font-size:.98rem}
   .estimate-car .ec-meta{font-size:.8rem;color:var(--cf-muted);margin-top:.15rem}
   .estimate-note{font-size:.82rem;color:var(--cf-ink-soft);text-align:center;line-height:1.6}
-  /* Plate-lookup loading banner — RC calls hit government DBs and take 3–8s, so make the wait feel alive. */
-  .lc-loading{display:none;align-items:center;gap:.65rem;background:var(--cf-green-050);border:1px solid var(--cf-green-100);border-radius:12px;padding:.8rem .95rem;margin-top:.85rem;color:var(--cf-green);font-size:.88rem;font-weight:600;line-height:1.35}
-  .lc-loading.visible{display:flex}
-  .lc-spin{width:22px;height:22px;flex:0 0 auto;animation:lcspin .9s linear infinite}
-  .lc-spin circle{stroke:var(--cf-green-bright);opacity:.22}
-  .lc-spin path{stroke:var(--cf-green-bright)}
-  @media(prefers-reduced-motion:reduce){.spinner,.lc-spin{animation:none}}
+  /* ── Plate-lookup loading takeover: a full-card replacement while the RC call runs (3–8s,
+     government DB), so a lookup that takes a few seconds never looks broken. ── */
+  .lc-load{background:var(--cf-green-050);border-color:var(--cf-green-100);display:flex;flex-direction:column;
+    align-items:center;text-align:center;justify-content:center;min-height:360px;padding:clamp(30px,5vw,48px) clamp(20px,4vw,32px)}
+  .lc-logo{width:88px;height:88px;border-radius:26px;display:grid;place-items:center;background:#fff;
+    color:var(--cf-green-bright);margin-bottom:1.4rem;box-shadow:0 10px 30px rgba(31,164,99,.18);animation:lc-pulse 2s ease-in-out infinite}
+  .lc-logo svg{width:44px;height:44px}
+  @keyframes lc-pulse{0%,100%{transform:scale(1);box-shadow:0 10px 30px rgba(31,164,99,.18)}
+    50%{transform:scale(1.05);box-shadow:0 16px 46px rgba(31,164,99,.36)}}
+  .lc-load h4{font-size:16px;font-weight:800;color:var(--cf-ink);margin:0 0 .3rem;letter-spacing:-.01em}
+  .lc-load .lc-sub{font-size:13px;color:var(--cf-muted);margin:0 0 1.5rem}
+  .lc-fact-wrap{min-height:60px;max-width:360px;display:flex;align-items:center;justify-content:center;margin-bottom:1.35rem}
+  .lc-fact{font-size:14px;line-height:1.55;color:var(--cf-ink-soft);opacity:0;transition:opacity .5s ease}
+  .lc-fact.show{opacity:1}
+  .lc-dots{display:flex;gap:.4rem}
+  .lc-dots span{width:8px;height:8px;border-radius:50%;background:var(--cf-green-bright);opacity:.35;animation:lc-breathe 1.4s ease-in-out infinite}
+  .lc-dots span:nth-child(2){animation-delay:.2s}
+  .lc-dots span:nth-child(3){animation-delay:.4s}
+  @keyframes lc-breathe{0%,100%{opacity:.3;transform:scale(.82)}50%{opacity:1;transform:scale(1.15)}}
+  /* ── Calm branded failure card ── */
+  .lc-fail .icon-wrap{background:var(--cf-amber-bg);color:var(--cf-amber-bright)}
+  .lc-fail-sub{font-size:.9rem;color:var(--cf-muted);margin:.1rem 0 1.3rem;line-height:1.55}
+  @media(prefers-reduced-motion:reduce){.spinner,.lc-logo,.lc-dots span{animation:none}.lc-fact{transition:none}}
 </style>
 {% endblock %}
 
@@ -98,12 +114,29 @@
         <input type="text" class="plate-input" id="plateInput" placeholder="e.g. GJ 05 MK 2024" maxlength="15" autocomplete="off">
       </div>
       <button class="cf-btn cf-btn-primary lc-btn" id="btnLookup" onclick="doLookup()"><svg class="i"><use href="#ic-search"/></svg>Get car details</button>
-      <div class="lc-loading" id="lookupLoading" role="status" aria-live="polite">
-        <svg class="lc-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-width="3"/><path d="M21 12a9 9 0 0 0-9-9" stroke-width="3" stroke-linecap="round"/></svg>
-        <span>Fetching vehicle details from government database…</span>
-      </div>
       <p class="cf-help" style="text-align:center;margin-top:.8rem;display:flex;align-items:center;justify-content:center;gap:.35rem"><svg class="i i-sm" style="stroke:var(--cf-green-bright)"><use href="#ic-shield"/></svg>Your plate is only used to fetch vehicle data, never shared publicly.</p>
       <div class="err-strip" id="lookupError"><svg class="i"><use href="#ic-warn"/></svg><span id="lookupErrorMsg"></span></div>
+    </div>
+  </div>
+
+  <!-- SCREEN LOADING: full takeover while the RC lookup runs (no frontend timeout — waits for the backend) -->
+  <div class="screen" id="screenLoading">
+    <div class="cf-card lc-load" role="status" aria-live="polite">
+      <div class="lc-logo" aria-hidden="true"><svg class="i"><use href="#ic-car"/></svg></div>
+      <h4>Fetching your car details…</h4>
+      <p class="lc-sub">Connecting to the government vehicle database</p>
+      <div class="lc-fact-wrap"><p class="lc-fact" id="lcFact"></p></div>
+      <div class="lc-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+    </div>
+  </div>
+
+  <!-- SCREEN FAIL: calm branded failure card (its button is the ONLY user-facing retry control) -->
+  <div class="screen" id="screenFail">
+    <div class="cf-card flow-card cf-reveal lc-fail">
+      <div class="icon-wrap"><svg class="i"><use href="#ic-search"/></svg></div>
+      <h3>We couldn't find this vehicle right now</h3>
+      <p class="lc-fail-sub" id="lcFailSub">Please check the number plate and re-enter it.</p>
+      <button class="cf-btn cf-btn-primary lc-btn" onclick="resetToPlate()"><svg class="i"><use href="#ic-search"/></svg>Try again</button>
     </div>
   </div>
 
@@ -211,6 +244,512 @@
   var phone = '';
   var FUELS = ['petrol', 'diesel', 'cng', 'electric', 'hybrid'];
 
+
+  // 500 genuinely distinct, accurate Indian-car facts shown on the loading takeover.
+  // Display order is randomized per page load (Fisher–Yates in _shuffleFacts).
+  var CAR_FACTS = [
+    "The earliest automobiles reached India in the closing years of the 19th century.",
+    "India's first cars were owned mainly by maharajas and wealthy elites.",
+    "Hindustan Motors was founded in the 1940s and became one of India's oldest carmakers.",
+    "Premier Automobiles was another pioneer of India's early car industry.",
+    "The Hindustan Ambassador was based on the British Morris Oxford design.",
+    "The Ambassador was produced from the late 1950s all the way until 2014.",
+    "For decades the Ambassador was the default car for Indian officials.",
+    "Hindustan Motors built the Ambassador at its Uttarpara plant in West Bengal.",
+    "Premier Automobiles built the Fiat-derived Premier Padmini in India.",
+    "The Premier Padmini was named after a legendary Indian queen.",
+    "Before Maruti, Indian buyers often waited years to receive a new car.",
+    "In the pre-liberalization era, only a few car models dominated India.",
+    "Maruti Udyog was set up as a joint venture with Suzuki of Japan.",
+    "The Maruti 800 launched in 1983 and transformed personal mobility in India.",
+    "The first Maruti 800 was handed over to its owner by the Prime Minister.",
+    "Mahindra began by assembling Willys Jeeps in India in the 1940s.",
+    "The Willys Jeep heritage still influences Mahindra's rugged image today.",
+    "Tata Motors first made its name in trucks and commercial vehicles.",
+    "Tata's passenger-car ventures grew out of its engineering expertise.",
+    "Standard Motors was an early carmaker based in southern India.",
+    "India's auto industry expanded rapidly after the 1991 economic reforms.",
+    "The Hindustan Contessa was a stylish sedan of the 1980s and 1990s.",
+    "The Contessa's design was derived from a Vauxhall model.",
+    "Ashok Leyland became a major name in Indian buses and trucks.",
+    "Bajaj built its early reputation on scooters like the Chetak.",
+    "The Ambassador earned the affectionate nickname King of Indian Roads.",
+    "Early Indian car assembly often relied on imported component kits.",
+    "TELCO was the former name of Tata's engineering and locomotive company.",
+    "The Maruti 800 ended an era ruled by the Ambassador and Padmini.",
+    "Sipani Automobiles was a lesser-known Indian carmaker of the 1980s.",
+    "India's first indigenously designed passenger car, the Tata Indica, arrived in 1998.",
+    "The Tata Indica was largely designed and developed within India.",
+    "Suzuki chose India for one of its most successful overseas ventures.",
+    "The Ambassador's spacious cabin made it a favorite for large families.",
+    "Fiat had a long association with India through Premier Automobiles.",
+    "The Padmini taxi became an enduring icon on the streets of Mumbai.",
+    "Government rules once limited how many cars a company could produce.",
+    "The License Raj era shaped India's early automotive landscape.",
+    "Kolkata's fleet of yellow taxis was long dominated by the Ambassador.",
+    "The Standard Herald was a compact car built in India in the 1960s.",
+    "Early motoring in India centered on big cities and princely states.",
+    "Many Indian maharajas were among Rolls-Royce's earliest global customers.",
+    "Vintage rallies celebrate the grand cars once owned by Indian royalty.",
+    "The Ambassador was one of the longest continuously produced cars in the world.",
+    "The Standard 2000 was a premium Indian sedan of the 1980s.",
+    "Premier also assembled Peugeot cars in India during the 1990s.",
+    "India's car ownership stayed low for decades, leaving huge room to grow.",
+    "Maruti brought Japanese production techniques to Indian factories.",
+    "The 1980s saw India gradually open to foreign automotive collaboration.",
+    "The Ambassador remains a nostalgic symbol of an earlier India.",
+    "Maruti Suzuki is India's largest carmaker by sales.",
+    "The name Maruti is another name for the Hindu deity Hanuman.",
+    "Tata Motors is part of the vast Tata Group conglomerate.",
+    "Tata Motors acquired Jaguar Land Rover in 2008.",
+    "Under Tata's ownership, Jaguar Land Rover enjoyed a major revival.",
+    "Mahindra started as a steel-trading firm before it built vehicles.",
+    "Mahindra is one of India's leading makers of SUVs and tractors.",
+    "Mahindra is among the world's largest tractor makers by volume.",
+    "Hyundai entered India and quickly became a leading brand.",
+    "The Hyundai Santro launched in India in 1998.",
+    "Hyundai built a large manufacturing base near Chennai.",
+    "Chennai is often called the Detroit of India for its auto industry.",
+    "Kia entered India in 2019 with the Seltos SUV.",
+    "Kia's Indian debut was one of the market's most successful launches.",
+    "Toyota operates in India through a joint venture with the Kirloskar Group.",
+    "The Toyota Innova became a trusted name for family and fleet travel.",
+    "Honda became known in India for reliable sedans like the City.",
+    "The Honda City has been a popular premium sedan in India for years.",
+    "Renault found wide success in India with the compact Kwid.",
+    "Nissan's Magnite drew attention to the sub-compact SUV segment.",
+    "Skoda has a long presence in India with models like the Octavia.",
+    "Volkswagen and Skoda share engineering resources for the Indian market.",
+    "MG Motor entered India and revived a classic British badge locally.",
+    "Ford built cars in India for years before scaling back local production.",
+    "General Motors sold Chevrolet cars in India for a period.",
+    "Fiat's Palio was a well-known hatchback in early-2000s India.",
+    "Tata Motors has earned praise for its focus on vehicle safety.",
+    "Several Tata models have achieved top crash-test safety ratings.",
+    "Mahindra's Scorpio helped cement its image as an SUV specialist.",
+    "Maruti Suzuki runs one of India's largest sales and service networks.",
+    "Maruti's Nexa showrooms cater to its more premium models.",
+    "Hyundai and Kia are sister brands under the same parent group.",
+    "Toyota's global reputation for reliability carries over to India.",
+    "Suzuki's partnership with India spans several decades.",
+    "Tata Motors also builds electric vehicles for the Indian market.",
+    "Mercedes-Benz, BMW, and Audi lead India's luxury car segment.",
+    "Mercedes-Benz assembles cars in India at its Pune facility.",
+    "BMW assembles several of its models at its Chennai plant.",
+    "Jaguar Land Rover vehicles are also assembled in India.",
+    "Volvo is known in India for its strong emphasis on safety.",
+    "Citroen entered India recently as part of a global auto group.",
+    "Isuzu offers pickup trucks and SUVs in the Indian market.",
+    "Force Motors is an Indian company known for its utility vehicles.",
+    "Eicher Motors is the company behind Royal Enfield motorcycles.",
+    "Maruti Suzuki models have long topped India's best-seller lists.",
+    "The Tata Group's roots trace back to the 19th century.",
+    "Mahindra pairs its auto business with a large farm-equipment arm.",
+    "Hyundai is known for offering feature-rich cars in India.",
+    "Many global carmakers use India as an export hub for small cars.",
+    "Suzuki exports India-made cars to markets around the world.",
+    "The Maruti 800 was affectionately called the people's car of India.",
+    "The Maruti 800 stayed in production for nearly three decades.",
+    "The Maruti Alto became one of India's best-selling small cars.",
+    "For years the Alto ranked among the top-selling cars in the country.",
+    "The Maruti Swift is a popular hatchback known for its peppy nature.",
+    "The Maruti Gypsy was a lightweight off-roader loved by the armed forces.",
+    "The Indian Army relied on the Maruti Gypsy for many years of service.",
+    "The Tata Nano was unveiled in 2008 as an ultra-affordable car.",
+    "The Tata Nano was conceived by Ratan Tata for safe family mobility.",
+    "Ratan Tata was inspired to build the Nano after seeing families on scooters.",
+    "The Tata Indica was marketed with the slogan More Car Per Car.",
+    "The Tata Safari became an aspirational SUV for Indian families.",
+    "The Tata Sumo was named in tribute to executive Sumant Moolgaokar.",
+    "The Mahindra Scorpio launched in the early 2000s and became a bestseller.",
+    "The Mahindra Thar is inspired by classic rugged off-road vehicles.",
+    "The Mahindra Thar shares its name with the Thar Desert of India.",
+    "The Mahindra Bolero has served as a rural workhorse for years.",
+    "The Toyota Innova is prized as a spacious multi-purpose vehicle.",
+    "The Innova is a favorite among taxi operators for its durability.",
+    "The Maruti Omni was a boxy van used for family and cargo duties.",
+    "The Ambassador featured a distinctive rounded, bulbous shape.",
+    "The Premier Padmini was based on a Fiat 1100 design.",
+    "The Maruti Zen was a beloved hatchback of the 1990s.",
+    "The Maruti Esteem was a popular compact sedan in its era.",
+    "The Hyundai Santro was famously endorsed by superstar Shah Rukh Khan.",
+    "The Hyundai i20 became a strong seller in the premium hatchback class.",
+    "The Hyundai Creta helped popularize the mid-size SUV in India.",
+    "The Maruti Wagon R is known for its tall-boy design and roomy cabin.",
+    "The Maruti Baleno is a popular premium hatchback.",
+    "The Maruti Dzire is a compact sedan derived from the Swift.",
+    "The Maruti Ertiga is a practical seven-seater for families.",
+    "The Tata Indigo was a compact sedan version of the Indica.",
+    "The Mahindra XUV500 brought modern styling to Mahindra's SUV lineup.",
+    "The Toyota Fortuner is a premium SUV with strong resale value in India.",
+    "The Maruti Vitara Brezza popularized the sub-four-metre SUV format.",
+    "The Tata Sierra was a stylish three-door utility vehicle of the 1990s.",
+    "Cars shorter than four metres enjoy lower tax rates in India.",
+    "The Tata Tiago is a popular entry-level hatchback.",
+    "The Tata Nexon became one of India's top-selling compact SUVs.",
+    "The Kia Seltos launched with a wide range of features and variants.",
+    "The Kia Sonet is a feature-rich sub-compact SUV.",
+    "The Renault Kwid brought SUV-inspired styling to the small-car class.",
+    "The Maruti Celerio offered an early automated manual transmission.",
+    "The Honda City is often praised for its refined petrol engines.",
+    "The Maruti S-Presso is a tall, compact entry-level car.",
+    "The Tata Harrier wears a bold, muscular design language.",
+    "The Maruti Ciaz is a spacious mid-size sedan.",
+    "The Innova Crysta is a more premium evolution of the original Innova.",
+    "The Ambassador's front bench seat could seat three across.",
+    "The Tata Punch is a compact SUV-styled small car.",
+    "India is one of the largest car markets in the world.",
+    "India ranks among the top few countries for new car sales.",
+    "India's used-car market is larger than its new-car market by volume.",
+    "Small hatchbacks have long been the backbone of Indian car sales.",
+    "SUVs have surged in popularity across the Indian market recently.",
+    "Compact SUVs are among the fastest-growing segments in India.",
+    "Petrol and diesel have long been the dominant fuels for Indian cars.",
+    "CNG cars have grown popular for their lower running costs.",
+    "Automatic transmissions are increasingly common in Indian cities.",
+    "India produces millions of passenger vehicles each year.",
+    "India is a major global hub for manufacturing small cars.",
+    "Many cars sold in Europe and Africa are built in India.",
+    "Maruti Suzuki has long held the largest share of India's car market.",
+    "Hyundai has consistently been among India's top-selling brands.",
+    "Tata Motors has climbed among India's top car sellers.",
+    "Mahindra is a leading player in India's SUV segment.",
+    "First-time buyers make up a large part of India's car market.",
+    "Entry-level cars are vital to bringing new buyers into car ownership.",
+    "India's growing middle class has fueled rising car demand.",
+    "Two-wheelers still far outnumber cars on Indian roads.",
+    "Festive seasons bring a noticeable spike in car sales across India.",
+    "Rural markets are an increasingly important part of India's auto growth.",
+    "Loans and financing help make cars accessible to many Indian buyers.",
+    "India's car ownership per person is still low by global standards.",
+    "This low base gives India enormous long-term growth potential.",
+    "Ride-hailing services have shaped car demand in Indian cities.",
+    "The auto industry is a major contributor to India's economy.",
+    "The auto sector supports millions of jobs across India.",
+    "Neutral shades are among the most popular car colors in India.",
+    "Bold colors are gaining ground among younger Indian buyers.",
+    "Manual transmissions have historically dominated Indian car sales.",
+    "Diesel cars were especially popular when fuel-price gaps were large.",
+    "Compact sedans occupy a distinct and popular niche in India.",
+    "Seven-seaters are valued for India's large joint families.",
+    "Fuel efficiency, or mileage, is a top priority for Indian buyers.",
+    "Resale value strongly influences car-buying decisions in India.",
+    "Affordable maintenance is a key selling point in the Indian market.",
+    "India's premium and luxury segment continues to grow steadily.",
+    "Value for money is a central expectation in India's compact cars.",
+    "Owning a first car is a major life milestone for many Indian families.",
+    "India exports a large number of vehicles and components globally.",
+    "India is a growing base for global automotive research centers.",
+    "Feature-rich variants have become popular even in budget segments.",
+    "Touchscreen infotainment is now common even in affordable Indian cars.",
+    "Safety features have become stronger selling points in recent years.",
+    "Sunroofs have become a surprisingly popular feature among Indian buyers.",
+    "India's heat and monsoon make durability a valued trait in cars.",
+    "The mid-size SUV has become one of India's most contested segments.",
+    "Several carmakers compete fiercely in India's compact SUV space.",
+    "India's market blends global brands with strong homegrown players.",
+    "Kerala has one of the highest vehicle densities among Indian states.",
+    "Kerala's strong remittances have supported high car ownership.",
+    "Chandigarh is known for its wide, well-planned roads.",
+    "Chandigarh was designed by the famous architect Le Corbusier.",
+    "Delhi-NCR limits the age of diesel and petrol vehicles.",
+    "In Delhi, older diesel cars are restricted from the roads.",
+    "Mumbai's black-and-yellow taxis are a beloved city symbol.",
+    "Mumbai's Premier Padmini taxis were officially retired in 2023.",
+    "Kolkata is famous for its fleet of yellow taxis.",
+    "Goa is a top destination for renting cars and two-wheelers.",
+    "Self-drive rentals are hugely popular among visitors to Goa.",
+    "Bengaluru is known for its tech-driven car culture and busy traffic.",
+    "Delhi has one of the largest registered vehicle populations in India.",
+    "Pune sits near a strong automotive manufacturing belt.",
+    "Auto-rickshaws are a defining feature of Indian city streets.",
+    "Different Indian cities paint their auto-rickshaws in different colors.",
+    "Himachal Pradesh sees rugged vehicles suited to mountain roads.",
+    "In Ladakh, sturdy SUVs are favored for high-altitude travel.",
+    "Rajasthan's vintage-car heritage draws collectors and tourists.",
+    "Kerala's Onam festival is a popular season for buying new vehicles.",
+    "In rural India, bullock carts and cars still share the same roads.",
+    "Punjab has a strong enthusiast culture around vehicles and tractors.",
+    "Gujarat has a notable base of automotive manufacturing.",
+    "Tamil Nadu is a powerhouse of India's car production.",
+    "The Chennai region hosts plants for several major carmakers.",
+    "Coastal cities value rust protection against salty sea air.",
+    "In many towns, the family car doubles as a business vehicle.",
+    "Shared cabs and pooling are common in India's big cities.",
+    "Regional tastes influence which colors and models sell best.",
+    "Northeastern states offer scenic but challenging mountain driving.",
+    "Sikkim is known for its clean environment and orderly traffic.",
+    "Many Indian cities are building ring roads to ease congestion.",
+    "Growing metro rail networks have reshaped city commuting.",
+    "In hilly regions, engine-braking skills are especially valued.",
+    "Tourist taxis in hill stations are often sturdy diesel vehicles.",
+    "Hill capitals manage traffic on steep, winding roads.",
+    "Puducherry's French-influenced streets add charm to local driving.",
+    "Beach destinations see a seasonal surge in rental scooters and cars.",
+    "Many pilgrimage routes carry heavy seasonal vehicle traffic.",
+    "The Rann of Kutch draws road-trippers during its festival season.",
+    "Desert regions demand good engine cooling for cars.",
+    "Snowbound regions require careful driving in winter.",
+    "Scarce parking makes compact cars popular in Indian cities.",
+    "Old walled-city areas favor nimble small cars and two-wheelers.",
+    "Many Indian cities have added dedicated bus lanes.",
+    "App-booked shared autos operate in many Indian cities.",
+    "Local mechanics and roadside garages are vital to car culture.",
+    "Regional festivals often align with peaks in vehicle purchases.",
+    "Car ownership is often shared across extended Indian families.",
+    "Mumbai blends taxis, autos, and family cars in its busy traffic.",
+    "NH 44 is India's longest national highway.",
+    "NH 44 runs from Srinagar in the north to Kanyakumari in the south.",
+    "The Golden Quadrilateral connects Delhi, Mumbai, Chennai, and Kolkata.",
+    "The Golden Quadrilateral is among the largest highway networks in the world.",
+    "The Mumbai-Pune Expressway was among India's first modern expressways.",
+    "The Mumbai-Pune Expressway sharply cut travel time between the two cities.",
+    "The Yamuna Expressway links Greater Noida to Agra.",
+    "The Yamuna Expressway offers a fast route toward the Taj Mahal.",
+    "The Delhi-Mumbai Expressway is one of India's longest expressway projects.",
+    "The Atal Tunnel near Manali is one of the world's highest road tunnels.",
+    "The Atal Tunnel gives all-weather access to the Lahaul valley.",
+    "Khardung La is one of the highest motorable mountain passes in the world.",
+    "Khardung La lies in the Ladakh region of northern India.",
+    "Umling La is among the highest motorable roads on Earth.",
+    "India has one of the largest road networks in the world.",
+    "National highways carry a large share of India's road traffic.",
+    "Peripheral expressways help traffic bypass the Delhi region.",
+    "The Bandra-Worli Sea Link is an iconic bridge in Mumbai.",
+    "The Bandra-Worli Sea Link cut travel time along Mumbai's coast.",
+    "Modern Indian expressways increasingly feature controlled access.",
+    "Toll plazas help fund the building and upkeep of Indian highways.",
+    "FASTag enables electronic toll payments on Indian highways.",
+    "FASTag uses windshield stickers read automatically at toll gates.",
+    "Indian roadside milestones are color-coded by the type of road.",
+    "Yellow milestones indicate national highways in India.",
+    "Green milestones indicate state highways in India.",
+    "India's expressway network has expanded rapidly in recent years.",
+    "The Purvanchal Expressway is a major highway in Uttar Pradesh.",
+    "The Agra-Lucknow Expressway is a long access-controlled road.",
+    "Some Indian expressways include airstrips for emergency aircraft landings.",
+    "The Zoji La pass connects Kashmir with the Ladakh region.",
+    "The Rohtang Pass is a scenic high-altitude route near Manali.",
+    "Mountain highways in India often feature dramatic hairpin bends.",
+    "The road to Leh is a bucket-list drive for many enthusiasts.",
+    "The Manali-Leh Highway crosses several high mountain passes.",
+    "Coastal highways offer scenic drives along India's long shoreline.",
+    "The Mumbai Coastal Road is a major urban infrastructure project.",
+    "Ghat roads wind through India's Western and Eastern Ghats.",
+    "The Chennai-Bengaluru corridor is a busy industrial route.",
+    "Highway rest stops offer fuel, food, and a break for travelers.",
+    "Dhabas serve hearty meals to travelers along Indian highways.",
+    "Many Indian highways are being widened to more lanes.",
+    "India uses a national numbering system for its major highways.",
+    "Green-highway efforts promote tree planting along roadsides.",
+    "Signage and lighting have improved on major Indian corridors.",
+    "The Samruddhi Expressway stretches across much of Maharashtra.",
+    "Flyovers and overpasses help ease congestion in Indian cities.",
+    "India continues to invest heavily in new expressway construction.",
+    "Border roads connect remote Himalayan regions to the rest of India.",
+    "The Border Roads Organisation maintains many high-altitude routes.",
+    "Checking tyre pressure regularly improves safety and fuel efficiency.",
+    "Correctly inflated tyres last longer and grip the road better.",
+    "Under-inflated tyres can raise fuel consumption and wear.",
+    "Regular oil changes keep a car's engine running smoothly.",
+    "Engine oil should be changed on the maker's recommended schedule.",
+    "Wearing a seatbelt is one of the simplest ways to stay safe.",
+    "Seatbelts are mandatory for front-seat occupants in India.",
+    "Rear-seat passengers are also urged to buckle up for safety.",
+    "Bharat NCAP is India's own vehicle crash-safety rating program.",
+    "Bharat NCAP began operations in 2023.",
+    "Bharat NCAP rates cars on a star scale for crash protection.",
+    "ABS helps stop wheels from locking during hard braking.",
+    "Anti-lock brakes let drivers keep steering control while braking.",
+    "Airbags cushion occupants during a collision.",
+    "Many Indian cars now include dual front airbags as standard.",
+    "Six airbags are becoming more common in Indian cars.",
+    "Easing off the accelerator in the monsoon helps prevent skidding on wet roads.",
+    "Avoid driving through deep floodwater to protect the engine.",
+    "Fresh wiper blades greatly improve visibility in the rain.",
+    "Working headlights and taillights are essential for night driving.",
+    "Checking brake pads regularly is key to safe stopping.",
+    "Coolant keeps the engine from overheating in the summer heat.",
+    "A well-maintained battery helps avoid sudden breakdowns.",
+    "Proper wheel alignment improves handling and tyre life.",
+    "Tyre tread depth should be checked to ensure good grip.",
+    "Bald tyres are dangerous, especially on wet roads.",
+    "Keeping a safe following distance lowers the risk of collisions.",
+    "A first-aid kit is a handy item to keep in any car.",
+    "A spare tyre and jack are essential for handling a flat.",
+    "Regular servicing catches small problems before they grow.",
+    "Clean air filters help the engine breathe and perform well.",
+    "Smooth braking and acceleration save fuel and parts.",
+    "Dashboard warning lights should never be ignored.",
+    "Child safety seats protect young passengers in the car.",
+    "Never leave children or pets alone in a parked car in the heat.",
+    "Using indicators clearly signals your intentions to others.",
+    "Adjusting the mirrors properly reduces blind spots.",
+    "Defogging the windshield improves visibility in humid weather.",
+    "Clean headlight lenses improve night-time visibility.",
+    "Avoiding phone distractions keeps drivers focused on the road.",
+    "Speed limits exist to keep all road users safe.",
+    "Fog lights aid visibility on misty winter mornings.",
+    "Checking horn, brakes, and lights before a trip is wise.",
+    "Topping up washer fluid helps clear dust from the windshield.",
+    "Checking tyres for cuts and bulges helps prevent blowouts.",
+    "Good-quality tyres improve braking and cornering safety.",
+    "Keeping documents and emergency contacts handy is smart.",
+    "Rotating tyres periodically helps them wear more evenly.",
+    "A reflective warning triangle alerts traffic if you break down.",
+    "Periodic wheel balancing reduces vibration and uneven wear.",
+    "India drives on the left side of the road, a British colonial legacy.",
+    "Because of left-side driving, the steering wheel sits on the right.",
+    "White number plates in India are for private vehicles.",
+    "Yellow number plates indicate commercial vehicles like taxis.",
+    "Green number plates are reserved for electric vehicles.",
+    "Red plates are typically used for temporary registration.",
+    "Diplomatic vehicles in India carry special light-blue plates.",
+    "BH-series plates make it easier to move vehicles between states.",
+    "BH plates are handy for people who transfer jobs across India.",
+    "Indian number plates begin with a code for the state or territory.",
+    "DL on a plate stands for Delhi and MH stands for Maharashtra.",
+    "KA on a number plate indicates the state of Karnataka.",
+    "TN on a number plate indicates the state of Tamil Nadu.",
+    "White is consistently among the most popular car colors in India.",
+    "Many buyers pick auspicious days to bring home a new car.",
+    "Special or fancy registration numbers can be bought at auction.",
+    "Some owners pay a premium for numbers they consider lucky.",
+    "A new car is often blessed with a small ceremony before first use.",
+    "A string of lemon and green chillies is a common charm on vehicles.",
+    "Many Indian trucks carry the phrase Horn OK Please on the back.",
+    "Horn OK Please invites following drivers to honk before overtaking.",
+    "Honking is a common way to communicate on busy Indian roads.",
+    "Overtaking on Indian roads is generally done on the right side.",
+    "Roundabouts are commonly called circles in many Indian cities.",
+    "The Zero Mile Stone in Nagpur once served as a central reference point.",
+    "Distance markers along Indian roads are often called kilometre stones.",
+    "Many Indian cars carry small idols or symbols on the dashboard.",
+    "India measures speed and distance in kilometres, not miles.",
+    "Speedometers in Indian cars are marked in kilometres per hour.",
+    "Fuel in India is sold by the litre.",
+    "Bumper stickers with witty phrases are common on Indian vehicles.",
+    "Many Indian families give their first car an affectionate name.",
+    "High-security registration plates are now standard on Indian vehicles.",
+    "HSRP plates include tamper-resistant features for added security.",
+    "A valid pollution-under-control certificate is required for vehicles.",
+    "Delhi has tried odd-even car rationing to help cut pollution.",
+    "Cycle rickshaws still share the road with cars in many towns.",
+    "The auto-rickshaw is a three-wheeled taxi found across India.",
+    "Every new car in India must be registered before it hits the road.",
+    "The Tata Nano was billed among the most affordable cars in the world.",
+    "Vanity stickers and decals are a popular way to personalize cars.",
+    "Many Indians carefully choose a car's color before buying.",
+    "Bringing home a new car is often a proud family photo moment.",
+    "Indian registration numbers follow a standard character format by law.",
+    "Learner drivers in India often display a red L sign on the car.",
+    "Some owners avoid number combinations they consider unlucky.",
+    "Indian number plates use both English letters and numerals.",
+    "Ambulances and emergency vehicles have right of way in India.",
+    "Indian roads carry a colorful mix of vehicles in shared space.",
+    "Personalized number plates are a point of pride for some owners.",
+    "Several Indian states waive road tax to encourage electric cars.",
+    "The Tata Nexon EV is one of India's best-selling electric cars.",
+    "The Tata Tiago EV brought electric mobility to a lower price point.",
+    "Tata Motors leads India's electric passenger-car market.",
+    "India is pushing hard to expand electric-vehicle adoption.",
+    "Government incentives have supported India's EV growth.",
+    "Public charging networks are expanding across Indian cities.",
+    "Fast chargers top up an EV battery far quicker than home charging.",
+    "Home charging is a convenient option for many Indian EV owners.",
+    "EVs generally have lower running costs than petrol or diesel cars.",
+    "Electric cars produce no tailpipe emissions.",
+    "EVs are especially well suited to short city commutes.",
+    "Regenerative braking helps EVs recover energy while decelerating.",
+    "India's FAME scheme has supported electric-vehicle purchases.",
+    "Electric two-wheelers are hugely popular in India's EV transition.",
+    "Ather Energy is a well-known Indian electric-scooter maker.",
+    "Ola Electric is a major player in India's electric-scooter market.",
+    "Electric scooters are now a common sight in many Indian cities.",
+    "The Mahindra XUV400 is one of Mahindra's electric SUVs.",
+    "Several carmakers are launching new EV models for India.",
+    "Improvements in battery technology are boosting EV range.",
+    "Charging apps help EV drivers find nearby stations.",
+    "Solar power is being paired with EV charging at some sites.",
+    "Many Indian offices and malls now offer EV charging points.",
+    "Electric buses are joining many Indian city fleets.",
+    "Several Indian cities run fleets of electric public buses.",
+    "EVs help reduce air pollution in crowded cities.",
+    "Quieter operation is another benefit of electric vehicles.",
+    "Many ride-hailing fleets are adding electric cars.",
+    "Battery-swapping is being explored for electric two-wheelers.",
+    "India is investing in local battery manufacturing.",
+    "Electric three-wheelers are popular for last-mile transport.",
+    "E-rickshaws have become common across many Indian towns.",
+    "Hybrid cars pair a petrol engine with electric assistance.",
+    "Strong hybrids can travel short distances on electric power alone.",
+    "CNG offers a lower-emission alternative to petrol in many cars.",
+    "Flex-fuel vehicles can run on higher ethanol-petrol blends.",
+    "India blends ethanol into petrol to cut its oil imports.",
+    "Connected-car features are increasingly common in India.",
+    "Many new Indian cars offer app-based remote controls.",
+    "Advanced driver-assistance systems are appearing in Indian cars.",
+    "Features like automatic emergency braking are becoming available.",
+    "Digital instrument clusters are now common in new Indian cars.",
+    "Over-the-air software updates are reaching more Indian vehicles.",
+    "India is working to standardize EV charging nationwide.",
+    "Range anxiety is easing as charging networks grow.",
+    "Electric mobility is central to India's clean-energy plans.",
+    "Many Indian start-ups are innovating in electric mobility.",
+    "Subsidies have helped make electric scooters more affordable in India.",
+    "India's future mobility blends EVs, CNG, and cleaner fuels.",
+    "Horn OK Please is a familiar phrase painted on the back of Indian trucks.",
+    "Indian truck art turns cargo vehicles into colorful moving canvases.",
+    "Truck decorations often include tassels, paintings, and cheerful slogans.",
+    "Painted eyes and lotus motifs are common on Indian trucks.",
+    "The auto-rickshaw is an iconic three-wheeled ride found across India.",
+    "Auto-rickshaws are affectionately called autos in many Indian cities.",
+    "Jugaad describes India's spirit of clever, frugal improvisation.",
+    "Jugaad often means an ingenious fix made with limited resources.",
+    "Hill-station road trips are a beloved Indian holiday tradition.",
+    "Families often drive to hill stations to escape the summer heat.",
+    "Dhanteras is considered an auspicious day to buy vehicles.",
+    "Many Indians buy new cars during Diwali and the festive season.",
+    "Buying a car during Navratri is considered auspicious by many.",
+    "Festive discounts make the festival season a popular time to buy cars.",
+    "New cars are often decorated with fresh flower garlands.",
+    "Grooms sometimes arrive at weddings in vintage or luxury cars.",
+    "The decorated wedding car is a highlight of Indian marriage processions.",
+    "Long family drives are a favorite way to bond in India.",
+    "Tea stalls and dhabas are essential stops on Indian road trips.",
+    "Songs and games keep Indian family road trips lively.",
+    "The great Indian road trip has inspired films and travel stories.",
+    "Bollywood has featured many memorable cars over the decades.",
+    "Cars often play a starring role in Indian films and songs.",
+    "Car pooling among neighbors and colleagues is common in cities.",
+    "The family car is central to weekend outings and temple visits.",
+    "Long-distance pilgrimages by car are common across India.",
+    "Car detailing has become a growing hobby among Indian enthusiasts.",
+    "Vintage car rallies celebrate India's rich motoring heritage.",
+    "Car clubs organize drives and meets across Indian cities.",
+    "Off-roading has a growing enthusiast community in India.",
+    "The Himalayan terrain draws off-road and adventure drivers.",
+    "Motorsport interest in India has grown with rallies and racing events.",
+    "Mileage is a favorite topic in everyday Indian car conversations.",
+    "Research and bargaining are part of the Indian car-buying ritual.",
+    "Word-of-mouth strongly influences car choices in Indian families.",
+    "Passing a driving test is a proud milestone for many Indians.",
+    "Learning to drive is often a family affair in India.",
+    "The first family car holds deep sentimental value for many households.",
+    "Cars are often kept for many years and lovingly maintained.",
+    "Cars sometimes pass down between generations in Indian families.",
+    "Sunday car washing is a familiar sight in Indian neighborhoods.",
+    "Sharing snacks and chai during traffic jams is a very Indian moment.",
+    "Festive stickers and decorations brighten many Indian cars.",
+    "Cricket and cars are two enduring passions in Indian culture.",
+    "A car's first long journey is often a memorable family occasion.",
+    "Truck art has inspired modern Indian fashion and design.",
+    "Roadside chai breaks are the heartbeat of Indian highway journeys.",
+    "The joy of the open road unites drivers across India.",
+    "Packing homemade snacks is a cherished road-trip tradition for families.",
+    "The open highway at dawn is a favorite start to Indian road trips."
+  ];
+
   function $(id) { return document.getElementById(id); }
   // Django CSRF: read the LIVE csrftoken cookie at request time. The cookie can
   // rotate (e.g. when verify-otp logs the user in), so never read a token that
@@ -252,6 +791,8 @@
   window.goStep = goStep;
 
   // ── Screen 1: plate lookup ──
+  // Inline strip is used ONLY for client-side input problems (bad plate, already-listed) — real
+  // backend lookups get the full loading takeover / failure card below.
   function showLookupError(msg) {
     $('lookupErrorMsg').textContent = msg;
     $('lookupError').classList.add('visible');
@@ -259,34 +800,87 @@
   }
   function normPlate(p) { return (p || '').toUpperCase().replace(/[\s-]/g, ''); }
 
-  // Toggle the whole lookup into/out of its loading state: disable the button AND the plate
-  // input, swap the button label, and show/hide the "government database" status banner.
-  function setLoading(on) {
-    var btn = $('btnLookup');
-    btn.disabled = on;
-    $('plateInput').disabled = on;
-    btn.innerHTML = on
-      ? '<span class="spinner"></span> Fetching…'
-      : '<svg class="i"><use href="#ic-search"/></svg>Get car details';
-    $('lookupLoading').classList.toggle('visible', on);
+  // ── Loading takeover ──
+  // The lookup has NO frontend timeout/abort — it waits as long as the backend takes (which has
+  // its own 3×30s retry budget). While it waits, screen 1 (form + any error) is fully hidden and a
+  // premium full-card loading screen plays, so a lookup that takes a few seconds never looks broken.
+  var _reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  var _factOrder = [];      // shuffled indices into CAR_FACTS — computed once per page load
+  var _factPos = 0;
+  var _factTimer = null;
+
+  function _shuffleFacts() {
+    _factOrder = CAR_FACTS.map(function (_, i) { return i; });
+    for (var i = _factOrder.length - 1; i > 0; i--) {          // Fisher–Yates
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = _factOrder[i]; _factOrder[i] = _factOrder[j]; _factOrder[j] = t;
+    }
   }
+  function _paintFact() {
+    var el = $('lcFact');
+    el.textContent = CAR_FACTS[_factOrder[_factPos % _factOrder.length]];
+    el.classList.add('show');
+    _factPos++;
+  }
+  function startFacts() {
+    if (!_factOrder.length) _shuffleFacts();
+    _factPos = 0;
+    _paintFact();                        // first fact immediately
+    if (_reduceMotion) return;           // static: no rotation, no fade cycling
+    stopFacts();
+    _factTimer = setInterval(function () {
+      $('lcFact').classList.remove('show');                    // fade out
+      setTimeout(_paintFact, 500);                             // swap + fade back in
+    }, 3000);
+  }
+  function stopFacts() { if (_factTimer) { clearInterval(_factTimer); _factTimer = null; } }
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(function (s) { s.classList.remove('active'); });
+    $(id).classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function _steps(show) { document.querySelector('.lc-steps').style.display = show ? '' : 'none'; }
+
+  function showLoading(on) {
+    if (on) { _steps(false); showScreen('screenLoading'); startFacts(); }
+    else { stopFacts(); _steps(true); }
+  }
+  function showFail(msg) {
+    stopFacts(); _steps(false);
+    $('lcFailSub').textContent = msg || 'Please check the number plate and re-enter it.';
+    showScreen('screenFail');
+  }
+  // The failure-card retry button → back to a clean plate screen.
+  window.resetToPlate = function () {
+    _steps(true);
+    $('lookupError').classList.remove('visible');
+    $('plateWrap').classList.remove('is-invalid');
+    $('plateInput').disabled = false;
+    goStep(1);
+    $('plateInput').focus();
+  };
 
   window.doLookup = function () {
     var plate = normPlate($('plateInput').value.trim());
     $('lookupError').classList.remove('visible');
     $('plateWrap').classList.remove('is-invalid');
     if (plate.length < 6) { showLookupError('Please enter a valid number plate (e.g. GJ05MK2024).'); return; }
-    setLoading(true);
+    showLoading(true);
     api('/vehicles/vahaan-lookup/', { plate_number: plate }).then(function (res) {
-      setLoading(false);
       var d = res.data;
-      if (!d.found) { showLookupError(d.error || 'Vehicle not found. Please check the number plate.'); return; }
+      if (d.already_listed) {            // not a lookup failure — keep the seller on the plate screen
+        showLoading(false); goStep(1);
+        showLookupError(d.error || 'This vehicle is already listed on CarFriend.');
+        return;
+      }
+      if (!d.found) { showFail(d.error); return; }
+      showLoading(false);
       carData = d;
       renderDetails(d);
       goStep(2);
     }).catch(function () {
-      setLoading(false);
-      showLookupError('Could not connect. Please try again.');
+      showFail('Could not connect. Please check the number and re-enter it.');
     });
   };
 
@@ -347,7 +941,7 @@
       $('otpInput').focus();
     }).catch(function () {
       btn.disabled = false; btn.innerHTML = 'Send OTP';
-      showOtpError('Network error. Please try again.');
+      showOtpError('Network error. Please retry.');
     });
   };
 
@@ -362,7 +956,7 @@
       fetchEstimate(btn);
     }).catch(function () {
       btn.disabled = false; btn.innerHTML = 'Verify &amp; see price';
-      showOtpError('Network error. Please try again.');
+      showOtpError('Network error. Please retry.');
     });
   };
 
@@ -390,7 +984,7 @@
       goStep(5);
     }).catch(function () {
       if (btn) { btn.disabled = false; btn.innerHTML = label; }
-      showOtpError('Network error. Please try again.');
+      showOtpError('Network error. Please retry.');
     });
   }
 

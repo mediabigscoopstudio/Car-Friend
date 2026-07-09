@@ -38,13 +38,13 @@ def _rate_limited(request):
     last_key = f"est_last:{ip}"
     last = cache.get(last_key)
     if last and (now - last) < ESTIMATE_MIN_INTERVAL:
-        return "You're going a little fast — please wait a moment and try again."
+        return "You're going a little fast — please wait a moment."
     cache.set(last_key, now, ESTIMATE_WINDOW_SECONDS)
 
     count_key = f"est_count:{ip}"
     count = cache.get(count_key, 0)
     if count >= ESTIMATE_MAX_PER_WINDOW:
-        return "Too many lookups right now. Please try again in a minute."
+        return "Too many lookups right now. Please wait a minute."
     cache.set(count_key, count + 1, ESTIMATE_WINDOW_SECONDS)
     return None
 
@@ -84,7 +84,7 @@ def estimate_price(request):
         if not _valid_plate(plate):
             return JsonResponse(
                 {"ok": False, "error": "That doesn't look like a valid number plate. "
-                                       "Please check and try again, or select your brand.",
+                                       "Please check the plate, or select your brand instead.",
                  "fallback": True},
                 status=400,
             )
@@ -98,7 +98,7 @@ def estimate_price(request):
             )
         except services.SurepassTimeout:
             return JsonResponse(
-                {"ok": False, "error": "The lookup service is slow right now. " + FALLBACK_HINT,
+                {"ok": False, "error": "We couldn't fetch your car right now. " + FALLBACK_HINT,
                  "fallback": True},
                 status=504,
             )

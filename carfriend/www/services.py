@@ -19,6 +19,7 @@ import datetime
 import json
 import logging
 import socket
+import time
 import urllib.error
 import urllib.request
 
@@ -35,6 +36,11 @@ TIMEOUT_SECONDS = 8
 # RC lookups hit government DBs and routinely take 3–8s (up to ~15s), so they get their own,
 # longer budget. Only the RC call uses this; PAN/Aadhaar/challan/e-Sign keep TIMEOUT_SECONDS.
 RC_TIMEOUT_SECONDS = 30
+# SurePass in production intermittently resets the connection (ConnectionResetError / errno 104)
+# on the first hit. Retry transient connection failures a few times before giving up, so a single
+# blip never surfaces as a lookup failure. Definitive HTTP responses (404/422 etc.) are NOT retried.
+RC_MAX_ATTEMPTS = 3
+RC_RETRY_DELAY = 2  # seconds between attempts
 
 # Cache successful RC lookups by plate for 24h — SurePass rate-limits rapid repeat calls
 # and a plate's RC data doesn't change within a day. Only successful lookups are cached.
@@ -153,26 +159,41 @@ def _call_surepass_rc(plate_number):
         },
     )
 
-    try:
-        with urllib.request.urlopen(req, timeout=RC_TIMEOUT_SECONDS) as resp:
-            status = getattr(resp, "status", None) or resp.getcode()
-            raw = resp.read().decode("utf-8", errors="replace")
-    except urllib.error.HTTPError as exc:
+    # Retry transient connection failures (reset / timeout / unreachable) a few times before
+    # giving up. HTTPError is a definitive response from SurePass, so it is never retried — note
+    # HTTPError subclasses URLError, so it MUST be caught first.
+    status = None
+    raw = ""
+    for attempt in range(1, RC_MAX_ATTEMPTS + 1):
         try:
-            raw = exc.read().decode("utf-8", errors="replace")
-        except Exception:
-            raw = ""
-        # Never log id_number or the response body — both can carry PII.
-        logger.warning("Surepass RC HTTP error: status=%s", exc.code)
-        if exc.code in (404, 422):
-            raise SurepassNotFound("No vehicle found for that number plate.") from None
-        raise SurepassError("RC lookup failed. Please try again.") from None
-    except (socket.timeout, TimeoutError):
-        logger.warning("Surepass RC timed out after %ss", RC_TIMEOUT_SECONDS)
-        raise SurepassTimeout("RC lookup timed out.") from None
-    except urllib.error.URLError as exc:
-        logger.warning("Surepass RC connection error: %s", exc.reason)
-        raise SurepassTimeout("Could not reach the RC service.") from None
+            with urllib.request.urlopen(req, timeout=RC_TIMEOUT_SECONDS) as resp:
+                status = getattr(resp, "status", None) or resp.getcode()
+                raw = resp.read().decode("utf-8", errors="replace")
+            break  # success — leave the retry loop
+        except urllib.error.HTTPError as exc:
+            try:
+                raw = exc.read().decode("utf-8", errors="replace")
+            except Exception:
+                raw = ""
+            # Never log id_number or the response body — both can carry PII.
+            logger.warning("Surepass RC HTTP error: status=%s", exc.code)
+            if exc.code in (404, 422):
+                raise SurepassNotFound("No vehicle found for that number plate.") from None
+            raise SurepassError("RC lookup failed.") from None
+        except (urllib.error.URLError, OSError) as exc:
+            # Covers ConnectionResetError (errno 104), socket.timeout / TimeoutError, and other
+            # connection-level failures. urllib.error.URLError is NOT an OSError, so it is listed
+            # explicitly alongside OSError.
+            reason = getattr(exc, "reason", exc)
+            if attempt < RC_MAX_ATTEMPTS:
+                logger.info(
+                    "Surepass RC connection issue on attempt %s/%s (%s) — retrying in %ss",
+                    attempt, RC_MAX_ATTEMPTS, reason, RC_RETRY_DELAY,
+                )
+                time.sleep(RC_RETRY_DELAY)
+                continue
+            logger.warning("Surepass RC unreachable after %s attempts: %s", RC_MAX_ATTEMPTS, reason)
+            raise SurepassTimeout("Could not reach the RC service.") from None
 
     # Response body intentionally NOT logged — it contains owner PII.
     logger.info("Surepass RC response: status=%s", status)
@@ -181,7 +202,7 @@ def _call_surepass_rc(plate_number):
         payload = json.loads(raw)
     except ValueError:
         logger.warning("Surepass RC returned non-JSON response.")
-        raise SurepassError("RC lookup failed. Please try again.") from None
+        raise SurepassError("RC lookup failed.") from None
 
     data = (payload or {}).get("data") or {}
     if not data:
@@ -321,7 +342,7 @@ def _call_surepass(path, payload=None, tag="kyc", method="POST", timeout=None):
             raise SurepassConfigError("Verification auth failed.") from None
         if exc.code in (404, 422):
             raise SurepassNotFound("No matching record found.") from None
-        raise SurepassError("Verification failed. Please try again.") from None
+        raise SurepassError("Verification failed. Please retry.") from None
     except (socket.timeout, TimeoutError):
         logger.warning("Surepass %s timed out after %ss", tag, timeout)
         raise SurepassTimeout("Verification timed out.") from None
@@ -408,7 +429,7 @@ def digilocker_fetch_aadhaar(client_id):
 # names). The raw response body is never logged (it may contain PII); only the
 # status code is.
 CHALLAN_ENDPOINT = "/api/v1/challan/challan"
-CHALLAN_TIMEOUT = 15  # challan lookups are slower than RC
+CHALLAN_TIMEOUT = 15  # challan lookups take longer than RC
 
 
 def _money(raw):

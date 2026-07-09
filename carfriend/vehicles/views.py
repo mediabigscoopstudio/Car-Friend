@@ -55,18 +55,22 @@ def vahaan_lookup(request):
         return JsonResponse({'found': False, 'error': 'Please enter a number plate.'})
 
     if Vehicle.objects.filter(plate_number=plate).exists():
-        return JsonResponse({'found': False, 'error': 'This vehicle is already listed on CarFriend.'})
+        # Not a lookup failure — keep the seller on the plate screen with an inline note.
+        return JsonResponse({'found': False, 'already_listed': True,
+                             'error': 'This vehicle is already listed on CarFriend.'})
 
+    # NOTE: keep these messages calm and free of the two forbidden phrases — the plate screen
+    # shows a styled failure card whose button is the ONLY user-facing place they may appear.
     try:
         data = services.lookup_rc_full(plate)
     except services.SurepassNotFound:
-        return JsonResponse({'found': False, 'error': 'Vehicle not found. Please check the number plate and try again.'})
+        return JsonResponse({'found': False, 'error': "We couldn't find a vehicle for that number plate. Please check and re-enter it."})
     except services.SurepassTimeout:
-        return JsonResponse({'found': False, 'error': 'The lookup service is slow right now. Please try again.'})
+        return JsonResponse({'found': False, 'error': "We couldn't reach the vehicle database just now. Please re-enter your plate."})
     except services.SurepassConfigError:
-        return JsonResponse({'found': False, 'error': 'Lookup is temporarily unavailable. Please try again later.'})
+        return JsonResponse({'found': False, 'error': 'Vehicle lookup is temporarily unavailable.'})
     except services.SurepassError:
-        return JsonResponse({'found': False, 'error': 'Something went wrong fetching your car. Please try again.'})
+        return JsonResponse({'found': False, 'error': "Something went wrong fetching your car. Please re-enter your plate."})
 
     data['found'] = True
     data['plate_number'] = plate
@@ -293,7 +297,7 @@ def sell_verify_otp(request):
     phone = normalise_phone(body.get('phone'))
     code = (body.get('code') or '').strip()
     if not otp.verify_otp(phone, code):
-        return JsonResponse({'ok': False, 'error': 'Incorrect or expired OTP. Please try again.'}, status=400)
+        return JsonResponse({'ok': False, 'error': 'Incorrect or expired OTP. Please re-enter it.'}, status=400)
 
     user = get_or_create_guest_user(phone)
     # Explicit backend required because the project configures multiple
