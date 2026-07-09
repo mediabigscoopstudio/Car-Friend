@@ -314,11 +314,13 @@
     if (!/^[6-9][0-9]{9}$/.test(val)) { $('phoneWrap').classList.add('is-invalid'); showOtpError('Enter a valid 10-digit mobile number.'); return; }
     phone = val;
     var btn = $('btnSendOtp'); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Sending…';
-    api('/vehicles/sell/send-otp/', { phone: phone }).then(function (res) {
+    // Phone-OTP auth via the app endpoints (accounts.otp_views). role=seller on first signup.
+    api('/auth/otp/request/', { phone: phone }).then(function (res) {
       btn.disabled = false; btn.innerHTML = 'Send OTP';
-      if (!res.data.ok) { showOtpError(res.data.error || 'Could not send OTP.'); return; }
+      if (!res.data.success) { showOtpError(res.data.error || 'Could not send OTP.'); return; }
       $('otpPhoneLabel').textContent = '+91 ' + phone;
-      $('stubHint').style.display = res.data.stub ? 'inline' : 'none';
+      // The endpoint never reveals test-vs-live mode, so no "use 000000" hint is shown.
+      $('stubHint').style.display = 'none';
       $('otpPhoneStep').style.display = 'none'; $('otpCodeStep').style.display = 'block';
       $('otpInput').focus();
     }).catch(function () {
@@ -332,8 +334,9 @@
     hideOtpError();
     if (code.length !== 6) { showOtpError('Enter the 6-digit OTP.'); return; }
     var btn = $('btnVerify'); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Verifying…';
-    api('/vehicles/sell/verify-otp/', { phone: phone, code: code }).then(function (res) {
-      if (!res.data.ok) { btn.disabled = false; btn.innerHTML = 'Verify &amp; see price'; showOtpError(res.data.error || 'Incorrect OTP.'); return; }
+    api('/auth/otp/verify/', { phone: phone, otp: code, role: 'seller' }).then(function (res) {
+      if (!res.data.success) { btn.disabled = false; btn.innerHTML = 'Verify &amp; see price'; showOtpError(res.data.error || 'Incorrect OTP.'); return; }
+      // Logged in now (session cookie set) — continue inline to the estimate.
       fetchEstimate(btn);
     }).catch(function () {
       btn.disabled = false; btn.innerHTML = 'Verify &amp; see price';

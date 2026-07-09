@@ -289,6 +289,15 @@ CF_MIN_TESTDRIVE_M = config("CF_MIN_TESTDRIVE_M", default=0, cast=int)   # metre
 CF_LEGAL_ENTITY  = config("CF_LEGAL_ENTITY",  default="Car Friend")
 CF_LEGAL_ADDRESS = config("CF_LEGAL_ADDRESS", default="[Udyam registration & registered address — set CF_LEGAL_ADDRESS]")
 
+# Phone-OTP auth for the mobile apps (accounts.otp_views). Separate from the older
+# cache-based sell-flow OTP (www/otp.py, FAST2SMS_API_KEY). "test" => the fixed
+# CF_OTP_TEST_CODE is stored and no SMS is sent; "live" => a random code is sent via
+# Fast2SMS. The code is NEVER returned to the client or logged.
+CF_OTP_MODE           = config("CF_OTP_MODE", default="test")        # "test" | "live"
+CF_OTP_TEST_CODE      = config("CF_OTP_TEST_CODE", default="000000")
+CF_FAST2SMS_API_KEY   = config("CF_FAST2SMS_API_KEY", default="")
+CF_FAST2SMS_SENDER_ID = config("CF_FAST2SMS_SENDER_ID", default="CRFRND")
+
 NOTIFY_SYNC_FALLBACK = True
 
 # Default primary key field type

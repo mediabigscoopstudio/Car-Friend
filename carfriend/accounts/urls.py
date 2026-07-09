@@ -1,7 +1,11 @@
 from django.urls import path
 from accounts import views
+from accounts import otp_views
 
 urlpatterns = [
+    # Phone-OTP auth for the mobile apps (NEW, additive — the existing routes below are untouched).
+    path("otp/request/", otp_views.otp_request, name="otp_request"),
+    path("otp/verify/",  otp_views.otp_verify,  name="otp_verify"),
     path("login/",            views.login_page,        name="login"),
     path("register/",         views.register_page,     name="register"),
     path("logout/",           views.logout_page,       name="logout"),

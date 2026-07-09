@@ -229,3 +229,27 @@ def dealer_can_bid(user):
 
 def latest_dealer_verification(user):
     return DealerVerification.objects.filter(dealer=user).order_by("-submitted_at").first()
+
+
+class OTPVerification(models.Model):
+    """Phone-OTP challenge for the mobile-app auth path (accounts.otp_views).
+
+    One row per OTP request. The code is stored server-side only, never returned to
+    the client. A row is valid for 5 minutes and single-use (verified=True on success).
+    """
+    phone      = models.CharField(max_length=15)
+    otp_code   = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    verified   = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"OTP · {self.phone} · {'used' if self.verified else 'pending'}"
+
+    @property
+    def is_expired(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        return timezone.now() > self.created_at + timedelta(minutes=5)
