@@ -254,16 +254,16 @@ def dealer_onboard(request):
     if latest and latest.status in (DealerVerification.Status.PENDING, DealerVerification.Status.APPROVED):
         return redirect("/auth/dealer/dashboard/")
 
+    from accounts.dealer_docs import required_docs_for_path, PATH1_DOCS, PATH2_DOCS
+
     error = None
     if request.method == "POST":
-        form  = DealerVerificationForm(request.POST)
-        city  = request.POST.get("city", "").strip()
-        phone = request.POST.get("phone", "").strip()
-        brand_interest = request.POST.get("brand_interest", "").strip()
+        form = DealerVerificationForm(request.POST)
+        path = request.POST.get("path", "").strip()
 
-        # Validate the required documents.
+        # Validate only the CHOSEN path's documents.
         doc_files, doc_error = {}, None
-        for key, label in DEALER_REQUIRED_DOCS:
+        for key, label in required_docs_for_path(path):
             f = request.FILES.get(f"doc_{key}")
             err = validate_document(f)
             if err:
@@ -273,31 +273,36 @@ def dealer_onboard(request):
 
         if not form.is_valid():
             error = next(iter(form.errors.values()))[0]
-        elif not city:
-            error = "City is required."
         elif doc_error:
             error = doc_error
         else:
+            cd = form.cleaned_data
             request.user.role = Role.DEALER
-            request.user.city = city
-            if phone:
-                request.user.phone = phone
+            request.user.city = cd["city"]
+            if cd.get("official_mobile"):
+                request.user.phone = cd["official_mobile"]
             request.user.save(update_fields=["role", "city", "phone"])
+            # Keep the dealer profile's display fields in sync (no auction prefs).
             DealerProfile.objects.update_or_create(
                 user=request.user,
                 defaults={
-                    "dealership_name": form.cleaned_data["business_name"],
-                    "gstin":           form.cleaned_data["gstin"],
-                    "city":            city,
-                    "budget_min":      _safe_int(request.POST.get("budget_min")),
-                    "budget_max":      _safe_int(request.POST.get("budget_max")),
-                    "brand_interest":  brand_interest,
+                    "dealership_name": cd["business_name"],
+                    "gstin":           cd.get("gstin", ""),
+                    "city":            cd["city"],
                 },
             )
             verification = DealerVerification.objects.create(
                 dealer=request.user,
-                business_name=form.cleaned_data["business_name"],
-                gstin=form.cleaned_data["gstin"],
+                business_name=cd["business_name"],
+                city=cd["city"],
+                official_mobile=cd["official_mobile"],
+                official_email=cd["official_email"],
+                aadhaar_number=cd["aadhaar_number"],
+                path=cd["path"],
+                gstin=cd.get("gstin", ""),
+                pan_number=cd.get("pan_number", ""),
+                tan_number=cd.get("tan_number", ""),
+                aoa_number=cd.get("aoa_number", ""),
                 status=DealerVerification.Status.PENDING,
             )
             for key, f in doc_files.items():
@@ -310,7 +315,8 @@ def dealer_onboard(request):
 
     return render(request, "www/dashboard/dealer_onboard.html", {
         "error": error,
-        "required_docs": DEALER_REQUIRED_DOCS,
+        "path1_docs": PATH1_DOCS,
+        "path2_docs": PATH2_DOCS,
         "rejected": bool(latest and latest.status == DealerVerification.Status.REJECTED),
         "reject_reason": latest.reject_reason if latest else "",
     })
@@ -496,11 +502,7 @@ def profile_edit(request):
             dp.dealership_name = ((request.POST.get("dealership_name") or dp.dealership_name).strip()[:200]) or "Dealer"
             dp.gstin          = (request.POST.get("gstin") or "").strip().upper()[:20]
             dp.city           = u.city
-            dp.brand_interest = (request.POST.get("brand_interest") or "").strip()[:255]
-            dp.budget_min     = _to_int(request.POST.get("budget_min"))
-            dp.budget_max     = _to_int(request.POST.get("budget_max"))
-            dp.save(update_fields=["dealership_name", "gstin", "city",
-                                   "brand_interest", "budget_min", "budget_max", "updated_at"])
+            dp.save(update_fields=["dealership_name", "gstin", "city", "updated_at"])
             return redirect("profile")
         return render(request, "www/account/dealer_profile_edit.html", {"dp": dp})
     sp, _ = SellerProfile.objects.get_or_create(user=request.user)
@@ -632,3 +634,72 @@ def dealer_document_download(request, doc_id):
         raise Http404("Document not available.")
     log(request.user, "dealer.document.view", doc, request)
     return FileResponse(fh, as_attachment=False, filename=f"{doc.doc_type}_{doc.id}")
+
+
+@admin_required
+def dealer_verification_edit(request, id):
+    """Master 'Re-register': edit any field, re-upload any document, or flip the path for a
+    dealer's verification. Any save RESETS the record to PENDING (re-approval required).
+    This is also the entry point for completing grandfathered dealers' new fields/docs."""
+    from accounts.dealer_docs import required_docs_for_path, PATH1_DOCS, PATH2_DOCS
+    rec = get_object_or_404(
+        DealerVerification.objects.select_related("dealer").prefetch_related("documents"), id=id)
+
+    error = None
+    if request.method == "POST":
+        form = DealerVerificationForm(request.POST)
+        # Re-upload is OPTIONAL here — only validate/replace the documents actually provided.
+        doc_files, doc_error = {}, None
+        for key, label in required_docs_for_path(request.POST.get("path", "").strip()):
+            f = request.FILES.get(f"doc_{key}")
+            if not f:
+                continue
+            err = validate_document(f)
+            if err:
+                doc_error = f"{label}: {err}"
+                break
+            doc_files[key] = f
+
+        if not form.is_valid():
+            error = next(iter(form.errors.values()))[0]
+        elif doc_error:
+            error = doc_error
+        else:
+            cd = form.cleaned_data
+            rec.business_name   = cd["business_name"]
+            rec.city            = cd["city"]
+            rec.official_mobile = cd["official_mobile"]
+            rec.official_email  = cd["official_email"]
+            rec.aadhaar_number  = cd["aadhaar_number"]
+            rec.path            = cd["path"]
+            rec.gstin           = cd.get("gstin", "")
+            rec.pan_number      = cd.get("pan_number", "")
+            rec.tan_number      = cd.get("tan_number", "")
+            rec.aoa_number      = cd.get("aoa_number", "")
+            rec.status          = DealerVerification.Status.PENDING   # re-register → re-approval
+            rec.reject_reason   = ""
+            rec.reviewed_by     = None
+            rec.reviewed_at     = None
+            rec.save()
+            for key, f in doc_files.items():
+                DealerDocument.objects.filter(verification=rec, doc_type=key).delete()
+                DealerDocument.objects.create(verification=rec, doc_type=key, file=f)
+            DealerProfile.objects.update_or_create(
+                user=rec.dealer,
+                defaults={"dealership_name": cd["business_name"],
+                          "gstin": cd.get("gstin", ""), "city": cd["city"]})
+            log(request.user, "dealer.verification.reregister", rec, request)
+            notify(rec.dealer, "dealer_verification",
+                   title="Verification updated",
+                   body="Your dealer verification was updated by our team and is under review.")
+            messages.success(request, "Re-registered — record reset to pending for re-approval.")
+            return redirect(f"/dealer_verifications/{rec.id}/")
+
+    return render(request, "master/dealer_verification_edit.html", {
+        "active": "dealer_verifications",
+        "rec": rec,
+        "error": error,
+        "path1_docs": PATH1_DOCS,
+        "path2_docs": PATH2_DOCS,
+        "existing_docs": {d.doc_type for d in rec.documents.all()},
+    })

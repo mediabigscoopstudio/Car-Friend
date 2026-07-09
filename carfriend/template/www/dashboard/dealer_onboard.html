@@ -25,31 +25,44 @@
   {% endif %}
 
   <div class="cf-card cf-reveal d1" style="padding:1.3rem 1.35rem">
-    <form method="POST" action="/auth/dealer/onboard/" enctype="multipart/form-data">
+    <form method="POST" action="/auth/dealer/onboard/" enctype="multipart/form-data" id="dealer-form">
       {% csrf_token %}
 
       <div class="cf-flabel" style="margin-bottom:.7rem">Business details</div>
-      <div class="cf-field"><label for="id_bname">Legal business name</label><input type="text" name="business_name" id="id_bname" class="cf-input" placeholder="e.g. Sharma Auto Sales Pvt Ltd" required></div>
+      <div class="cf-field"><label for="id_bname">Legal business name</label><input type="text" name="business_name" id="id_bname" class="cf-input" placeholder="e.g. Sharma Auto Sales" required></div>
       <div class="d-flex" style="gap:.9rem;flex-wrap:wrap">
         <div class="cf-field" style="flex:1 1 200px"><label for="id_city">City</label><input type="text" name="city" id="id_city" class="cf-input" placeholder="e.g. Delhi" required value="{{ request.user.city }}"></div>
-        <div class="cf-field" style="flex:1 1 200px"><label for="id_phone">Mobile number</label><input type="tel" name="phone" id="id_phone" class="cf-input" placeholder="10-digit mobile" value="{{ request.user.phone }}"></div>
+        <div class="cf-field" style="flex:1 1 200px"><label for="id_omobile">Official mobile</label><input type="tel" name="official_mobile" id="id_omobile" class="cf-input" placeholder="10-digit mobile" maxlength="10" required value="{{ request.user.phone }}"></div>
       </div>
-      <div class="cf-field"><label for="id_gstin">GSTIN</label><input type="text" name="gstin" id="id_gstin" class="cf-input" placeholder="22AAAAA0000A1Z5" maxlength="15" style="text-transform:uppercase" required></div>
-
-      <div class="cf-div" style="margin:1.1rem 0"></div>
-      <div class="cf-flabel" style="margin-bottom:.3rem">Verification documents</div>
-      <p class="cf-help" style="margin:0 0 .8rem">PDF, JPG or PNG · max 5 MB each.</p>
-      {% for key, label in required_docs %}
-      <div class="cf-field"><label for="id_doc_{{ key }}">{{ label }}</label><input type="file" name="doc_{{ key }}" id="id_doc_{{ key }}" class="cf-input" accept=".pdf,.jpg,.jpeg,.png" required></div>
-      {% endfor %}
-
-      <div class="cf-div" style="margin:1.1rem 0"></div>
-      <div class="cf-flabel" style="margin-bottom:.7rem">Auction preferences (optional)</div>
       <div class="d-flex" style="gap:.9rem;flex-wrap:wrap">
-        <div class="cf-field" style="flex:1 1 160px"><label for="id_bmin">Min budget (₹)</label><input type="number" name="budget_min" id="id_bmin" class="cf-input" placeholder="e.g. 200000" min="0"></div>
-        <div class="cf-field" style="flex:1 1 160px"><label for="id_bmax">Max budget (₹)</label><input type="number" name="budget_max" id="id_bmax" class="cf-input" placeholder="e.g. 1000000" min="0"></div>
+        <div class="cf-field" style="flex:1 1 200px"><label for="id_oemail">Official email</label><input type="email" name="official_email" id="id_oemail" class="cf-input" placeholder="you@business.com" required value="{{ request.user.email }}"></div>
+        <div class="cf-field" style="flex:1 1 200px"><label for="id_aadhaar">Aadhaar number</label><input type="text" name="aadhaar_number" id="id_aadhaar" class="cf-input" placeholder="12-digit Aadhaar" inputmode="numeric" maxlength="12" required></div>
       </div>
-      <div class="cf-field"><label for="id_brand">Brands of interest</label><input type="text" name="brand_interest" id="id_brand" class="cf-input" placeholder="e.g. Maruti, Hyundai, Tata"></div>
+      <div class="cf-foot-note" style="margin:.1rem 0 .2rem"><svg class="i"><use href="#ic-shield"/></svg>Your Aadhaar is verified privately by our team and never shown publicly.</div>
+
+      <div class="cf-div" style="margin:1.1rem 0"></div>
+      <div class="cf-flabel" style="margin-bottom:.5rem">How do you register your business?</div>
+      <p class="cf-help" style="margin:0 0 .7rem">Choose one — you'll only fill that path's documents.</p>
+      <label class="cf-check" style="display:flex;gap:.6rem;align-items:flex-start;padding:.6rem .1rem"><input type="radio" name="path" value="formal" required style="margin-top:.2rem"><span><strong>I have GSTIN (Path 1)</strong><br><span style="color:var(--cf-muted);font-size:.85rem">GST, PAN, TAN and AOA — number + document each.</span></span></label>
+      <label class="cf-check" style="display:flex;gap:.6rem;align-items:flex-start;padding:.6rem .1rem"><input type="radio" name="path" value="small" style="margin-top:.2rem"><span><strong>I have Udyam + Gumasta (Path 2)</strong><br><span style="color:var(--cf-muted);font-size:.85rem">Gumasta Dhara and Udyam Certificate documents.</span></span></label>
+
+      <p class="cf-help" style="margin:.6rem 0 .8rem">Documents: PDF, JPG or PNG · max 5 MB each.</p>
+
+      <div id="path-formal" class="path-block" style="display:none">
+        <div class="cf-field"><label for="id_gstin">GSTIN</label><input type="text" name="gstin" id="id_gstin" class="cf-input" placeholder="22AAAAA0000A1Z5" maxlength="15" style="text-transform:uppercase"></div>
+        <div class="cf-field"><label for="id_doc_gst_certificate">GST Certificate</label><input type="file" name="doc_gst_certificate" id="id_doc_gst_certificate" class="cf-input" accept=".pdf,.jpg,.jpeg,.png"></div>
+        <div class="cf-field"><label for="id_pan">PAN</label><input type="text" name="pan_number" id="id_pan" class="cf-input" placeholder="ABCDE1234F" maxlength="10" style="text-transform:uppercase"></div>
+        <div class="cf-field"><label for="id_doc_pan_card">PAN Card</label><input type="file" name="doc_pan_card" id="id_doc_pan_card" class="cf-input" accept=".pdf,.jpg,.jpeg,.png"></div>
+        <div class="cf-field"><label for="id_tan">TAN</label><input type="text" name="tan_number" id="id_tan" class="cf-input" placeholder="ABCD12345E" maxlength="10" style="text-transform:uppercase"></div>
+        <div class="cf-field"><label for="id_doc_tan_card">TAN Card</label><input type="file" name="doc_tan_card" id="id_doc_tan_card" class="cf-input" accept=".pdf,.jpg,.jpeg,.png"></div>
+        <div class="cf-field"><label for="id_aoa">AOA reference / number</label><input type="text" name="aoa_number" id="id_aoa" class="cf-input" placeholder="Articles of Association ref."></div>
+        <div class="cf-field"><label for="id_doc_aoa">Articles of Association (AOA)</label><input type="file" name="doc_aoa" id="id_doc_aoa" class="cf-input" accept=".pdf,.jpg,.jpeg,.png"></div>
+      </div>
+
+      <div id="path-small" class="path-block" style="display:none">
+        <div class="cf-field"><label for="id_doc_gumasta">Gumasta Dhara / Shop Act licence</label><input type="file" name="doc_gumasta" id="id_doc_gumasta" class="cf-input" accept=".pdf,.jpg,.jpeg,.png"></div>
+        <div class="cf-field"><label for="id_doc_udyam">Udyam Certificate</label><input type="file" name="doc_udyam" id="id_doc_udyam" class="cf-input" accept=".pdf,.jpg,.jpeg,.png"></div>
+      </div>
 
       <div class="cf-foot-note" style="margin:.2rem 0 1rem"><svg class="i"><use href="#ic-shield"/></svg>You can browse auctions immediately. Bidding unlocks once verification is approved.</div>
       <button type="submit" class="cf-btn cf-btn-primary" style="width:100%"><svg class="i"><use href="#ic-check"/></svg>Submit for verification</button>
@@ -57,4 +70,27 @@
   </div>
 
 </div></div></main>
+
+<script>
+// Reveal only the chosen path's fields; toggle `required` so hidden inputs never block submit.
+(function () {
+  var radios = document.querySelectorAll('input[name="path"]');
+  function showPath() {
+    var sel = document.querySelector('input[name="path"]:checked');
+    var val = sel ? sel.value : '';
+    ['formal', 'small'].forEach(function (p) {
+      var block = document.getElementById('path-' + p);
+      if (!block) return;
+      var on = (p === val);
+      block.style.display = on ? 'block' : 'none';
+      block.querySelectorAll('input').forEach(function (inp) {
+        if (on) inp.setAttribute('required', 'required');
+        else inp.removeAttribute('required');
+      });
+    });
+  }
+  radios.forEach(function (r) { r.addEventListener('change', showPath); });
+  showPath();
+})();
+</script>
 {% endblock %}

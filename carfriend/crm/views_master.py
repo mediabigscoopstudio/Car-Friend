@@ -136,10 +136,15 @@ def master_dealers(request):
 def master_dealer_detail(request, dealer_id):
     dealer = get_object_or_404(DealerProfile, id=dealer_id)
     bids = Bid.objects.filter(dealer=dealer.user).select_related('vehicle').order_by('-created_at')
+    # Latest verification → the Re-register entry point for grandfathered/approved dealers.
+    from accounts.models import DealerVerification
+    verification = (DealerVerification.objects
+                    .filter(dealer=dealer.user).order_by('-submitted_at').first())
     return render(request, 'master/dealer_detail.html', {
         'active': 'dealers',
         'dealer': dealer,
         'bids':   bids,
+        'verification': verification,
     })
 
 

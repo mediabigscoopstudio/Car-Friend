@@ -29,12 +29,6 @@
         <div class="cf-field" style="flex:1 1 200px"><label for="id_gstin">GSTIN</label><input class="cf-input" id="id_gstin" name="gstin" type="text" maxlength="20" value="{{ dp.gstin }}" style="text-transform:uppercase"></div>
         <div class="cf-field" style="flex:1 1 200px"><label for="id_city">City</label><input class="cf-input" id="id_city" name="city" type="text" maxlength="120" value="{{ dp.city }}"></div>
       </div>
-      <div class="d-flex" style="gap:.9rem;flex-wrap:wrap">
-        <div class="cf-field" style="flex:1 1 160px"><label for="id_bmin">Min budget (₹)</label><input class="cf-input" id="id_bmin" name="budget_min" type="number" min="0" value="{{ dp.budget_min }}"></div>
-        <div class="cf-field" style="flex:1 1 160px"><label for="id_bmax">Max budget (₹)</label><input class="cf-input" id="id_bmax" name="budget_max" type="number" min="0" value="{{ dp.budget_max }}"></div>
-      </div>
-      <div class="cf-field"><label for="id_brand">Brands of interest</label><input class="cf-input" id="id_brand" name="brand_interest" type="text" maxlength="255" value="{{ dp.brand_interest }}" placeholder="e.g. Maruti, Hyundai, Tata"></div>
-
       <div style="display:flex;gap:.65rem;margin-top:.3rem">
         <button type="submit" class="cf-btn cf-btn-primary"><svg class="i"><use href="#ic-check"/></svg>Save details</button>
         <a href="{% url 'profile' %}" class="cf-btn cf-btn-ghost">Cancel</a>

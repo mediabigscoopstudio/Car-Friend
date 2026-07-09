@@ -13,18 +13,16 @@
 <div class="panel">
   <h2>Dealers <span style="font-weight:400;color:var(--cf-slate);font-size:12px">· read-only</span></h2>
   <table>
-    <thead><tr><th>Dealership</th><th>City</th><th>Brand interest</th><th>Budget</th><th>Sales associate</th></tr></thead>
+    <thead><tr><th>Dealership</th><th>City</th><th>Sales associate</th></tr></thead>
     <tbody>
       {% for r in rows %}
       <tr>
         <td class="car">{{ r.dealership }}</td>
         <td>{{ r.city|default:"—" }}</td>
-        <td>{{ r.brand|default:"—" }}</td>
-        <td>{{ r.budget }}</td>
         <td>{{ r.associate }}</td>
       </tr>
       {% empty %}
-      <tr><td colspan="5" class="empty">No dealers found.</td></tr>
+      <tr><td colspan="3" class="empty">No dealers found.</td></tr>
       {% endfor %}
     </tbody>
   </table>

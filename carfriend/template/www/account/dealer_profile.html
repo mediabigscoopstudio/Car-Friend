@@ -49,9 +49,8 @@
       <div style="flex:1 1 auto;min-width:0">
         <div style="font-weight:800;font-size:1.02rem">Business details</div>
         <div style="color:var(--cf-muted);font-size:.86rem;margin-top:.15rem">
-          {% if dp.gstin %}GST {{ dp.gstin }}{% else %}GST not added{% endif %}{% if dp.city %} · {{ dp.city }}{% endif %}{% if dp.budget_max %} · Budget up to ₹{{ dp.budget_max }}{% endif %}
+          {% if dp.gstin %}GST {{ dp.gstin }}{% else %}GST not added{% endif %}{% if dp.city %} · {{ dp.city }}{% endif %}
         </div>
-        {% if dp.brand_interest %}<div style="color:var(--cf-muted);font-size:.82rem;margin-top:.2rem">Interested in: {{ dp.brand_interest }}</div>{% endif %}
       </div>
       <a href="{% url 'profile_edit' %}" class="cf-btn cf-btn-ghost">Edit</a>
     </div>

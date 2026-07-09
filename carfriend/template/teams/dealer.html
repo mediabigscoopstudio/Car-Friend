@@ -7,8 +7,6 @@
 <div class="kpi-grid">
   <div class="kpi-card"><div class="label">Dealership</div><div class="value" style="font-size:18px">{{ d.dealership_name }}</div></div>
   <div class="kpi-card"><div class="label">City</div><div class="value" style="font-size:16px">{{ d.city|default:"—" }}</div></div>
-  <div class="kpi-card"><div class="label">Budget</div><div class="value" style="font-size:14px">₹{{ d.budget_min|floatformat:0 }}–₹{{ d.budget_max|floatformat:0 }}</div></div>
-  <div class="kpi-card"><div class="label">Brand Interest</div><div class="value" style="font-size:14px">{{ d.brand_interest|default:"—" }}</div></div>
 </div>
 
 <!-- Comm log -->

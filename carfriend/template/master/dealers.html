@@ -9,7 +9,7 @@
 <div class="table-wrap">
   <table>
     <thead>
-      <tr><th>Dealership</th><th>Email</th><th>City</th><th>GST</th><th>Budget Range</th><th>Verified</th><th>Joined</th><th></th></tr>
+      <tr><th>Dealership</th><th>Email</th><th>City</th><th>GST</th><th>Verified</th><th>Joined</th><th></th></tr>
     </thead>
     <tbody>
       {% for dealer in dealers %}
@@ -18,17 +18,12 @@
         <td><a href="mailto:{{ dealer.user.email }}" style="color:var(--brand)">{{ dealer.user.email }}</a></td>
         <td>{{ dealer.city|default:"—" }}</td>
         <td style="font-family:monospace;font-size:12px">{{ dealer.gstin|default:"—" }}</td>
-        <td style="font-size:12px">
-          {% if dealer.budget_min or dealer.budget_max %}
-          &#8377;{{ dealer.budget_min|default:"0" }} – &#8377;{{ dealer.budget_max|default:"0" }}
-          {% else %}—{% endif %}
-        </td>
         <td>{% if dealer.is_verified %}<span class="pill pill-green">Verified</span>{% else %}<span class="pill pill-red">Pending</span>{% endif %}</td>
         <td style="color:var(--text-2);font-size:12px">{{ dealer.created_at|date:"d M Y" }}</td>
         <td><a href="/dealers/{{ dealer.id }}/" class="btn btn-secondary btn-sm">View</a></td>
       </tr>
       {% empty %}
-      <tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-2)">No dealers registered yet</td></tr>
+      <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-2)">No dealers registered yet</td></tr>
       {% endfor %}
     </tbody>
   </table>

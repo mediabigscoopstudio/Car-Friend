@@ -72,8 +72,7 @@ class Command(BaseCommand):
         ]):
             d = _user(uname, Role.DEALER, name, internal=False, phone=f"982000000{i}")
             DealerProfile.objects.get_or_create(user=d, defaults=dict(
-                dealership_name=name, city=city, budget_min=300000,
-                budget_max=1500000, brand_interest="Hatchback, SUV"))
+                dealership_name=name, city=city))
             dealers.append(d)
 
         # A winner-declined OCB sitting in the Sales Head inbox.

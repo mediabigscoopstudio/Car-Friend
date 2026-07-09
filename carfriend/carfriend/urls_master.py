@@ -30,6 +30,7 @@ urlpatterns = [
     path("dealer_verifications", a.dealer_verifications, name="dealer_verifications"),
     path("dealer_verifications/<int:id>/", a.dealer_verification_detail, name="dealer_verification_detail"),
     path("dealer_verifications/<int:id>/decide", a.dealer_verification_decide, name="dealer_verification_decide"),
+    path("dealer_verifications/<int:id>/edit", a.dealer_verification_edit, name="dealer_verification_edit"),
     path("dealer_document/<int:doc_id>/", a.dealer_document_download, name="dealer_document_download"),
     # payments
     path("payments_pending", p.payments_pending, name="payments_pending"),

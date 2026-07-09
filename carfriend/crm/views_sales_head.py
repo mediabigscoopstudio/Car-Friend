@@ -123,8 +123,6 @@ def sh_dealers(request):
         rows.append({
             "dealership": p.dealership_name if p else (d.get_full_name() or d.username),
             "city": (p.city if p else "") or d.city,
-            "brand": p.brand_interest if p else "",
-            "budget": f"₹{p.budget_min:,}–₹{p.budget_max:,}" if p and (p.budget_min or p.budget_max) else "—",
             "associate": (assoc.get_full_name() or assoc.username) if assoc else "—",
         })
     return render(request, "teams/sales_head/dealers.html", {"rows": rows, "q": q})

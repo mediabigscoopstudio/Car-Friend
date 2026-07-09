@@ -1,0 +1,78 @@
+{% extends "base/base_web.html" %}
+{% block title %}Re-register Dealer · Master{% endblock %}
+{% block page_title %}Re-register dealer verification{% endblock %}
+
+{% block content %}
+<style>
+  .dv-form label{display:block;font-size:12px;font-weight:600;color:var(--text-2);margin:12px 0 4px}
+  .dv-form input:not([type=radio]){width:100%;max-width:420px;padding:8px 10px;border:1px solid var(--border,#d9d9d9);border-radius:6px;font-size:14px}
+  .dv-form .row{display:flex;gap:18px;flex-wrap:wrap}
+  .dv-form .row > div{flex:1 1 200px}
+  .dv-note{font-size:12px;color:var(--text-2);margin-top:4px}
+  .dv-err{padding:10px 14px;margin-bottom:12px;color:#B42318;background:#FCE8E8;border-radius:8px}
+</style>
+
+<p style="margin:0 0 14px"><a href="{% url 'dealer_verification_detail' rec.id %}">← Back to {{ rec.business_name }}</a></p>
+{% if error %}<div class="dv-err">{{ error }}</div>{% endif %}
+<div class="card" style="padding:16px;margin-bottom:14px;color:var(--text-2);font-size:13px">Editing here <strong>resets the record to Pending</strong> for re-approval. Re-uploading documents is optional — leave a file blank to keep the one on file.</div>
+
+<form method="post" action="{% url 'dealer_verification_edit' rec.id %}" enctype="multipart/form-data" class="dv-form" id="dv-form">
+  {% csrf_token %}
+
+  <div class="section-header"><h2>Core details</h2></div>
+  <label>Legal business name</label><input type="text" name="business_name" value="{{ rec.business_name }}" required>
+  <div class="row">
+    <div><label>City</label><input type="text" name="city" value="{{ rec.city }}" required></div>
+    <div><label>Official mobile</label><input type="tel" name="official_mobile" value="{{ rec.official_mobile }}" maxlength="10" required></div>
+  </div>
+  <div class="row">
+    <div><label>Official email</label><input type="email" name="official_email" value="{{ rec.official_email }}" required></div>
+    <div><label>Aadhaar number</label><input type="text" name="aadhaar_number" value="{{ rec.aadhaar_number }}" maxlength="12" inputmode="numeric" required></div>
+  </div>
+
+  <div class="section-header" style="margin-top:18px"><h2>Registration path</h2></div>
+  <label style="display:inline-flex;gap:8px;align-items:center;font-weight:400"><input type="radio" name="path" value="formal" {% if rec.path == 'formal' %}checked{% endif %} required> I have GSTIN (Path 1)</label>
+  <label style="display:inline-flex;gap:8px;align-items:center;font-weight:400;margin-left:20px"><input type="radio" name="path" value="small" {% if rec.path == 'small' %}checked{% endif %}> I have Udyam + Gumasta (Path 2)</label>
+
+  <div id="path-formal" class="path-block" style="display:none">
+    <label>GSTIN</label><input type="text" name="gstin" value="{{ rec.gstin }}" maxlength="15" style="text-transform:uppercase">
+    <label>GST Certificate (re-upload)</label><input type="file" name="doc_gst_certificate" accept=".pdf,.jpg,.jpeg,.png">{% if 'gst_certificate' in existing_docs %}<div class="dv-note">A file is on record.</div>{% endif %}
+    <label>PAN</label><input type="text" name="pan_number" value="{{ rec.pan_number }}" maxlength="10" style="text-transform:uppercase">
+    <label>PAN Card (re-upload)</label><input type="file" name="doc_pan_card" accept=".pdf,.jpg,.jpeg,.png">{% if 'pan_card' in existing_docs %}<div class="dv-note">A file is on record.</div>{% endif %}
+    <label>TAN</label><input type="text" name="tan_number" value="{{ rec.tan_number }}" maxlength="10" style="text-transform:uppercase">
+    <label>TAN Card (re-upload)</label><input type="file" name="doc_tan_card" accept=".pdf,.jpg,.jpeg,.png">{% if 'tan_card' in existing_docs %}<div class="dv-note">A file is on record.</div>{% endif %}
+    <label>AOA reference / number</label><input type="text" name="aoa_number" value="{{ rec.aoa_number }}">
+    <label>Articles of Association (re-upload)</label><input type="file" name="doc_aoa" accept=".pdf,.jpg,.jpeg,.png">{% if 'aoa' in existing_docs %}<div class="dv-note">A file is on record.</div>{% endif %}
+  </div>
+
+  <div id="path-small" class="path-block" style="display:none">
+    <label>Gumasta Dhara / Shop Act licence (re-upload)</label><input type="file" name="doc_gumasta" accept=".pdf,.jpg,.jpeg,.png">{% if 'gumasta' in existing_docs %}<div class="dv-note">A file is on record.</div>{% endif %}
+    <label>Udyam Certificate (re-upload)</label><input type="file" name="doc_udyam" accept=".pdf,.jpg,.jpeg,.png">{% if 'udyam' in existing_docs %}<div class="dv-note">A file is on record.</div>{% endif %}
+  </div>
+
+  <div style="margin-top:18px"><button type="submit" class="btn btn-primary">Save &amp; set to pending</button></div>
+</form>
+
+<script>
+// Reveal only the chosen path's fields. Text numbers become required for the active path;
+// file re-uploads stay optional.
+(function () {
+  function showPath() {
+    var sel = document.querySelector('input[name="path"]:checked');
+    var val = sel ? sel.value : '';
+    ['formal', 'small'].forEach(function (p) {
+      var block = document.getElementById('path-' + p);
+      if (!block) return;
+      var on = (p === val);
+      block.style.display = on ? 'block' : 'none';
+      block.querySelectorAll('input:not([type=file])').forEach(function (inp) {
+        if (on) inp.setAttribute('required', 'required');
+        else inp.removeAttribute('required');
+      });
+    });
+  }
+  document.querySelectorAll('input[name="path"]').forEach(function (r) { r.addEventListener('change', showPath); });
+  showPath();
+})();
+</script>
+{% endblock %}

@@ -125,10 +125,6 @@ class DealerProfile(models.Model):
     dealership_name = models.CharField(max_length=200)
     gstin           = models.CharField(max_length=20, blank=True)
     city            = models.CharField(max_length=120, blank=True)
-    budget_min      = models.PositiveIntegerField(default=0)
-    budget_max      = models.PositiveIntegerField(default=0)
-    brand_interest  = models.CharField(max_length=255, blank=True)
-    preferences     = models.TextField(blank=True)
     is_banned       = models.BooleanField(default=False)
     status          = models.CharField(max_length=20, default="Enabled")
     # Notification channel preferences.
@@ -157,11 +153,25 @@ class DealerVerification(models.Model):
         APPROVED = "approved", "Approved"
         REJECTED = "rejected", "Rejected"
 
-    dealer        = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
-                                      related_name="dealer_verifications")
-    business_name = models.CharField(max_length=200)
-    gstin         = models.CharField(max_length=20)
-    status        = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
+    class Path(models.TextChoices):
+        FORMAL = "formal", "Path 1 — formal business (GSTIN)"
+        SMALL  = "small",  "Path 2 — small business (Udyam + Gumasta)"
+
+    dealer          = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                                        related_name="dealer_verifications")
+    business_name   = models.CharField(max_length=200)
+    # Compulsory core (two-path rework). blank=True keeps grandfathered rows valid.
+    city            = models.CharField(max_length=120, blank=True)
+    official_mobile = models.CharField(max_length=15, blank=True)
+    official_email  = models.EmailField(blank=True)
+    aadhaar_number  = models.CharField(max_length=12, blank=True)   # admin-verified; MASTER-ONLY
+    path            = models.CharField(max_length=10, choices=Path.choices, blank=True)
+    # Path 1 (formal) numbers — the matching documents live on DealerDocument.
+    gstin           = models.CharField(max_length=20, blank=True)
+    pan_number      = models.CharField(max_length=20, blank=True)
+    tan_number      = models.CharField(max_length=20, blank=True)
+    aoa_number      = models.CharField(max_length=40, blank=True)
+    status          = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
     reject_reason = models.TextField(blank=True)
     submitted_at  = models.DateTimeField(auto_now_add=True)
     reviewed_at   = models.DateTimeField(null=True, blank=True)
@@ -177,6 +187,13 @@ class DealerVerification(models.Model):
     @property
     def is_approved(self):
         return self.status == self.Status.APPROVED
+
+    @property
+    def aadhaar_masked(self):
+        """Aadhaar shown only as last-4 (dealer-facing safety). Master reads the raw
+        field directly; this is never used to render on a dealer surface."""
+        d = "".join(c for c in (self.aadhaar_number or "") if c.isdigit())
+        return ("XXXX XXXX " + d[-4:]) if len(d) >= 4 else ""
 
 
 class DealerDocument(models.Model):

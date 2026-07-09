@@ -13,8 +13,17 @@
 </div>
 
 <div class="card" style="padding:16px;margin-bottom:18px">
-  <p><strong>Dealer:</strong> {{ rec.dealer }} &nbsp;·&nbsp; {{ rec.dealer.email }}</p>
-  <p><strong>GSTIN:</strong> <span style="font-family:monospace">{{ rec.gstin }}</span></p>
+  <p><strong>Dealer:</strong> {{ rec.dealer }} &nbsp;·&nbsp; login {{ rec.dealer.email }}</p>
+  <p><strong>City:</strong> {{ rec.city|default:"—" }}</p>
+  <p><strong>Official mobile:</strong> {{ rec.official_mobile|default:"—" }} &nbsp;·&nbsp; <strong>Official email:</strong> {{ rec.official_email|default:"—" }}</p>
+  <p><strong>Aadhaar number:</strong> <span style="font-family:monospace">{{ rec.aadhaar_number|default:"—" }}</span></p>
+  <p><strong>Registration path:</strong> {% if rec.path %}{{ rec.get_path_display }}{% else %}<span style="color:var(--text-2)">— (grandfathered / not set)</span>{% endif %}</p>
+  {% if rec.path == 'formal' or rec.gstin or rec.pan_number or rec.tan_number or rec.aoa_number %}
+  <p style="margin-top:6px"><strong>GSTIN:</strong> <span style="font-family:monospace">{{ rec.gstin|default:"—" }}</span>
+     &nbsp;·&nbsp; <strong>PAN:</strong> <span style="font-family:monospace">{{ rec.pan_number|default:"—" }}</span>
+     &nbsp;·&nbsp; <strong>TAN:</strong> <span style="font-family:monospace">{{ rec.tan_number|default:"—" }}</span>
+     &nbsp;·&nbsp; <strong>AOA:</strong> <span style="font-family:monospace">{{ rec.aoa_number|default:"—" }}</span></p>
+  {% endif %}
   <p><strong>Submitted:</strong> {{ rec.submitted_at|date:"d M Y, H:i" }}</p>
   {% if rec.reviewed_by %}<p><strong>Reviewed by:</strong> {{ rec.reviewed_by }} on {{ rec.reviewed_at|date:"d M Y" }}</p>{% endif %}
 </div>
@@ -37,9 +46,9 @@
   </table>
 </div>
 
-{% if rec.status == 'pending' %}
-<div class="section-header"><h2>Decision</h2></div>
+<div class="section-header"><h2>Actions</h2></div>
 <div class="card" style="padding:16px;display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start">
+  {% if rec.status == 'pending' %}
   <form method="post" action="/dealer_verifications/{{ rec.id }}/decide">
     {% csrf_token %}
     <input type="hidden" name="decision" value="approve">
@@ -51,8 +60,10 @@
     <textarea name="reason" placeholder="Reason for rejection (required — shown to the dealer)" rows="2" style="width:280px;padding:8px"></textarea>
     <button type="submit" class="btn btn-danger">Reject</button>
   </form>
+  {% endif %}
+  <a href="{% url 'dealer_verification_edit' rec.id %}" class="btn btn-secondary">Re-register / edit fields &amp; documents</a>
 </div>
-{% elif rec.status == 'rejected' %}
+{% if rec.status == 'rejected' %}
 <div class="card" style="padding:16px;margin-top:12px"><strong>Rejection reason:</strong> {{ rec.reject_reason }}</div>
 {% endif %}
 

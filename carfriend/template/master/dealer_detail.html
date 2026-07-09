@@ -34,12 +34,14 @@
         <div><span style="color:var(--text-2)">Email: </span><a href="mailto:{{ dealer.user.email }}" style="color:var(--brand)">{{ dealer.user.email }}</a></div>
         <div><span style="color:var(--text-2)">City: </span>{{ dealer.city|default:"—" }}</div>
         <div><span style="color:var(--text-2)">GST: </span><code>{{ dealer.gstin|default:"—" }}</code></div>
-        <div><span style="color:var(--text-2)">Budget: </span>&#8377;{{ dealer.budget_min|default:0 }} – &#8377;{{ dealer.budget_max|default:0 }}</div>
-        <div><span style="color:var(--text-2)">Brands: </span>{{ dealer.brand_interest|default:"—" }}</div>
         <div><span style="color:var(--text-2)">Status: </span>{% if dealer.is_verified %}<span class="pill pill-green">Verified</span>{% else %}<span class="pill pill-red">Pending</span>{% endif %}</div>
         <div><span style="color:var(--text-2)">Joined: </span>{{ dealer.created_at|date:"d M Y" }}</div>
       </div>
     </div>
+    {% if verification %}
+    <a href="{% url 'dealer_verification_edit' verification.id %}" class="btn btn-secondary btn-sm" style="display:block;text-align:center;margin-top:8px">Edit verification / Re-register</a>
+    <a href="{% url 'dealer_verification_detail' verification.id %}" class="btn btn-secondary btn-sm" style="display:block;text-align:center;margin-top:6px">View verification ({{ verification.get_status_display }})</a>
+    {% endif %}
     <a href="/dealers" class="btn btn-secondary btn-sm" style="display:block;text-align:center;margin-top:8px">&larr; Dealer Network</a>
   </div>
 
