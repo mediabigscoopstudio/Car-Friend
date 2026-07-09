@@ -1,6 +1,26 @@
-import requests
+import json
+import urllib.error
+import urllib.request
+
 from django.conf import settings
 from .models import Notification
+
+
+def _post_json(url, payload, headers=None):
+    """POST JSON via the built-in urllib (the VPS's `requests` install is broken, dying
+    with ConnectionResetError(104); urllib works). Returns True on a 2xx response, False on
+    any HTTP error / connection failure — mirroring the old `requests` r.ok + try/except."""
+    data = json.dumps(payload).encode()
+    hdrs = {"Content-Type": "application/json", "User-Agent": "CarFriend/1.0"}
+    if headers:
+        hdrs.update(headers)
+    req = urllib.request.Request(url, data=data, headers=hdrs, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            status = getattr(resp, "status", None) or resp.getcode()
+            return 200 <= int(status) < 300
+    except Exception:
+        return False
 
 EVENT_CHANNELS = {
     "task_assigned":  ["inapp", "push"],
@@ -39,47 +59,33 @@ def notify(recipient, event, title, body="", url="", channels=None):
 def _send_push(token, title, body, url):
     if not settings.FCM_SERVER_KEY:
         return False
-    try:
-        r = requests.post(
-            "https://fcm.googleapis.com/fcm/send", timeout=8,
-            headers={"Authorization": f"key={settings.FCM_SERVER_KEY}",
-                     "Content-Type": "application/json"},
-            json={"to": token,
-                  "notification": {"title": title, "body": body},
-                  "data": {"url": url}},
-        )
-        return r.ok
-    except Exception:
-        return False
+    return _post_json(
+        "https://fcm.googleapis.com/fcm/send",
+        {"to": token,
+         "notification": {"title": title, "body": body},
+         "data": {"url": url}},
+        headers={"Authorization": f"key={settings.FCM_SERVER_KEY}"},
+    )
 
 
 def _send_whatsapp(phone, text):
     wa = settings.WHATSAPP
     if not wa["TOKEN"]:
         return False
-    try:
-        r = requests.post(
-            f"https://graph.facebook.com/v19.0/{wa['PHONE_ID']}/messages", timeout=8,
-            headers={"Authorization": f"Bearer {wa['TOKEN']}",
-                     "Content-Type": "application/json"},
-            json={"messaging_product": "whatsapp", "to": phone,
-                  "type": "text", "text": {"body": text}},
-        )
-        return r.ok
-    except Exception:
-        return False
+    return _post_json(
+        f"https://graph.facebook.com/v19.0/{wa['PHONE_ID']}/messages",
+        {"messaging_product": "whatsapp", "to": phone,
+         "type": "text", "text": {"body": text}},
+        headers={"Authorization": f"Bearer {wa['TOKEN']}"},
+    )
 
 
 def _send_sms(phone, text):
     if not settings.SMS["API_KEY"]:
         return False
-    try:
-        r = requests.post(
-            "https://api.smsgateway.example/send", timeout=8,
-            json={"apikey": settings.SMS["API_KEY"],
-                  "sender": settings.SMS["SENDER"],
-                  "to": phone, "message": text},
-        )
-        return r.ok
-    except Exception:
-        return False
+    return _post_json(
+        "https://api.smsgateway.example/send",
+        {"apikey": settings.SMS["API_KEY"],
+         "sender": settings.SMS["SENDER"],
+         "to": phone, "message": text},
+    )
