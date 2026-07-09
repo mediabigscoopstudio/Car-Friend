@@ -23,6 +23,7 @@ import urllib.error
 import urllib.request
 
 from decouple import config
+from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,16 @@ logger = logging.getLogger(__name__)
 SUREPASS_BASE = config("SUREPASS_BASE_URL", default="https://sandbox.surepass.app")
 RC_ENDPOINT = "/api/v1/rc/rc-full"
 TIMEOUT_SECONDS = 8
+
+# Cache successful RC lookups by plate for 24h — SurePass rate-limits rapid repeat calls
+# and a plate's RC data doesn't change within a day. Only successful lookups are cached.
+RC_CACHE_TTL = 60 * 60 * 24  # 24 hours
+
+
+def _rc_cache_key(plate):
+    """Normalise the plate (uppercase, alphanumerics only) so 'MH01 AB 1234' and
+    'MH01AB1234' share one cache entry."""
+    return "rc_lookup:" + "".join(c for c in (plate or "").upper() if c.isalnum())
 
 
 class SurepassError(Exception):
@@ -115,6 +126,14 @@ def _call_surepass_rc(plate_number):
 
     Raises a SurepassError subclass on any failure.
     """
+    # Serve a previously-successful lookup from cache — no SurePass call (avoids the
+    # production rate-limit / connection-reset on rapid repeat lookups).
+    cache_key = _rc_cache_key(plate_number)
+    cached = cache.get(cache_key)
+    if cached is not None:
+        logger.info("Surepass RC served from cache")
+        return cached
+
     token = config("SUREPASS_TOKEN", default="")
     if not token:
         logger.error("SUREPASS_TOKEN is not set; RC lookup unavailable.")
@@ -164,6 +183,9 @@ def _call_surepass_rc(plate_number):
     data = (payload or {}).get("data") or {}
     if not data:
         raise SurepassNotFound("No vehicle found for that number plate.")
+    # Only reached on a successful, non-empty lookup — cache it for 24h. Every failure
+    # path above raises before this line, so failures are never cached.
+    cache.set(cache_key, data, RC_CACHE_TTL)
     return data
 
 

@@ -298,6 +298,16 @@ CF_OTP_TEST_CODE      = config("CF_OTP_TEST_CODE", default="000000")
 CF_FAST2SMS_API_KEY   = config("CF_FAST2SMS_API_KEY", default="")
 CF_FAST2SMS_SENDER_ID = config("CF_FAST2SMS_SENDER_ID", default="CRFRND")
 
+# In-process cache (no Redis). Backs the 24h SurePass RC-lookup cache (www/services.py)
+# and the existing OTP/estimate rate limiters (www/otp.py, www/views.py). Point this at
+# Redis or the DB cache later if a cross-worker cache is needed.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "carfriend-local",
+    }
+}
+
 NOTIFY_SYNC_FALLBACK = True
 
 # Default primary key field type
