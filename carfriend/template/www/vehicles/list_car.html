@@ -48,7 +48,13 @@
   .estimate-car .ec-name{font-weight:800;color:var(--cf-ink);font-size:.98rem}
   .estimate-car .ec-meta{font-size:.8rem;color:var(--cf-muted);margin-top:.15rem}
   .estimate-note{font-size:.82rem;color:var(--cf-ink-soft);text-align:center;line-height:1.6}
-  @media(prefers-reduced-motion:reduce){.spinner{animation:none}}
+  /* Plate-lookup loading banner — RC calls hit government DBs and take 3–8s, so make the wait feel alive. */
+  .lc-loading{display:none;align-items:center;gap:.65rem;background:var(--cf-green-050);border:1px solid var(--cf-green-100);border-radius:12px;padding:.8rem .95rem;margin-top:.85rem;color:var(--cf-green);font-size:.88rem;font-weight:600;line-height:1.35}
+  .lc-loading.visible{display:flex}
+  .lc-spin{width:22px;height:22px;flex:0 0 auto;animation:lcspin .9s linear infinite}
+  .lc-spin circle{stroke:var(--cf-green-bright);opacity:.22}
+  .lc-spin path{stroke:var(--cf-green-bright)}
+  @media(prefers-reduced-motion:reduce){.spinner,.lc-spin{animation:none}}
 </style>
 {% endblock %}
 
@@ -92,6 +98,10 @@
         <input type="text" class="plate-input" id="plateInput" placeholder="e.g. GJ 05 MK 2024" maxlength="15" autocomplete="off">
       </div>
       <button class="cf-btn cf-btn-primary lc-btn" id="btnLookup" onclick="doLookup()"><svg class="i"><use href="#ic-search"/></svg>Get car details</button>
+      <div class="lc-loading" id="lookupLoading" role="status" aria-live="polite">
+        <svg class="lc-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-width="3"/><path d="M21 12a9 9 0 0 0-9-9" stroke-width="3" stroke-linecap="round"/></svg>
+        <span>Fetching vehicle details from government database…</span>
+      </div>
       <p class="cf-help" style="text-align:center;margin-top:.8rem;display:flex;align-items:center;justify-content:center;gap:.35rem"><svg class="i i-sm" style="stroke:var(--cf-green-bright)"><use href="#ic-shield"/></svg>Your plate is only used to fetch vehicle data, never shared publicly.</p>
       <div class="err-strip" id="lookupError"><svg class="i"><use href="#ic-warn"/></svg><span id="lookupErrorMsg"></span></div>
     </div>
@@ -249,22 +259,34 @@
   }
   function normPlate(p) { return (p || '').toUpperCase().replace(/[\s-]/g, ''); }
 
+  // Toggle the whole lookup into/out of its loading state: disable the button AND the plate
+  // input, swap the button label, and show/hide the "government database" status banner.
+  function setLoading(on) {
+    var btn = $('btnLookup');
+    btn.disabled = on;
+    $('plateInput').disabled = on;
+    btn.innerHTML = on
+      ? '<span class="spinner"></span> Fetching…'
+      : '<svg class="i"><use href="#ic-search"/></svg>Get car details';
+    $('lookupLoading').classList.toggle('visible', on);
+  }
+
   window.doLookup = function () {
     var plate = normPlate($('plateInput').value.trim());
     $('lookupError').classList.remove('visible');
     $('plateWrap').classList.remove('is-invalid');
     if (plate.length < 6) { showLookupError('Please enter a valid number plate (e.g. GJ05MK2024).'); return; }
-    var btn = $('btnLookup'); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Fetching…';
+    setLoading(true);
     api('/vehicles/vahaan-lookup/', { plate_number: plate }).then(function (res) {
-      btn.disabled = false; btn.innerHTML = 'Get car details';
+      setLoading(false);
       var d = res.data;
       if (!d.found) { showLookupError(d.error || 'Vehicle not found. Please check the number plate.'); return; }
       carData = d;
       renderDetails(d);
       goStep(2);
     }).catch(function () {
-      btn.disabled = false; btn.innerHTML = 'Get car details';
-      showLookupError('Network error. Please try again.');
+      setLoading(false);
+      showLookupError('Could not connect. Please try again.');
     });
   };
 

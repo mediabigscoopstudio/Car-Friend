@@ -32,6 +32,9 @@ logger = logging.getLogger(__name__)
 SUREPASS_BASE = config("SUREPASS_BASE_URL", default="https://sandbox.surepass.app")
 RC_ENDPOINT = "/api/v1/rc/rc-full"
 TIMEOUT_SECONDS = 8
+# RC lookups hit government DBs and routinely take 3–8s (up to ~15s), so they get their own,
+# longer budget. Only the RC call uses this; PAN/Aadhaar/challan/e-Sign keep TIMEOUT_SECONDS.
+RC_TIMEOUT_SECONDS = 30
 
 # Cache successful RC lookups by plate for 24h — SurePass rate-limits rapid repeat calls
 # and a plate's RC data doesn't change within a day. Only successful lookups are cached.
@@ -151,7 +154,7 @@ def _call_surepass_rc(plate_number):
     )
 
     try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as resp:
+        with urllib.request.urlopen(req, timeout=RC_TIMEOUT_SECONDS) as resp:
             status = getattr(resp, "status", None) or resp.getcode()
             raw = resp.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
@@ -165,7 +168,7 @@ def _call_surepass_rc(plate_number):
             raise SurepassNotFound("No vehicle found for that number plate.") from None
         raise SurepassError("RC lookup failed. Please try again.") from None
     except (socket.timeout, TimeoutError):
-        logger.warning("Surepass RC timed out after %ss", TIMEOUT_SECONDS)
+        logger.warning("Surepass RC timed out after %ss", RC_TIMEOUT_SECONDS)
         raise SurepassTimeout("RC lookup timed out.") from None
     except urllib.error.URLError as exc:
         logger.warning("Surepass RC connection error: %s", exc.reason)
