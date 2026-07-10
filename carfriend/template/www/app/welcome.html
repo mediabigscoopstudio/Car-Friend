@@ -22,9 +22,10 @@ tokens from carfriend-ui.css. Live-auction count + stats are REAL DB values.
   .aw-hero{position:relative;padding:24px 22px 26px;border-radius:22px;color:#fff;overflow:hidden;
     background:radial-gradient(120% 90% at 90% -10%,rgba(57,217,138,.35),transparent 55%),linear-gradient(160deg,#187a4d 0%,#0f4a30 60%,#0b3a26 100%);
     box-shadow:0 18px 40px -18px rgba(9,45,28,.7);border:1px solid rgba(255,255,255,.1)}
-  .aw-hero .row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  /* .aw-row (not .row) — Bootstrap's global .row > * would force width:100% on the pill. */
+  .aw-hero .aw-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
   .aw-kicker{color:rgba(255,255,255,.72);font-size:11px;font-weight:800;letter-spacing:.11em;text-transform:uppercase}
-  .aw-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);color:#eaffef;font-size:11px;font-weight:800;letter-spacing:.06em;padding:5px 10px 5px 9px;border-radius:var(--cf-pill)}
+  .aw-pill{display:inline-flex;flex:0 0 auto;align-items:center;gap:6px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);color:#eaffef;font-size:11px;font-weight:800;letter-spacing:.06em;padding:5px 10px 5px 9px;border-radius:var(--cf-pill)}
   .aw-pill .rd{width:7px;height:7px;border-radius:50%;background:#ff5b5b;box-shadow:0 0 0 0 rgba(255,91,91,.7);animation:awping 1.5s infinite}
   @keyframes awping{0%{box-shadow:0 0 0 0 rgba(255,91,91,.7)}70%{box-shadow:0 0 0 8px rgba(255,91,91,0)}100%{box-shadow:0 0 0 0 rgba(255,91,91,0)}}
   .aw-hero h1{font-size:28px;font-weight:800;letter-spacing:-.03em;margin:4px 0 6px;line-height:1.08}
@@ -70,7 +71,7 @@ tokens from carfriend-ui.css. Live-auction count + stats are REAL DB values.
     </div>
 
     <div class="aw-hero">
-      <div class="row">
+      <div class="aw-row">
         <span class="aw-kicker">Buy · Sell · Auction</span>
         <span class="aw-pill"><span class="rd"></span>{% if live_count %}{{ live_count }} LIVE NOW{% else %}JOIN NOW{% endif %}</span>
       </div>
