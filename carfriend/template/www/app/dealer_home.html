@@ -1,0 +1,156 @@
+{% extends "base/base_www.html" %}
+{% comment %}
+/app/dealer/ — dealer post-login home for the WebView app. All prices are GROSS
+(straight from Auction.reserve_price / Bid.amount); no seller identity is shown.
+Additive; the /auth/dealer/dashboard/ page is untouched.
+{% endcomment %}
+{% block title %}Home — CarFriend Dealer{% endblock %}
+
+{% block extra_head %}
+<style>
+  .ah-top{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(243,247,243,.92);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--cf-line)}
+  .ah-brand{display:flex;align-items:center;gap:8px;text-decoration:none}
+  .ah-brand .mk{width:30px;height:30px;border-radius:9px;background:linear-gradient(150deg,var(--cf-green),var(--cf-green-deep));display:grid;place-items:center}
+  .ah-brand .mk svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .ah-brand b{font-size:16px;font-weight:800;letter-spacing:-.02em;color:var(--cf-ink)}
+  .ah-brand b span{color:var(--cf-green)}
+  .ah-bell{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:#fff;border:1px solid var(--cf-line);color:var(--cf-ink-soft)}
+  .ah-bell svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .ah-main{max-width:520px;margin:0 auto;padding:16px 14px 96px}
+  .ah-hi{font-size:22px;font-weight:800;letter-spacing:-.02em;color:var(--cf-ink);margin:6px 2px 14px}
+  .dh-hero{position:relative;overflow:hidden;border-radius:20px;color:#fff;padding:20px;margin-bottom:22px;
+    background:radial-gradient(120% 90% at 90% -10%,rgba(57,217,138,.3),transparent 55%),linear-gradient(160deg,#187a4d 0%,#0f4a30 60%,#0b3a26 100%);
+    box-shadow:0 16px 34px -18px rgba(9,45,28,.7);border:1px solid rgba(255,255,255,.1)}
+  .dh-hero .row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .dh-hero .kicker{color:rgba(255,255,255,.72);font-size:11px;font-weight:800;letter-spacing:.11em;text-transform:uppercase}
+  .dh-live{display:inline-flex;align-items:center;gap:6px;background:rgba(226,75,74,.18);border:1px solid rgba(255,120,118,.5);color:#ffdedd;font-size:11px;font-weight:800;letter-spacing:.08em;padding:5px 10px 5px 9px;border-radius:var(--cf-pill)}
+  .dh-live .rd{width:7px;height:7px;border-radius:50%;background:#ff5b5b;box-shadow:0 0 0 0 rgba(255,91,91,.7);animation:dhping 1.5s infinite}
+  @keyframes dhping{0%{box-shadow:0 0 0 0 rgba(255,91,91,.7)}70%{box-shadow:0 0 0 8px rgba(255,91,91,0)}100%{box-shadow:0 0 0 0 rgba(255,91,91,0)}}
+  .dh-nums{display:flex;gap:26px;margin-bottom:6px}
+  .dh-nums .num b{font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1}
+  .dh-nums .num span{display:block;font-size:11.5px;font-weight:700;color:rgba(255,255,255,.78);margin-top:3px}
+  .dh-sub{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#ffe7a6;margin-top:8px}
+  .dh-sub svg{width:14px;height:14px;stroke:#ffe7a6;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .dh-actions{display:flex;gap:10px;margin-top:16px}
+  .dh-actions .primary{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#fff;color:var(--cf-green-deep);border-radius:12px;padding:13px 12px;font-weight:800;font-size:14px;text-decoration:none}
+  .dh-actions .primary svg{width:16px;height:16px;stroke:var(--cf-green-deep);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .dh-actions .ghost{display:inline-flex;align-items:center;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.26);border-radius:12px;padding:13px 16px;font-weight:800;font-size:14px;text-decoration:none}
+  .ah-sec{display:flex;align-items:baseline;justify-content:space-between;margin:0 2px 12px}
+  .ah-sec h3{font-size:15px;font-weight:800;letter-spacing:-.01em;color:var(--cf-ink);margin:0}
+  .ah-sec a{font-size:12.5px;font-weight:800;color:var(--cf-green);text-decoration:none}
+  .dh-ac{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--cf-line);border-radius:16px;padding:12px;margin-bottom:10px;text-decoration:none;box-shadow:var(--cf-shadow-card)}
+  .dh-grade{width:48px;height:48px;border-radius:13px;flex:0 0 auto;display:grid;place-items:center;background:linear-gradient(150deg,var(--cf-green),var(--cf-green-deep));color:#fff;line-height:1}
+  .dh-grade b{font-size:17px;font-weight:800}
+  .dh-grade small{display:block;font-size:7px;font-weight:800;letter-spacing:.08em;opacity:.8;margin-top:1px}
+  .dh-ac .mid{flex:1;min-width:0}
+  .dh-nm{font-size:14px;font-weight:800;color:var(--cf-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dh-meta{display:flex;align-items:center;gap:8px;margin-top:5px;font-size:11.5px;font-weight:700;color:var(--cf-muted)}
+  .dh-meta .tmr{display:inline-flex;align-items:center;gap:4px;color:var(--cf-green-deep);background:var(--cf-green-050);border:1px solid var(--cf-green-200);padding:2px 7px;border-radius:var(--cf-pill)}
+  .dh-meta .tmr.low{color:#c0322f;background:#fdecec;border-color:#f6c9c7}
+  .dh-meta .bd{display:inline-flex;align-items:center;gap:4px}
+  .dh-meta svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .dh-bid{text-align:right;flex:0 0 auto}
+  .dh-bid .k{font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--cf-muted)}
+  .dh-bid .v{font-size:15px;font-weight:800;color:var(--cf-ink);margin-top:1px}
+  .dh-none{background:#fff;border:1px dashed var(--cf-line-strong);border-radius:16px;padding:24px 18px;text-align:center;color:var(--cf-muted);font-size:13px;font-weight:600}
+  .dh-bids{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+  .dh-bx{background:#fff;border:1px solid var(--cf-line);border-radius:14px;padding:16px;text-align:center}
+  .dh-bx b{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1}
+  .dh-bx span{display:block;font-size:11.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;margin-top:5px}
+  .dh-bx.lead b{color:var(--cf-green-bright)} .dh-bx.lead span{color:var(--cf-green-deep)}
+  .dh-bx.out b{color:#e24b4a} .dh-bx.out span{color:#b23a39}
+  .cf-tabbar{display:flex}
+</style>
+{% endblock %}
+
+{% block body %}
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="ic-arrow" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+  <symbol id="ic-home" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></symbol>
+  <symbol id="ic-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/></symbol>
+</svg>
+
+<header class="ah-top">
+  <a class="ah-brand" href="{% url 'app_home' %}"><span class="mk"><svg><use href="#ic-car"/></svg></span><b>Car<span>Friend</span></b></a>
+  <a class="ah-bell" href="{% url 'notifications_inbox' %}" aria-label="Notifications"><svg><use href="#ic-bell"/></svg></a>
+</header>
+
+<main class="ah-main">
+  <div class="ah-hi">Welcome back{% if greeting_name %}, {{ greeting_name }}{% endif %} 👋</div>
+
+  <section class="dh-hero">
+    <div class="row">
+      <span class="kicker">Live marketplace</span>
+      <span class="dh-live"><span class="rd"></span>LIVE</span>
+    </div>
+    <div class="dh-nums">
+      <div class="num"><b>{{ live_count }}</b><span>Live auctions</span></div>
+      <div class="num"><b>{{ open_ocb_count }}</b><span>Open OCBs</span></div>
+    </div>
+    {% if ending_15 %}<div class="dh-sub"><svg><use href="#ic-clock"/></svg>{{ ending_15 }} ending in 15 min</div>{% endif %}
+    <div class="dh-actions">
+      <a class="primary" href="{% url 'dealer_auction_list' %}"><svg><use href="#ic-broadcast"/></svg>Enter auctions</a>
+      <a class="ghost" href="{% url 'dealer_purchases' %}">My bids</a>
+    </div>
+  </section>
+
+  <div class="ah-sec"><h3>Ending soon</h3>{% if live_count %}<a href="{% url 'dealer_auction_list' %}">All auctions</a>{% endif %}</div>
+  {% if ending_soon %}
+    {% for s in ending_soon %}
+    <a class="dh-ac" href="{% url 'dealer_auction_room' s.id %}">
+      <span class="dh-grade"><b>{{ s.grade|default:"—" }}</b><small>GRADE</small></span>
+      <div class="mid">
+        <div class="dh-nm">{{ s.name }}</div>
+        <div class="dh-meta">
+          <span class="tmr" data-end="{{ s.end_ts }}"><svg><use href="#ic-clock"/></svg><span class="t">--</span></span>
+          <span class="bd"><svg><use href="#ic-users"/></svg>{{ s.bidders }} bidder{{ s.bidders|pluralize }}</span>
+        </div>
+      </div>
+      <div class="dh-bid">
+        <div class="k">{% if s.has_bid %}Highest bid{% else %}Reserve{% endif %}</div>
+        <div class="v">₹{{ s.high_gross_fmt }}</div>
+      </div>
+    </a>
+    {% endfor %}
+  {% else %}
+    <div class="dh-none">No live auctions right now — check back soon.</div>
+  {% endif %}
+
+  <div class="ah-sec" style="margin-top:26px"><h3>Your bids</h3></div>
+  <div class="dh-bids">
+    <div class="dh-bx lead"><b>{{ leading }}</b><span>Leading</span></div>
+    <div class="dh-bx out"><b>{{ outbid }}</b><span>Outbid</span></div>
+  </div>
+</main>
+
+<nav class="cf-tabbar" aria-label="Primary">
+  <a href="{% url 'app_dealer_home' %}" class="cf-tab active"><svg class="i"><use href="#ic-home"/></svg>Home</a>
+  <a href="{% url 'dealer_auction_list' %}" class="cf-tab"><svg class="i"><use href="#ic-broadcast"/></svg>Auctions</a>
+  <a href="{% url 'open_ocb_list' %}" class="cf-tab"><svg class="i"><use href="#ic-bolt"/></svg>OCB</a>
+  <a href="{% url 'dealer_purchases' %}" class="cf-tab"><svg class="i"><use href="#ic-list"/></svg>My Bids</a>
+  <a href="{% url 'profile' %}" class="cf-tab"><svg class="i"><use href="#ic-user"/></svg>Profile</a>
+</nav>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  function fmt(sec){
+    if(sec<=0) return 'Ended';
+    var m=Math.floor(sec/60), s=sec%60;
+    if(m>=60){ var h=Math.floor(m/60); return h+'h '+(m%60)+'m'; }
+    if(m>0) return m+'m '+(s<10?'0':'')+s+'s';
+    return s+'s';
+  }
+  function tick(){
+    var now=Math.floor(Date.now()/1000);
+    document.querySelectorAll('.dh-meta .tmr[data-end]').forEach(function(el){
+      var rem=parseInt(el.getAttribute('data-end'),10)-now;
+      el.querySelector('.t').textContent=fmt(rem);
+      el.classList.toggle('low', rem>0 && rem<90);
+    });
+  }
+  tick(); setInterval(tick,1000);
+})();
+</script>
+{% endblock %}

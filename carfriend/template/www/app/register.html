@@ -1,0 +1,127 @@
+{% extends "base/base_www.html" %}
+{% comment %}
+/app/register/ — phone-OTP signup. Sends role=seller by default, or role=dealer when
+reached as /app/register/?role=dealer (the dealer app). Additive; /auth/register/ untouched.
+{% endcomment %}
+{% block title %}Create your account — CarFriend{% endblock %}
+
+{% block extra_head %}
+<style>
+  .app-auth{min-height:100vh;background:radial-gradient(1200px 620px at 50% -10%,#e7efe8,#d6e3d8);padding:26px 14px;display:flex;justify-content:center}
+  .aa-col{width:100%;max-width:420px;display:flex;flex-direction:column}
+  .aa-brand{display:flex;align-items:center;gap:8px;justify-content:center;margin:8px 0 20px}
+  .aa-brand .mk{width:34px;height:34px;border-radius:10px;background:linear-gradient(150deg,var(--cf-green),var(--cf-green-deep));display:grid;place-items:center}
+  .aa-brand .mk svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .aa-brand b{font-size:18px;font-weight:800;letter-spacing:-.02em;color:var(--cf-ink)}
+  .aa-brand b span{color:var(--cf-green)}
+  .aa-card{background:#fff;border:1px solid var(--cf-line);border-radius:var(--cf-radius);padding:22px 20px 24px;box-shadow:var(--cf-shadow-card)}
+  .aa-card h1{font-size:20px;font-weight:800;letter-spacing:-.02em;margin:0 0 3px;color:var(--cf-ink)}
+  .aa-card .sub{font-size:13px;color:var(--cf-muted);font-weight:600;margin:0 0 18px}
+  .aa-role{display:inline-flex;align-items:center;gap:6px;background:var(--cf-green-050);border:1px solid var(--cf-green-200);color:var(--cf-green-deep);font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:var(--cf-pill);margin-bottom:14px}
+  .aa-phone{display:flex;align-items:stretch;border:1px solid var(--cf-line-strong);border-radius:12px;overflow:hidden;transition:border-color .15s,box-shadow .15s}
+  .aa-phone:focus-within{border-color:var(--cf-green-bright);box-shadow:0 0 0 3px rgba(31,164,99,.14)}
+  .aa-cc{background:var(--cf-green-050);color:var(--cf-green-deep);font-weight:800;font-size:15px;display:flex;align-items:center;padding:0 14px;border-right:1px solid var(--cf-line)}
+  .aa-phone input{flex:1;min-width:0;border:0;outline:0;padding:14px 14px;font-size:16px;font-weight:700;letter-spacing:1px;color:var(--cf-ink);font-family:inherit}
+  .aa-otp{width:100%;text-align:center;letter-spacing:8px;font-size:22px;font-weight:800;color:var(--cf-ink);border:1px solid var(--cf-line-strong);border-radius:12px;padding:14px;outline:0;font-family:inherit}
+  .aa-otp:focus{border-color:var(--cf-green-bright);box-shadow:0 0 0 3px rgba(31,164,99,.14)}
+  .aa-btn{width:100%;margin-top:14px;justify-content:center}
+  .aa-lbl{font-size:12px;font-weight:800;color:var(--cf-ink-soft);text-transform:uppercase;letter-spacing:.04em;margin:0 0 7px}
+  .aa-meta{font-size:12.5px;color:var(--cf-muted);text-align:center;margin-top:12px}
+  .aa-meta a{color:var(--cf-green);font-weight:800;cursor:pointer;text-decoration:none}
+  .aa-err{display:none;background:var(--cf-amber-bg);border:1px solid var(--cf-amber-line);color:var(--cf-amber);border-radius:10px;padding:.6rem .8rem;font-size:13px;font-weight:600;margin-top:12px}
+  .aa-err.show{display:block}
+  .aa-alt{text-align:center;font-size:13px;color:var(--cf-muted);font-weight:600;margin-top:18px}
+  .aa-alt a{color:var(--cf-green-deep);font-weight:800;text-decoration:none}
+  .aa-terms{text-align:center;font-size:11.5px;color:var(--cf-muted);font-weight:600;margin-top:14px;line-height:1.5}
+  .aa-terms a{color:var(--cf-green-deep);font-weight:800;text-decoration:none}
+  .aa-spin{display:inline-block;width:15px;height:15px;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:aaspin .7s linear infinite;vertical-align:-2px;margin-right:6px}
+  @keyframes aaspin{to{transform:rotate(360deg)}}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="app-auth">
+  <div class="aa-col">
+    <a class="aa-brand" href="{% url 'app_home' %}" style="text-decoration:none"><span class="mk"><svg><use href="#ic-car"/></svg></span><b>Car<span>Friend</span></b></a>
+    <div class="aa-card">
+      <span class="aa-role">{% if otp_role == 'dealer' %}Dealer account{% else %}Seller account{% endif %}</span>
+      <h1>Create your account</h1>
+      <p class="sub">{% if otp_role == 'dealer' %}Start bidding on inspected cars.{% else %}Sell your car the smart way.{% endif %} Just your mobile number to begin.</p>
+
+      <div id="phoneStep">
+        <div class="aa-lbl">Mobile number</div>
+        <div class="aa-phone">
+          <span class="aa-cc">+91</span>
+          <input id="phone" type="tel" inputmode="numeric" maxlength="10" autocomplete="tel" placeholder="10-digit number">
+        </div>
+        <button id="btnSend" class="cf-btn cf-btn-primary aa-btn" onclick="sendOtp()">Send OTP</button>
+      </div>
+
+      <div id="otpStep" style="display:none">
+        <div class="aa-lbl">Enter the 6-digit OTP</div>
+        <input id="otp" class="aa-otp" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000">
+        <div class="aa-meta">Sent to <b id="phoneLabel"></b> · <a onclick="backToPhone()">change</a></div>
+        <button id="btnVerify" class="cf-btn cf-btn-primary aa-btn" onclick="verifyOtp()">Verify &amp; continue</button>
+      </div>
+
+      <div class="aa-err" id="err"></div>
+      <div class="aa-terms">By continuing, you agree to our <a href="{% url 'terms' %}">Terms</a> and <a href="{% url 'privacy' %}">Privacy</a>.</div>
+    </div>
+    <div class="aa-alt">Already have an account? <a href="{% url 'app_login' %}">Sign in</a></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var OTP_ROLE = "{{ otp_role|escapejs }}";  // "seller" or "dealer" — applied only on new-user creation
+  var phone = "";
+  function $(id){ return document.getElementById(id); }
+  function getCookie(name){
+    var v=null; if(document.cookie){ document.cookie.split(';').forEach(function(c){ c=c.trim(); if(c.indexOf(name+'=')===0) v=decodeURIComponent(c.substring(name.length+1)); }); } return v;
+  }
+  function api(url, payload){
+    return fetch(url, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':getCookie('csrftoken')||''}, body:JSON.stringify(payload)})
+      .then(function(r){ return r.json().then(function(d){ return {status:r.status, data:d}; }); });
+  }
+  function showErr(m){ var e=$('err'); e.textContent=m; e.classList.add('show'); }
+  function hideErr(){ $('err').classList.remove('show'); }
+  function busy(btn,on,label){ btn.disabled=on; btn.innerHTML = on ? '<span class="aa-spin"></span>'+label : label; }
+
+  window.sendOtp = function(){
+    hideErr();
+    var val = ($('phone').value||'').replace(/[^0-9]/g,'');
+    if(!/^[6-9][0-9]{9}$/.test(val)){ showErr('Enter a valid 10-digit mobile number.'); return; }
+    phone = val;
+    var btn=$('btnSend'); busy(btn,true,'Sending…');
+    api('/auth/otp/request/', {phone:phone}).then(function(res){
+      busy(btn,false,'Send OTP');
+      if(!res.data.success){ showErr(res.data.error || 'Could not send OTP.'); return; }
+      $('phoneLabel').textContent = '+91 '+phone;
+      $('phoneStep').style.display='none'; $('otpStep').style.display='block'; $('otp').focus();
+    }).catch(function(){ busy(btn,false,'Send OTP'); showErr('Could not connect. Please retry.'); });
+  };
+
+  window.backToPhone = function(){ hideErr(); $('otpStep').style.display='none'; $('phoneStep').style.display='block'; };
+
+  window.verifyOtp = function(){
+    hideErr();
+    var code = ($('otp').value||'').replace(/[^0-9]/g,'');
+    if(code.length!==6){ showErr('Enter the 6-digit OTP.'); return; }
+    var btn=$('btnVerify'); busy(btn,true,'Verifying…');
+    var payload = {phone:phone, otp:code};
+    if(OTP_ROLE){ payload.role = OTP_ROLE; }
+    api('/auth/otp/verify/', payload).then(function(res){
+      if(!res.data.success){ busy(btn,false,'Verify & continue'); showErr(res.data.error || 'Invalid OTP.'); return; }
+      window.location.href = (res.data.role === 'dealer') ? '/app/dealer/' : '/app/seller/';
+    }).catch(function(){ busy(btn,false,'Verify & continue'); showErr('Could not connect. Please retry.'); });
+  };
+
+  $('phone').addEventListener('input', function(){ this.value=this.value.replace(/[^0-9]/g,''); });
+  $('phone').addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); sendOtp(); } });
+  $('otp').addEventListener('input', function(){ this.value=this.value.replace(/[^0-9]/g,''); });
+  $('otp').addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); verifyOtp(); } });
+})();
+</script>
+{% endblock %}

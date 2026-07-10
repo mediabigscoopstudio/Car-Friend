@@ -1,0 +1,118 @@
+{% extends "base/base_www.html" %}
+{% comment %}
+Pre-login welcome for the Android WebView apps (MODEL B — unified welcome).
+Additive /app/ page; the marketing homepage (/) is untouched. Uses the global cf-*
+tokens from carfriend-ui.css. Live-auction count + stats are REAL DB values.
+{% endcomment %}
+{% block title %}CarFriend — Buy & sell used cars{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Missing-from-sprite icons are inlined below; the rest come from www/_icons.html. */
+  .app-welcome{min-height:100vh;background:radial-gradient(1200px 620px at 50% -10%,#e7efe8,#d6e3d8);
+    padding:22px 12px 26px;display:flex;justify-content:center}
+  .aw-col{width:100%;max-width:440px}
+  .aw-top{display:flex;align-items:center;padding:6px 6px 14px}
+  .aw-brand{display:flex;align-items:center;gap:8px}
+  .aw-brand .mk{width:34px;height:34px;border-radius:10px;background:linear-gradient(150deg,var(--cf-green),var(--cf-green-deep));display:grid;place-items:center}
+  .aw-brand .mk svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .aw-brand b{font-size:17px;font-weight:800;letter-spacing:-.02em;color:var(--cf-ink)}
+  .aw-brand b span{color:var(--cf-green)}
+  .aw-signin{margin-left:auto;font-size:13px;font-weight:800;color:var(--cf-green-deep);text-decoration:none;padding:8px 14px;border-radius:var(--cf-pill);background:#fff;border:1px solid var(--cf-line)}
+  .aw-hero{position:relative;padding:24px 22px 26px;border-radius:22px;color:#fff;overflow:hidden;
+    background:radial-gradient(120% 90% at 90% -10%,rgba(57,217,138,.35),transparent 55%),linear-gradient(160deg,#187a4d 0%,#0f4a30 60%,#0b3a26 100%);
+    box-shadow:0 18px 40px -18px rgba(9,45,28,.7);border:1px solid rgba(255,255,255,.1)}
+  .aw-hero .row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .aw-kicker{color:rgba(255,255,255,.72);font-size:11px;font-weight:800;letter-spacing:.11em;text-transform:uppercase}
+  .aw-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);color:#eaffef;font-size:11px;font-weight:800;letter-spacing:.06em;padding:5px 10px 5px 9px;border-radius:var(--cf-pill)}
+  .aw-pill .rd{width:7px;height:7px;border-radius:50%;background:#ff5b5b;box-shadow:0 0 0 0 rgba(255,91,91,.7);animation:awping 1.5s infinite}
+  @keyframes awping{0%{box-shadow:0 0 0 0 rgba(255,91,91,.7)}70%{box-shadow:0 0 0 8px rgba(255,91,91,0)}100%{box-shadow:0 0 0 0 rgba(255,91,91,0)}}
+  .aw-hero h1{font-size:28px;font-weight:800;letter-spacing:-.03em;margin:4px 0 6px;line-height:1.08}
+  .aw-hero p{color:rgba(255,255,255,.85);font-size:14px;font-weight:500;margin:0 0 18px;line-height:1.5}
+  .aw-actions{display:flex;gap:10px}
+  .aw-actions .primary{flex:1;background:#fff;color:var(--cf-green-deep);border:0;border-radius:12px;padding:14px 12px;font-weight:800;font-size:15px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 12px 26px -12px rgba(0,0,0,.5)}
+  .aw-actions .primary svg{width:16px;height:16px;stroke:var(--cf-green-deep);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .aw-actions .ghost{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.26);border-radius:12px;padding:14px 16px;font-weight:800;font-size:14px;text-decoration:none;display:inline-flex;align-items:center}
+  .aw-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:16px}
+  .aw-stat{background:#fff;border:1px solid var(--cf-line);border-radius:14px;padding:14px 8px;text-align:center}
+  .aw-stat .v{font-size:20px;font-weight:800;letter-spacing:-.02em;color:var(--cf-green-deep);line-height:1}
+  .aw-stat .k{font-size:10.5px;font-weight:800;letter-spacing:.05em;color:var(--cf-muted);text-transform:uppercase;margin-top:4px}
+  .aw-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px}
+  .aw-card{background:#fff;border:1px solid var(--cf-line);border-radius:14px;padding:14px}
+  .aw-card .ic{width:32px;height:32px;border-radius:10px;background:var(--cf-green-100);display:grid;place-items:center;margin-bottom:9px}
+  .aw-card .ic svg{width:17px;height:17px;stroke:var(--cf-green-deep);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .aw-card .h{font-size:13.5px;font-weight:800;letter-spacing:-.01em;color:var(--cf-ink)}
+  .aw-card .s{font-size:11.5px;color:var(--cf-muted);font-weight:600;line-height:1.35;margin-top:2px}
+  .aw-how{margin-top:24px}
+  .aw-how h2{font-size:15px;font-weight:800;letter-spacing:-.01em;margin:0 0 12px;color:var(--cf-ink)}
+  .aw-how ol{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
+  .aw-how li{display:flex;gap:12px;align-items:flex-start}
+  .aw-how .num{width:26px;height:26px;border-radius:50%;background:var(--cf-green);color:#fff;font-weight:800;font-size:12px;display:grid;place-items:center;flex:0 0 auto}
+  .aw-how .tx b{display:block;font-size:13.5px;font-weight:800;color:var(--cf-ink)}
+  .aw-how .tx span{font-size:12px;color:var(--cf-muted);font-weight:600;line-height:1.4;display:block;margin-top:1px}
+  .aw-foot{text-align:center;color:var(--cf-muted);font-size:12px;font-weight:600;margin:26px 6px 6px}
+  .aw-foot a{color:var(--cf-green-deep);text-decoration:none;font-weight:800}
+  @media (prefers-reduced-motion:reduce){.aw-pill .rd{animation:none}}
+</style>
+{% endblock %}
+
+{% block body %}
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="ic-key" viewBox="0 0 24 24"><path d="M21 2l-2 2"/><path d="M17 6l4-4"/><circle cx="8" cy="16" r="5"/><path d="M11.7 12.3L19 5"/></symbol>
+  <symbol id="ic-arrow" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+</svg>
+
+<div class="app-welcome">
+  <div class="aw-col">
+    <div class="aw-top">
+      <span class="aw-brand"><span class="mk"><svg><use href="#ic-car"/></svg></span><b>Car<span>Friend</span></b></span>
+      <a class="aw-signin" href="{% url 'app_login' %}">Sign in</a>
+    </div>
+
+    <div class="aw-hero">
+      <div class="row">
+        <span class="aw-kicker">Buy · Sell · Auction</span>
+        <span class="aw-pill"><span class="rd"></span>{% if live_count %}{{ live_count }} LIVE NOW{% else %}JOIN NOW{% endif %}</span>
+      </div>
+      <h1>The smartest way to buy and sell used cars.</h1>
+      <p>Verified inspections, live auctions with real dealers, transparent prices. Made in India.</p>
+      <div class="aw-actions">
+        <a class="primary" href="{% url 'app_register' %}"><svg><use href="#ic-arrow"/></svg>Get started</a>
+        <a class="ghost" href="{% url 'app_login' %}">Sign in</a>
+      </div>
+    </div>
+
+    {% if show_stats %}
+    <div class="aw-stats">
+      <div class="aw-stat"><div class="v">{{ cars_sold }}</div><div class="k">Cars sold</div></div>
+      <div class="aw-stat"><div class="v">{{ dealers }}</div><div class="k">Dealers</div></div>
+      <div class="aw-stat"><div class="v">300+</div><div class="k">Checkpoints</div></div>
+    </div>
+    {% endif %}
+
+    <div class="aw-cards">
+      <div class="aw-card">
+        <span class="ic"><svg><use href="#ic-key"/></svg></span>
+        <div class="h">Sell your car</div>
+        <div class="s">Free inspection. Live auction. You pick the winner.</div>
+      </div>
+      <div class="aw-card">
+        <span class="ic"><svg><use href="#ic-broadcast"/></svg></span>
+        <div class="h">Buy or bid</div>
+        <div class="s">Grade-A inspected cars, live auctions daily.</div>
+      </div>
+    </div>
+
+    <div class="aw-how">
+      <h2>How CarFriend works</h2>
+      <ol>
+        <li><span class="num">1</span><span class="tx"><b>Inspection</b><span>Certified 300+ checkpoint report with real photos.</span></span></li>
+        <li><span class="num">2</span><span class="tx"><b>Live auction</b><span>Verified dealers bid in real time. You decide.</span></span></li>
+        <li><span class="num">3</span><span class="tx"><b>Instant handover</b><span>Sign digitally, get paid, we handle the RC.</span></span></li>
+      </ol>
+    </div>
+
+    <div class="aw-foot">By continuing, you agree to our <a href="{% url 'terms' %}">Terms</a> and <a href="{% url 'privacy' %}">Privacy</a></div>
+  </div>
+</div>
+{% endblock %}

@@ -12,6 +12,8 @@ urlpatterns = [
     path("auth/", include("accounts.urls")),
     # Public website
     path("", include("www.urls")),
+    # Mobile-app WebView pages (welcome + phone-OTP auth + seller/dealer homes)
+    path("app/", include("www.app_urls")),
     # Sub-app public URLs
     path("vehicles/", include("vehicles.urls")),
     path("auctions/", include("auctions.urls")),
