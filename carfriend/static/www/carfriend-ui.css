@@ -95,12 +95,18 @@ body::before{ content:""; position:fixed; inset:0; pointer-events:none; z-index:
 
 /* ── §7.5 action ribbon + docs strip ── */
 .cf-ribbon{ background:var(--cf-amber-bg); border:1px solid var(--cf-amber-line); border-radius:var(--cf-radius); overflow:hidden; box-shadow:var(--cf-shadow); }
-.cf-ribbon-top{ display:flex; align-items:center; gap:1rem; padding:clamp(15px,2.2vw,20px); }
+/* wraps: .cf-btn is white-space:nowrap and cannot shrink, so without wrapping it
+   starves the text column down to min-content (one word per line) on phones. */
+.cf-ribbon-top{ display:flex; align-items:center; flex-wrap:wrap; gap:.85rem 1rem; padding:clamp(15px,2.2vw,20px); }
 .cf-warn-ic{ width:46px; height:46px; border-radius:12px; flex:0 0 auto; display:grid; place-items:center; background:#fff; border:1px solid var(--cf-amber-line); color:var(--cf-amber-bright); }
 .cf-warn-ic svg.i{ width:24px; height:24px; stroke-width:2.2; }
-.cf-ribbon-txt{ flex:1 1 auto; min-width:0; }
+/* the 180px basis is the wrap trigger: it is small enough to sit beside the 46px icon even at 320px,
+   yet large enough that the button always drops to its own line below 640px */
+.cf-ribbon-txt{ flex:1 1 180px; min-width:0; overflow-wrap:break-word; }
 .cf-ribbon-txt h2{ font-size:1.02rem; font-weight:800; letter-spacing:-.01em; margin:0; color:var(--cf-ink); }
 .cf-ribbon-txt p{ margin:.15rem 0 0; font-size:.88rem; color:var(--cf-amber); font-weight:500; line-height:1.4; }
+.cf-ribbon-top > .cf-btn{ flex:0 0 auto; margin-left:auto; }
+@media(max-width:640px){ .cf-ribbon-top > .cf-btn{ width:100%; margin-left:0; } }
 .cf-ribbon-docs{ display:flex; align-items:center; gap:.55rem 1rem; flex-wrap:wrap; padding:11px clamp(15px,2.2vw,20px); background:rgba(255,255,255,.55); border-top:1px solid var(--cf-amber-line); }
 .cf-docs-label{ font-size:.72rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--cf-amber); }
 .cf-chip{ display:inline-flex; align-items:center; gap:.35rem; font-size:.82rem; font-weight:600; padding:.28rem .6rem; border-radius:var(--cf-pill); background:#fff; border:1px solid var(--cf-line); color:var(--cf-ink-soft); }
