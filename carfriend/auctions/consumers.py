@@ -34,11 +34,15 @@ class AuctionConsumer(AsyncWebsocketConsumer):
         except (TypeError, ValueError):
             await self.send(json.dumps({"type": "error", "msg": "Enter a valid bid amount."}))
             return
-        ok, payload = await self.place_bid(user.id, amount)
+        ok, payload, auto_payloads = await self.place_bid(user.id, amount)
         if ok:
             await self.channel_layer.group_send(
                 self.group, {"type": "bid.broadcast", "payload": payload}
             )
+            for auto_payload in auto_payloads:
+                await self.channel_layer.group_send(
+                    self.group, {"type": "bid.broadcast", "payload": auto_payload}
+                )
         else:
             await self.send(json.dumps({"type": "error", "msg": payload}))
 
@@ -62,10 +66,9 @@ class AuctionConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def place_bid(self, dealer_id, amount):
-        import datetime
         from django.db import transaction
-        from django.utils import timezone
         from .models import Auction, Bid
+        from . import services
 
         from accounts.models import DealerVerification
 
@@ -74,29 +77,26 @@ class AuctionConsumer(AsyncWebsocketConsumer):
         with transaction.atomic():
             a = Auction.objects.select_for_update().get(pk=self.auction_id)
             if not a.is_live:
-                return False, "Auction is not live."
+                return False, "Auction is not live.", []
             # Re-check server-side: only an APPROVED-verified dealer can bid.
             if not DealerVerification.objects.filter(
                 dealer_id=dealer_id, status=DealerVerification.Status.APPROVED
             ).exists():
-                return False, "Your dealer account is not verified yet. Complete verification to bid."
-            hb = a.highest_bid
-            floor = (hb.amount if hb else a.reserve_price) + a.min_increment
+                return False, "Your dealer account is not verified yet. Complete verification to bid.", []
+            floor = a.current_floor
             if amount < floor:
-                return False, f"Minimum next bid is ₹{floor:,}."
+                return False, f"Minimum next bid is ₹{floor:,}.", []
             # Dealer must clear the GROSS reserve shown to them (a.reserve_price is
             # already the grossed reserve). Server-side guard so a bypassed disabled
             # button can't place a sub-reserve bid.
             if amount < a.reserve_price:
-                return False, f"Below reserve — bid ₹{a.reserve_price:,} or higher to qualify."
+                return False, f"Below reserve — bid ₹{a.reserve_price:,} or higher to qualify.", []
             bid = Bid.objects.create(auction=a, dealer_id=dealer_id, amount=amount)
-            # Anti-snipe: a bid in the last minute extends the clock by 60s.
-            if (a.end_at - timezone.now()).total_seconds() < 60:
-                a.end_at += datetime.timedelta(seconds=60)
-                a.save(update_fields=["end_at"])
+            services._extend_anti_snipe(a)
+            auto_payloads = services.run_auto_bids(a)
             return True, {
                 "highest":  amount,
                 "by_id":    bid.dealer_id,    # never the username — client shows "You"/"Dealer"
                 "ends_at":  a.end_at.isoformat(),
                 "count":    a.bids.count(),
-            }
+            }, auto_payloads

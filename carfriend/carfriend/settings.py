@@ -155,6 +155,10 @@ SOCIALACCOUNT_PROVIDERS = {
 
 WSGI_APPLICATION = "carfriend.wsgi.application"
 ASGI_APPLICATION = "carfriend.asgi.application"
+# In-memory = single process only. AuctionConsumer's own group_send relies on this, and so
+# does auctions.services.broadcast_bids (auto-bid HTTP endpoints broadcasting via
+# async_to_sync from a plain view) — both call sites need HTTP + WS served by the same
+# ASGI process. Upgrade to a Redis-backed layer before running multiple processes/replicas.
 CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
 # Live test-drive GPS broadcast (ws/drive/<report_id>/). OFF by default; store-and-
 # replay always works. Set True to let Admin/customer watch a drive live.

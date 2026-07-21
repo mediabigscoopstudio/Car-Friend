@@ -43,6 +43,13 @@ class Auction(models.Model):
                 .order_by("-amount").first())
 
     @property
+    def current_floor(self):
+        # Single source of truth for "next valid bid" — shared by the manual-bid path
+        # (consumers.AuctionConsumer.place_bid) and the auto-bid engine (services.run_auto_bids).
+        hb = self.highest_bid
+        return (hb.amount if hb else self.reserve_price) + self.min_increment
+
+    @property
     def is_live(self):
         return self.status == self.Status.LIVE and self.start_at <= timezone.now() < self.end_at
 
@@ -68,6 +75,28 @@ class Bid(models.Model):
         ordering = ["-amount"]
 
     def __str__(self): return f"₹{self.amount:,} by {self.dealer} on {self.auction_id}"
+
+
+class AutoBid(models.Model):
+    """A dealer's standing proxy-bid ceiling for one auction. While active, the auto-bid
+    engine (services.run_auto_bids) raises the dealer's standing bid on their behalf,
+    one min_increment at a time, whenever they're outbid — but never above max_amount.
+
+    One row per (auction, dealer): editing = update max_amount, cancelling = is_active=False,
+    re-enabling = update again. This is the persistence layer for "survives page refresh".
+    """
+
+    auction    = models.ForeignKey(Auction, on_delete=models.CASCADE, related_name="auto_bids")
+    dealer     = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="auto_bids")
+    max_amount = models.PositiveIntegerField()
+    is_active  = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["auction", "dealer"], name="uniq_autobid_per_dealer_auction")]
+
+    def __str__(self): return f"Auto-bid ≤₹{self.max_amount:,} by {self.dealer} on {self.auction_id}"
 
 
 class SellerDecision(models.Model):

@@ -11,6 +11,8 @@ preferred), and the challan block.
 import logging
 
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 
@@ -18,7 +20,8 @@ from accounts.models import dealer_can_bid
 from inspections.models import InspectionReport
 from inspections.services import build_report_data
 from inspections.templatetags.cf import short_car_name
-from .models import Auction
+from . import services
+from .models import Auction, AutoBid
 
 logger = logging.getLogger(__name__)
 
@@ -321,13 +324,10 @@ def dealer_auction_room(request, id):
     if a.reactivation_count:
         my_prev = (a.bids.filter(dealer=request.user, created_at__lt=a.start_at)
                    .order_by("-amount").first())
-    # Hero stats — REAL, from data the page already has (this round's bids):
-    #   bidder_count = distinct dealers who bid; initial_delta = the last raise
-    #   (newest bid minus the one before it); am_leading = is the viewer the top bid.
-    round_bids = a.bids.filter(is_voided=False, created_at__gte=a.start_at)
-    bidder_count = round_bids.values("dealer_id").distinct().count()
-    initial_delta = int(bids[0]["amount"] - bids[1]["amount"]) if len(bids) >= 2 else None
-    am_leading = bool(bids and bids[0]["is_me"])
+    # Dealer's own active auto-bid ceiling, if any — read back so the toggle/ceiling
+    # UI and the auto-bid status row survive a page refresh (auctions/models.AutoBid).
+    ab = AutoBid.objects.filter(auction=a, dealer=request.user, is_active=True).first()
+    auto_bid = {"max_amount": ab.max_amount} if ab else None
     return render(request, "auctions/dealer_room.html", {
         "a":            dealer_auction(a),
         "auction_id":   a.id,
@@ -336,10 +336,68 @@ def dealer_auction_room(request, id):
         "inspection":   dealer_inspection(report),
         "bids":         bids,
         "my_prev_bid":  my_prev.amount if my_prev else None,
-        "bidder_count": bidder_count,
-        "initial_delta": initial_delta,
-        "am_leading":   am_leading,
+        "auto_bid":     auto_bid,
     })
+
+
+# ── auto-bid (proxy bidding) ────────────────────────────────────────────────
+
+@login_required(login_url="/auth/login/")
+def dealer_auto_bid_set(request, id):
+    """Set/update/re-activate the dealer's auto-bid ceiling for this auction. Engages
+    immediately (via services.run_auto_bids) if the ceiling already clears the current
+    floor, same as standard proxy-bidding UX — not reactive-only."""
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "POST required."}, status=405)
+    guard = _bounce_non_dealer(request)
+    if guard:
+        return guard
+    if not dealer_can_bid(request.user):
+        return JsonResponse({"ok": False, "error": "Complete dealer verification to use auto-bid."}, status=403)
+    try:
+        max_amount = int(request.POST.get("max_amount", ""))
+    except (TypeError, ValueError):
+        return JsonResponse({"ok": False, "error": "Enter a valid ceiling amount."}, status=400)
+    if max_amount <= 0:
+        return JsonResponse({"ok": False, "error": "Enter a valid ceiling amount."}, status=400)
+
+    with transaction.atomic():
+        a = get_object_or_404(Auction.objects.select_for_update(), id=id)
+        if not a.is_live:
+            return JsonResponse({"ok": False, "error": "Auction is not live."}, status=400)
+        hb = a.highest_bid
+        current = hb.amount if hb else a.reserve_price
+        # Per spec: the ceiling must beat the CURRENT highest bid (not the next floor).
+        # A ceiling only 1 rupee above `current` is accepted here but stays functionally
+        # inert until raised, since current_floor is always current + min_increment.
+        if max_amount <= current:
+            return JsonResponse({
+                "ok": False,
+                "error": f"Ceiling must be higher than the current highest bid (₹{current:,}).",
+            }, status=400)
+        auto_bid, _ = AutoBid.objects.update_or_create(
+            auction=a, dealer=request.user,
+            defaults={"max_amount": max_amount, "is_active": True},
+        )
+        new_bids = services.run_auto_bids(a)
+        transaction.on_commit(lambda: services.broadcast_bids(a.id, new_bids))
+
+    return JsonResponse({"ok": True, "max_amount": auto_bid.max_amount, "is_active": True})
+
+
+@login_required(login_url="/auth/login/")
+def dealer_auto_bid_cancel(request, id):
+    """Deactivate the dealer's auto-bid for this auction. Never re-runs the cascade —
+    cancelling never creates a new obligation for anyone else, the floor doesn't change."""
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "POST required."}, status=405)
+    guard = _bounce_non_dealer(request)
+    if guard:
+        return guard
+    with transaction.atomic():
+        a = get_object_or_404(Auction.objects.select_for_update(), id=id)
+        AutoBid.objects.filter(auction=a, dealer=request.user).update(is_active=False)
+    return JsonResponse({"ok": True})
 
 
 def live_room_context(a, back_url):

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Auction, Bid, SellerDecision, OCBListing
+from .models import Auction, AutoBid, Bid, SellerDecision, OCBListing
 
 
 class BidInline(admin.TabularInline):
@@ -14,5 +14,6 @@ class AuctionAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Bid)
+admin.site.register(AutoBid)
 admin.site.register(SellerDecision)
 admin.site.register(OCBListing)

@@ -7,12 +7,15 @@ creation in a single guarded function is what prevents an auction from ever exis
 without a human-set price — permanently killing the ₹0-reserve bug.
 """
 import datetime
+import logging
 
 from django.utils import timezone
 
 from auctions.models import Auction
 from core.margin import gross_breakdown
 from notifications.services import notify
+
+logger = logging.getLogger(__name__)
 
 
 # Duration presets offered to the Retail Head (minutes -> label). Shared by the
@@ -139,3 +142,90 @@ def terminate_auction(auction, by_user=None):
     from crm.services import transition_lead_for_vehicle
     transition_lead_for_vehicle(auction.vehicle, "auction_closed", actor=by_user)
     return auction
+
+
+def _extend_anti_snipe(auction):
+    """A bid in the last minute extends the clock by 60s. Shared by the manual-bid path
+    (consumers.AuctionConsumer.place_bid) and the auto-bid engine below — both create a
+    Bid and must apply the same anti-snipe rule."""
+    if (auction.end_at - timezone.now()).total_seconds() < 60:
+        auction.end_at += datetime.timedelta(seconds=60)
+        auction.save(update_fields=["end_at"])
+
+
+def run_auto_bids(auction):
+    """Proxy-bidding engine. MUST be called inside the same transaction.atomic() +
+    Auction.objects.select_for_update() block as the triggering bid (a manual bid, or a
+    dealer's ceiling being set/raised) — the row lock is what makes this race-safe, not
+    the (in-memory, single-process) channel layer.
+
+    After the floor changes, any OTHER dealer with an active AutoBid whose ceiling still
+    clears the new floor gets an automatic bid placed on their behalf, at exactly the
+    floor — never above it, never above their ceiling. This can cascade (one auto-bid can
+    push the floor past another dealer's ceiling), so it loops, one min_increment at a
+    time, until no active auto-bid can clear the floor without exceeding its ceiling —
+    matching the spec's "incremental bids using the existing minimum increment logic",
+    not a single jump to a resolved clearing price.
+
+    Returns the ordered list of broadcast-ready payloads (one per bid placed), shaped like
+    AuctionConsumer's existing success payload, for the caller to fan out via broadcast_bids.
+    """
+    from accounts.models import DealerVerification
+    from auctions.models import AutoBid, Bid
+
+    if auction.min_increment <= 0:
+        # Defensive: nothing stops min_increment being edited to 0/negative via admin,
+        # which would otherwise let two competing auto-bids oscillate forever.
+        return []
+
+    payloads = []
+    for _ in range(1000):  # safety valve — should always converge (ceiling-bounded, strictly increasing floor)
+        hb = auction.highest_bid
+        leader_id = hb.dealer_id if hb else None
+        floor = auction.current_floor
+        candidate = (
+            AutoBid.objects
+            .filter(auction=auction, is_active=True, max_amount__gte=floor)
+            .exclude(dealer_id=leader_id)
+            # Re-check verification on every iteration, mirroring the manual-bid path's own
+            # per-bid re-check — a dealer whose verification is later revoked must not keep
+            # getting auto-bid on their behalf.
+            .filter(dealer_id__in=DealerVerification.objects.filter(
+                status=DealerVerification.Status.APPROVED).values("dealer_id"))
+            .order_by("-max_amount", "created_at")  # highest ceiling wins; earliest breaks ties
+            .first()
+        )
+        if not candidate:
+            # TODO(notifications): any active AutoBid here with max_amount < floor just got
+            # outbid past its ceiling. Once notification infra is wired up for this event
+            # (see notifications.services.notify), fire it to those dealers here.
+            # Intentionally not implemented yet — no sending happens.
+            break
+        bid = Bid.objects.create(auction=auction, dealer_id=candidate.dealer_id, amount=floor)
+        _extend_anti_snipe(auction)
+        payloads.append({
+            "highest": bid.amount,
+            "by_id":   bid.dealer_id,
+            "ends_at": auction.end_at.isoformat(),
+            "count":   auction.bids.count(),
+        })
+    else:
+        logger.warning("run_auto_bids: hit the 1000-iteration safety cap for auction %s — "
+                        "cascade may be unresolved.", auction.id)
+    return payloads
+
+
+def broadcast_bids(auction_id, payloads):
+    """Fan out auto-placed bid payloads to the live auction WS group from plain
+    (synchronous) code — the documented Channels pattern for broadcasting from outside a
+    consumer. Mirrors AuctionConsumer.bid_broadcast's payload shape exactly, so connected
+    dealers can't tell an auto-placed bid from a manual one."""
+    if not payloads:
+        return
+    from asgiref.sync import async_to_sync
+    from channels.layers import get_channel_layer
+
+    channel_layer = get_channel_layer()
+    group = f"auction_{auction_id}"
+    for payload in payloads:
+        async_to_sync(channel_layer.group_send)(group, {"type": "bid.broadcast", "payload": payload})

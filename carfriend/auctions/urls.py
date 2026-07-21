@@ -22,5 +22,8 @@ urlpatterns = [
     path("<int:auction_id>/result/", views.seller_auction_result, name="seller_auction_result"),
     path("<int:auction_id>/ocb/", views.seller_ocb, name="seller_ocb"),
     path("<int:auction_id>/ocb/respond/", views.seller_ocb_respond, name="seller_ocb_respond"),
+    # Auto-bid — declared before the dealer-room catch-all so it matches.
+    path("<int:id>/auto-bid/", d.dealer_auto_bid_set, name="dealer_auto_bid_set"),
+    path("<int:id>/auto-bid/cancel/", d.dealer_auto_bid_cancel, name="dealer_auto_bid_cancel"),
     path("<int:id>/", d.dealer_auction_room, name="dealer_auction_room"),
 ]
