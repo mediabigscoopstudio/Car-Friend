@@ -208,18 +208,28 @@ body::before{ content:""; position:fixed; inset:0; pointer-events:none; z-index:
 .cf-ac-media .car-glyph{ width:46px; height:46px; stroke:#8FB6A0; }
 .cf-timer{ position:absolute; right:8px; top:8px; display:inline-flex; align-items:center; gap:.28rem; background:rgba(18,32,25,.78); color:#fff; font-size:.68rem; font-weight:700; padding:.24rem .45rem; border-radius:7px; font-variant-numeric:tabular-nums; }
 .cf-timer svg.i{ width:12px; height:12px; stroke:#fff; } .cf-timer.low{ background:var(--cf-amber); }
-.cf-ac-grade{ position:absolute; left:8px; bottom:8px; width:34px; height:34px; border-radius:10px; background:var(--cf-green); color:#fff; display:grid; place-items:center; font-weight:800; font-size:.85rem; box-shadow:0 6px 14px -6px rgba(31,164,99,.7); }
+.cf-ac-grade{ position:absolute; left:8px; top:8px; width:34px; height:34px; border-radius:10px; background:var(--cf-green); color:#fff; display:grid; place-items:center; font-weight:800; font-size:.85rem; box-shadow:0 6px 14px -6px rgba(31,164,99,.7); }
 .cf-plate-sm{ position:absolute; right:8px; bottom:8px; display:flex; align-items:center; gap:.25rem; background:#122019; color:#fff; padding:.18rem .4rem; border-radius:6px; font-size:.58rem; font-weight:700; }
 .cf-plate-sm svg.i{ width:11px; height:11px; stroke:var(--cf-green-bright); }
+/* photo carousel (Bootstrap Carousel component, restyled to this design system) */
+.cf-ac-carousel, .cf-ac-carousel .carousel-inner, .cf-ac-carousel .carousel-item{ height:100%; }
+.cf-ac-carousel .carousel-item img{ width:100%; height:100%; object-fit:cover; }
+.cf-ac-dots{ position:absolute; bottom:8px; left:0; right:0; margin:0; padding:0; display:flex; align-items:center; justify-content:center; gap:.3rem; z-index:2; }
+.cf-ac-dots [data-bs-target]{ width:6px; height:6px; margin:0; padding:0; border:none; border-radius:50%; background:rgba(255,255,255,.6); opacity:1; text-indent:-9999px; transition:width .2s var(--ease), background .2s var(--ease); }
+.cf-ac-dots [data-bs-target].active{ background:#fff; width:14px; border-radius:3px; }
+.cf-ac-count{ position:absolute; right:8px; bottom:8px; z-index:2; background:rgba(18,32,25,.78); color:#fff; font-size:.62rem; font-weight:700; padding:.16rem .42rem; border-radius:6px; font-variant-numeric:tabular-nums; }
 .cf-ac-body{ padding:.8rem .9rem 1rem; display:flex; flex-direction:column; flex:1 1 auto; }
 .cf-ac-title{ font-weight:800; font-size:.98rem; letter-spacing:-.01em; line-height:1.18; }
 .cf-ac-specs{ color:var(--cf-muted); font-size:.79rem; font-weight:500; margin-top:.2rem; }
+.cf-ac-badges{ display:flex; flex-wrap:wrap; gap:.3rem; margin-top:.5rem; }
+.cf-ac-badges .cf-chip{ font-size:.7rem; padding:.2rem .5rem; }
 .cf-ac-bid{ display:flex; align-items:flex-end; justify-content:space-between; margin-top:.6rem; gap:.4rem; }
 .cf-bid-l{ font-size:.66rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--cf-muted); }
 .cf-bid-v{ font-weight:800; font-size:1.1rem; letter-spacing:-.02em; font-variant-numeric:tabular-nums; margin-top:.1rem; }
 .cf-bid-n{ font-size:.73rem; color:var(--cf-muted); font-weight:600; white-space:nowrap; }
 .cf-met{ display:inline-flex; align-items:center; gap:.25rem; font-size:.7rem; font-weight:700; color:var(--cf-green); margin-top:.1rem; } .cf-met svg.i{ width:12px; height:12px; stroke:var(--cf-green-bright); }
 .cf-ac-cta{ margin-top:.75rem; width:100%; padding:.62rem 1rem; font-size:.9rem; }
+.cf-ac-link{ display:flex; flex-direction:column; flex:1 1 auto; text-decoration:none; color:inherit; }
 
 /* ── §7.10 toolbar / sort / applied chips ── */
 .cf-sort{ display:inline-flex; align-items:center; gap:.5rem; background:#fff; border:1px solid var(--cf-line-strong); border-radius:12px; padding:.6rem .95rem; font-weight:600; font-size:.9rem; color:var(--cf-ink); cursor:pointer; }

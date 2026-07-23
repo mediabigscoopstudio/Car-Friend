@@ -41,6 +41,14 @@ def _live_auctions():
 
 # ── dealer-safe serialization (single source) ───────────────────────────────
 
+def _ordinal_owner(n):
+    """1 -> '1st owner', 2 -> '2nd owner', 11 -> '11th owner', etc."""
+    if not n or n < 1:
+        return ""
+    suffix = "th" if 11 <= (n % 100) <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+    return f"{n}{suffix} owner"
+
+
 def dealer_vehicle(v):
     return {
         "name":         short_car_name(v),                                   # make/model/variant only
@@ -50,6 +58,7 @@ def dealer_vehicle(v):
         "km":           v.odometer_km,
         "city":         v.city,
         "grade":        v.condition_grade,
+        "owner":        _ordinal_owner(v.owner_number),
     }
 
 
@@ -94,6 +103,59 @@ def _hero_url(report):
         return report.front_photo.url               # masked on upload
     photos = _photo_urls(report)                    # masked condition photos
     return photos[0] if photos else None
+
+
+# Preferred checkpoint keys for the two angles with no dedicated wrap-up field
+# (zones.py), tried in order — first one with a photo wins. Best-effort only:
+# every checkpoint here is optional, so a vehicle may have neither.
+_INTERIOR_CHECKPOINT_PRIORITY = ["dashboard_trim", "seats_upholstery", "steering_wheel",
+                                 "infotainment", "roof_headliner"]
+_ENGINE_BAY_CHECKPOINT_PRIORITY = ["engine_condition", "radiator", "battery", "belts",
+                                   "visible_leaks", "engine_mounts"]
+
+
+def _curated_photos(report):
+    """Best-effort curated photo set for an auction-listing-card carousel, in walk
+    order: front (hero preferred), left, rear, right, interior, engine bay.
+
+    The four exterior angles reuse the existing hand-picked, dealer-safe wrap-up
+    fields (same ones _hero_url already trusts). Interior and engine bay have no
+    dedicated field — this pulls the first available (masked, dealer-safe) photo
+    from a priority list of optional checkpoints in the 'inside' zone and the
+    'front' zone's engine-bay group respectively, skipping that slide entirely if
+    the vehicle has neither. Returns an ordered list of at most 6 URLs (possibly
+    empty for a vehicle with no inspection report yet).
+    """
+    if not report:
+        return []
+
+    def _field_url(field):
+        return field.url if field else None
+
+    front = _field_url(report.auction_hero_image) or _field_url(report.front_photo)
+    photos = []
+    for url in (front, _field_url(report.left_photo), _field_url(report.rear_photo),
+                _field_url(report.right_photo)):
+        if url and url not in photos:
+            photos.append(url)
+
+    from inspections import engine as insp_engine
+    if insp_engine.is_walk_inspection(report):
+        media_by_cp, _loose = _media_by_checkpoint(report)
+
+        def _first_available(keys):
+            for key in keys:
+                urls = media_by_cp.get(key)
+                if urls:
+                    return urls[0]
+            return None
+
+        for url in (_first_available(_INTERIOR_CHECKPOINT_PRIORITY),
+                    _first_available(_ENGINE_BAY_CHECKPOINT_PRIORITY)):
+            if url and url not in photos:
+                photos.append(url)
+
+    return photos
 
 
 # Font-Awesome icon per walk-around zone (zones.py keys).
@@ -272,7 +334,7 @@ def dealer_auction_list(request):
     cards = []
     for a in _live_auctions():
         card = dealer_auction(a)
-        card["cover"] = _hero_url(_vehicle_report(a.vehicle))   # hero shot, not insurance/doc
+        card["photos"] = _curated_photos(_vehicle_report(a.vehicle))   # for the card carousel
         cards.append(card)
     return render(request, "auctions/dealer_list.html", {
         "auctions": cards,

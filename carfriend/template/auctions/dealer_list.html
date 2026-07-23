@@ -72,29 +72,56 @@
       {% if auctions %}
       <div class="cf-grid" id="auctionGrid">
         {% for a in auctions %}
-        <a class="cf-ac" href="/auctions/{{ a.id }}/"
+        <div class="cf-ac"
            data-name="{{ a.vehicle.name|lower }}" data-fuel="{{ a.vehicle.fuel|lower }}"
            data-grade="{{ a.vehicle.grade|lower }}" data-trans="{{ a.vehicle.transmission|lower }}"
            data-end="{{ a.end_ts }}" data-highest="{{ a.highest|default:0 }}">
           <div class="cf-ac-media">
-            {% if a.cover %}<img src="{{ a.cover }}" alt="{{ a.vehicle.name }}" loading="lazy">{% else %}<svg class="i car-glyph"><use href="#ic-car"/></svg>{% endif %}
+            {% if a.photos %}
+            <div id="ac-carousel-{{ a.id }}" class="carousel slide cf-ac-carousel" data-bs-ride="carousel" data-bs-interval="false">
+              <div class="carousel-inner">
+                {% for photo in a.photos %}
+                <div class="carousel-item{% if forloop.first %} active{% endif %}">
+                  <img src="{{ photo }}" alt="{{ a.vehicle.name }}" loading="lazy">
+                </div>
+                {% endfor %}
+              </div>
+              {% if a.photos|length > 1 %}
+              <div class="carousel-indicators cf-ac-dots">
+                {% for photo in a.photos %}
+                <button type="button" data-bs-target="#ac-carousel-{{ a.id }}" data-bs-slide-to="{{ forloop.counter0 }}"{% if forloop.first %} class="active" aria-current="true"{% endif %} aria-label="Photo {{ forloop.counter }}"></button>
+                {% endfor %}
+              </div>
+              <span class="cf-ac-count"><span class="cur">1</span>/{{ a.photos|length }}</span>
+              {% endif %}
+            </div>
+            {% else %}
+            <svg class="i car-glyph"><use href="#ic-car"/></svg>
+            {% endif %}
             <span class="cf-timer" data-end="{{ a.end_ts }}"><svg class="i"><use href="#ic-clock"/></svg> <span class="t">—</span></span>
             {% if a.vehicle.grade %}<span class="cf-ac-grade">{{ a.vehicle.grade }}</span>{% endif %}
-            {% if a.vehicle.city %}<span class="cf-plate-sm"><svg class="i"><use href="#ic-pin"/></svg> {{ a.vehicle.city }}</span>{% endif %}
           </div>
-          <div class="cf-ac-body">
-            <div class="cf-ac-title">{{ a.vehicle.name }}</div>
-            <div class="cf-ac-specs">{{ a.vehicle.year }}{% if a.vehicle.fuel %} · {{ a.vehicle.fuel }}{% endif %}{% if a.vehicle.km %} · {{ a.vehicle.km }} km{% endif %}</div>
-            <div class="cf-ac-bid">
-              <div>
-                <div class="cf-bid-l">Highest bid</div>
-                {% if a.highest %}<div class="cf-bid-v"><span class="au-inr" data-v="{{ a.highest }}"></span></div>{% else %}<div class="cf-bid-v" style="color:var(--cf-muted);font-size:.95rem">No bids yet</div>{% endif %}
+          <a class="cf-ac-link" href="/auctions/{{ a.id }}/">
+            <div class="cf-ac-body">
+              <div class="cf-ac-title">{{ a.vehicle.name }}</div>
+              <div class="cf-ac-specs">{{ a.vehicle.year }}</div>
+              <div class="cf-ac-badges">
+                {% if a.vehicle.fuel %}<span class="cf-chip">{{ a.vehicle.fuel }}</span>{% endif %}
+                {% if a.vehicle.transmission %}<span class="cf-chip">{{ a.vehicle.transmission }}</span>{% endif %}
+                {% if a.vehicle.km %}<span class="cf-chip">{{ a.vehicle.km }} km</span>{% endif %}
+                {% if a.vehicle.owner %}<span class="cf-chip">{{ a.vehicle.owner }}</span>{% endif %}
               </div>
-              <div class="cf-bid-n">Reserve <span class="au-inr" data-v="{{ a.reserve }}"></span></div>
+              <div class="cf-ac-bid">
+                <div>
+                  <div class="cf-bid-l">Highest bid</div>
+                  {% if a.highest %}<div class="cf-bid-v"><span class="au-inr" data-v="{{ a.highest }}"></span></div>{% else %}<div class="cf-bid-v" style="color:var(--cf-muted);font-size:.95rem">No bids yet</div>{% endif %}
+                </div>
+                <div class="cf-bid-n">Reserve <span class="au-inr" data-v="{{ a.reserve }}"></span></div>
+              </div>
+              <span class="cf-btn cf-btn-primary cf-ac-cta"><svg class="i"><use href="#ic-bolt"/></svg>View &amp; bid</span>
             </div>
-            <span class="cf-btn cf-btn-primary cf-ac-cta"><svg class="i"><use href="#ic-bolt"/></svg>View &amp; bid</span>
-          </div>
-        </a>
+          </a>
+        </div>
         {% endfor %}
       </div>
       <div class="cf-empty" id="noMatches" style="display:none">
@@ -129,6 +156,14 @@
   // rupee formatting for all .au-inr[data-v]
   function inr(n){ return isNaN(n) ? '—' : '₹' + Number(n).toLocaleString('en-IN'); }
   document.querySelectorAll('.au-inr').forEach(function (el) { el.textContent = inr(parseInt(el.dataset.v, 10)); });
+
+  // card photo carousels — keep the "1/N" counter in sync as a dealer swipes/taps a dot.
+  // Bootstrap's own carousel JS (already loaded) drives the slide + indicator state; this
+  // only mirrors the active index into the counter chip.
+  document.addEventListener('slid.bs.carousel', function (e) {
+    var cur = e.target.querySelector('.cf-ac-count .cur');
+    if (cur) cur.textContent = e.to + 1;
+  });
 
   // live countdowns on the cards (absolute end timestamp)
   var timers = Array.prototype.slice.call(document.querySelectorAll('.cf-timer[data-end]'));
