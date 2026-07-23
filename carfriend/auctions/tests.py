@@ -4,8 +4,8 @@ from channels.db import database_sync_to_async
 from channels.routing import URLRouter
 from channels.testing import WebsocketCommunicator
 from django.contrib.auth import get_user_model
-from django.test import TransactionTestCase
-from django.urls import path as urlpath
+from django.test import Client, TransactionTestCase
+from django.urls import path as urlpath, reverse
 from django.utils import timezone
 
 from accounts.models import DealerVerification, Role
@@ -164,3 +164,76 @@ class AutoBidCascadeTests(TransactionTestCase):
         final_highest = await database_sync_to_async(lambda: auction.highest_bid)()
         self.assertEqual(final_highest.amount, 680000)
         self.assertEqual(final_highest.dealer_id, dealer2.id)
+
+
+class AutoBidRealEndpointTests(TransactionTestCase):
+    """Closes the one gap the tests above don't cover: the ceiling there was created directly
+    via AutoBid.objects.create, not through the real dealer_auto_bid_set HTTP endpoint a
+    dealer's browser actually calls. This goes through that endpoint (real login session, real
+    view code) and reproduces the live-reported screenshot numbers as closely as possible:
+    ceiling 12,00,000, highest bid 9,14,560 at the moment a later competing bid lands.
+    """
+
+    async def test_ceiling_set_via_real_endpoint_still_retriggers_on_later_bid(self):
+        auction = await database_sync_to_async(_mk_auction)(500000, 5000, highest_seed=900000)
+        dealer1 = await database_sync_to_async(_mk_dealer)("dealer1")
+        dealer2 = await database_sync_to_async(_mk_dealer)("dealer2")
+
+        client = Client()
+        await database_sync_to_async(client.force_login)(dealer1)
+        resp = await database_sync_to_async(client.post)(
+            reverse("dealer_auto_bid_set", args=[auction.id]),
+            {"max_amount": 1200000},
+        )
+        resp_json = resp.json()
+        self.assertTrue(resp_json.get("ok"), resp_json)
+        self.assertEqual(resp_json.get("max_amount"), 1200000)
+
+        # Confirm the row the endpoint actually wrote matches what the UI/JS would show.
+        stored = await database_sync_to_async(
+            lambda: AutoBid.objects.get(auction=auction, dealer=dealer1)
+        )()
+        self.assertTrue(stored.is_active)
+        self.assertEqual(stored.max_amount, 1200000)
+
+        d1 = _connect(auction, dealer1)
+        d2 = _connect(auction, dealer2)
+        try:
+            connected1, _ = await d1.connect()
+            connected2, _ = await d2.connect()
+            self.assertTrue(connected1)
+            self.assertTrue(connected2)
+            await d1.receive_json_from()  # initial state
+            await d2.receive_json_from()
+
+            # A LATER competing bid from Dealer 2 — this is the exact reported failure case:
+            # the ceiling was already set well before this bid, not set in reaction to it.
+            await d2.send_json_to({"type": "bid", "amount": 914560})
+            await d2.receive_json_from(timeout=2)  # own echo
+
+            outbid_msg = await d1.receive_json_from(timeout=2)
+            self.assertEqual(outbid_msg["type"], "bid")
+            self.assertEqual(outbid_msg["highest"], 914560)
+            self.assertEqual(outbid_msg["by_id"], dealer2.id)
+
+            counter_msg = await d1.receive_json_from(timeout=2)
+            self.assertEqual(counter_msg["type"], "bid")
+            self.assertEqual(counter_msg["highest"], 919560)  # 914560 + 5000 increment
+            self.assertEqual(counter_msg["by_id"], dealer1.id)
+
+            # Dealer 2 must see that same counter-bid too — group_send fans out to every
+            # connected socket, not just the one being asserted on above.
+            counter_msg_d2 = await d2.receive_json_from(timeout=2)
+            self.assertEqual(counter_msg_d2["type"], "bid")
+            self.assertEqual(counter_msg_d2["highest"], 919560)
+            self.assertEqual(counter_msg_d2["by_id"], dealer1.id)
+
+            self.assertTrue(await d1.receive_nothing(timeout=0.3))
+            self.assertTrue(await d2.receive_nothing(timeout=0.3))
+        finally:
+            await d1.disconnect()
+            await d2.disconnect()
+
+        final_highest = await database_sync_to_async(lambda: auction.highest_bid)()
+        self.assertEqual(final_highest.dealer_id, dealer1.id)
+        self.assertEqual(final_highest.amount, 919560)
