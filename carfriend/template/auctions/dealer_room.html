@@ -152,9 +152,7 @@
     </div>
   </div>
 
-  {# Compact MOBILE-ONLY auction status tile: LIVE + time left (left), highest bid (right).
-     Mirrors the live #cd / #hb the desktop panel already drives; no new socket, no bid logic.
-     Hidden on desktop via .dr-heroM display:none. #}
+  {# Compact MOBILE-ONLY auction status tile: LIVE + time left (left), highest bid (right). Mirrors the live #cd / #hb the desktop panel already drives; no new socket, no bid logic. Hidden on desktop via .dr-heroM display:none. #}
   <section class="dr-heroM" aria-label="Live auction">
     <div class="dr-heroM-left">
       <span class="dr-heroM-live"><span class="dot"></span>LIVE</span>
@@ -167,9 +165,7 @@
   </section>
 
   {% if auto_bid %}
-  {# Auto-bid status row — server-rendered only while active (no dormant/placeholder state
-     when inactive). data-ceiling feeds the live mirror script below; this markup must match
-     window.cfAutoBidRow's own template exactly so a live-toggled row looks identical. #}
+  {# Auto-bid status row — server-rendered only while active (no dormant/placeholder state when inactive). data-ceiling feeds the live mirror script below; this markup must match window.cfAutoBidRow's own template exactly so a live-toggled row looks identical. #}
   <section class="dr-autobidM" id="dr-autobidM" data-ceiling="{{ auto_bid.max_amount }}" aria-label="Auto-bid status">
     <div class="dr-autobidM-top">
       <span class="dr-autobidM-lbl">Auto-bid active</span>
