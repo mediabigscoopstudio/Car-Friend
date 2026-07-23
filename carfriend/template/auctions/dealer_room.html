@@ -80,10 +80,16 @@
 @media(prefers-reduced-motion:reduce){.dr-hb,#hb{transition:none}}
 /* Mobile sticky mini bid bar — mobile only; desktop layout untouched. Sits directly ABOVE
    the shared .cf-tabbar (bottom nav, carfriend-ui.css) rather than on top of it — the two
-   used to occupy the identical bottom:0 rect, which fully hid the tab bar. */
+   used to occupy the identical bottom:0 rect, which fully hid the tab bar.
+   .dr-mini's `bottom` and .cf-main's `padding-bottom` below are CSS fallbacks only (a
+   hand-estimated tabbar height — good enough to avoid ever overlapping, but not pixel-exact,
+   since .cf-tab's real rendered height depends on font metrics that vary by browser/OS). The
+   script at the end of this file measures the ACTUAL rendered .cf-tabbar/.dr-mini heights on
+   load and corrects both values precisely — that JS is what actually keeps the two bars
+   flush with no gap; these are just a safe non-JS floor. */
 .dr-mini{display:none}
 @media(max-width:991.98px){
-  .dr-mini{display:flex;align-items:center;gap:.7rem;position:fixed;left:0;right:0;bottom:82px;z-index:130;
+  .dr-mini{display:flex;align-items:center;gap:.7rem;position:fixed;left:0;right:0;bottom:56px;z-index:130;
     padding:.55rem .8rem;
     background:#fff;border-top:1px solid var(--cf-green-100);box-shadow:0 -10px 26px -14px rgba(21,96,62,.55)}
   .dr-mini-info{flex:1 1 auto;min-width:0;display:flex;gap:1.1rem;align-items:center}
@@ -95,8 +101,8 @@
   .dr-mini-btn{flex:0 0 auto;display:inline-flex;align-items:center;gap:.35rem;padding:.7rem 1.1rem;background:var(--cf-green);color:#fff;border:none;border-radius:11px;font-weight:800;font-size:.9rem;cursor:pointer;box-shadow:0 8px 18px -9px rgba(21,96,62,.75)}
   .dr-mini-btn:disabled{background:var(--cf-line-strong);cursor:not-allowed;box-shadow:none}
   .dr-mini-btn .i{width:16px;height:16px;stroke:#fff}
-  /* keep page content clear of BOTH fixed bars: the tab bar (82px) and this mini bar */
-  main.cf-main{padding-bottom:152px}
+  /* keep page content clear of BOTH fixed bars: the tab bar (~56px) and this mini bar (~60px) */
+  main.cf-main{padding-bottom:120px}
 }
 /* ── Compact mobile auction status tile (MOBILE ONLY; desktop layout untouched) ── */
 .dr-heroM{display:none}
@@ -670,6 +676,29 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') clos
     form.scrollIntoView({ behavior: 'smooth', block: 'center' });
     if (amt) { try { amt.focus({ preventScroll: true }); } catch (e) { amt.focus(); } }
   });
+})();
+</script>
+
+<script>
+// Flush-stack .dr-mini directly above the shared .cf-tabbar — ADDITIVE. The CSS `bottom`/
+// `padding-bottom` fallbacks above are hand-estimated (tabbar height depends on font-metric
+// rendering that varies by browser/OS, so a static px guess can leave a visible gap or, worse,
+// an overlap). This measures the ACTUAL rendered heights and corrects both precisely: no
+// change to either element's content, only their computed position.
+(function () {
+  var tabbar = document.querySelector('.cf-tabbar');
+  var mini = document.querySelector('.dr-mini');
+  var main = document.querySelector('main.cf-main');
+  if (!tabbar || !mini) return;
+  function sync() {
+    var tabbarH = tabbar.offsetHeight;
+    if (!tabbarH) return;   // tabbar is display:none at desktop widths — nothing to correct
+    mini.style.bottom = tabbarH + 'px';
+    if (main) main.style.paddingBottom = (tabbarH + mini.offsetHeight) + 'px';
+  }
+  sync();
+  window.addEventListener('resize', sync);
+  window.addEventListener('orientationchange', sync);
 })();
 </script>
 
